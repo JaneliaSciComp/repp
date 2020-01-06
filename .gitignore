@@ -29,3 +29,6 @@ test/output
 
 # doc site build output
 docs/_site
+
+# mypy
+.mypy_cache
