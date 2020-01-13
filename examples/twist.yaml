@@ -1,0 +1,15 @@
+pcr-buffer-length: 0
+
+synthetic-min-length: 300
+
+synthetic-max-length: 1800
+
+synthetic-fragment-cost:
+  1800:
+    fixed: false
+    cost: 0.07
+
+synthetic-vector-cost:
+  5000:
+    fixed: false
+    cost: 0.09

@@ -33,6 +33,10 @@ make install
 
 See [the docs](https://jjtimmons.github.io/repp/) or use `--help` on any command.
 
+## Examples
+
+See [/examples](/examples) to see input/output from REPP.
+
 ## Plasmid Design
 
 ### Sequence
