@@ -93,5 +93,5 @@ docs:
 	find ./docs -name *make* -type f -exec sed -i -e 's/\/Users\/josh/~/g' {} \;
 	rm ./docs/*-e
 
-docs-serve: docs 
+docs-dev: docs 
 	cd docs && bundle exec jekyll serve

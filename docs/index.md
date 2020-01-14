@@ -6,6 +6,10 @@ Biologists profit when they can re-use DNA during plasmid design: it enables che
 
 `REPP` enables such plasmid design. It turns plasmid specifications into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Plasmids are specifiable using their target sequence, features, or sub-fragments.
 
+## Publication
+
+We published a paper about REPP in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0223935). We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
+
 ## Installation
 
 Download links are available at SourceForge: [https://sourceforge.net/projects/repplasmid/files/](https://sourceforge.net/projects/repplasmid/files/)
@@ -27,7 +31,11 @@ make install
 
 ## Documentation
 
-See [the docs](https://jjtimmons.github.io/repp/) or use `--help` on any command.
+See [the docs](https://lattice-automation.github.io/repp/) or use `--help` on any command.
+
+## Examples
+
+See [/examples](/examples) to see input/output from REPP.
 
 ## Plasmid Design
 

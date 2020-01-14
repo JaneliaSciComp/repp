@@ -31,7 +31,7 @@ make install
 
 ## Documentation
 
-See [the docs](https://jjtimmons.github.io/repp/) or use `--help` on any command.
+See [the docs](https://lattice-automation.github.io/repp/) or use `--help` on any command.
 
 ## Examples
 
