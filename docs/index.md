@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/13923102/72352497-5a93c880-36b0-11ea-9a3e-c06425790770.png" width="650" margin-bottom="10px" />
+<img src="https://user-images.githubusercontent.com/13923102/72353248-b90d7680-36b1-11ea-8714-3249a887b156.png" width="650" margin-bottom="10px" />
 
 `REPP` is a software application for automating plasmid design. It takes a target plasmid and finds the least expensive combination of fragments from user and public repositories to create it via Gibson Assembly.
 
