@@ -37,6 +37,8 @@ See [the docs](https://lattice-automation.github.io/repp/) or use `--help` on an
 
 See [/examples](/examples) to see input/output from REPP.
 
+<br>
+
 ![https://user-images.githubusercontent.com/13923102/72355113-d55ee280-36b4-11ea-8663-f5759cd7597b.png](https://user-images.githubusercontent.com/13923102/72355113-d55ee280-36b4-11ea-8663-f5759cd7597b.png)
 
 ## Plasmid Design
