@@ -1,6 +1,6 @@
-<img src="https://user-images.githubusercontent.com/13923102/72353248-b90d7680-36b1-11ea-8714-3249a887b156.png" width="650" margin-bottom="10px" />
+<img src="https://user-images.githubusercontent.com/13923102/72353248-b90d7680-36b1-11ea-8714-3249a887b156.png" width="650" margin="0 auto 10px auto" />
 
-`REPP` is a software application for automating plasmid design. It takes a target plasmid and finds the least expensive combination of fragments from user and public repositories to create it via Gibson Assembly.
+`REPP` is a tool for DNA assembly. It takes a target plasmid and finds the least expensive combination of fragments from user and public repositories to create it via Gibson Assembly.
 
 Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low.
 
@@ -36,6 +36,8 @@ See [the docs](https://lattice-automation.github.io/repp/) or use `--help` on an
 ## Examples
 
 See [/examples](/examples) to see input/output from REPP.
+
+![https://user-images.githubusercontent.com/13923102/72355113-d55ee280-36b4-11ea-8663-f5759cd7597b.png](https://user-images.githubusercontent.com/13923102/72355113-d55ee280-36b4-11ea-8663-f5759cd7597b.png)
 
 ## Plasmid Design
 
