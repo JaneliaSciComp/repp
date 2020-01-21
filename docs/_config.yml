@@ -7,7 +7,7 @@ plugins:
 remote_theme: pmarsceill/just-the-docs
 aux_links:
   "repp on GitHub":
-    - "//github.com/JJTimmons/repp"
+    - "//github.com/Lattice-Automation/repp"
   "repp on SourceForge":
     - "//sourceforge.net/projects/repplasmid/"
 search_enabled: true
