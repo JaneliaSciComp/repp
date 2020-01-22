@@ -13,5 +13,5 @@ Which approximates to asking REPP to:
 - make a plasmid sequence that's in `As0.input.fa`
 - output build instructions in JSON to `As0.output.json`
 - use source fragments from Addgene
-- use synthesis settings from twist.yaml
+- use synthesis settings from `twist.yaml`
 - be verbose during the build
