@@ -22,7 +22,7 @@ var featureCreateCmd = &cobra.Command{
 	Short:                      "Add a feature to the features database",
 	Run:                        featureDB.SetCmd,
 	SuggestionsMinimumDistance: 2,
-	Long:                       "\nSet a feature in the features database so it can be use used in 'repp builde features'",
+	Long:                       "\nSet a feature in the features database so it can be use used in 'repp make features'",
 	Aliases:                    []string{"add", "update"},
 	Example:                    "  repp set feature \"custom terminator 3\" CTAGCATAACAAGCTTGGGCACCTGTAAACGGGTCTTGAGGGGTTCCATTTTG",
 }
