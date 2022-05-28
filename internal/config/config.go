@@ -21,9 +21,6 @@ var (
 	// reppDir is the root directory where repp settings and database files live
 	reppDir = filepath.Join(home, ".repp")
 
-	// RootSettingsFile is the default settings file path for the config package
-	RootSettingsFile = filepath.Join(reppDir, "config.yaml")
-
 	// Primer3Config is the path to the embedded primer3 config directory
 	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
 
@@ -119,11 +116,11 @@ type Config struct {
 	// to allow Primer3 to look for a primer
 	PCRBufferLength int `mapstructure:"pcr-buffer-length"`
 
-	// maximum length of a synthesized piece of DNA
-	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
-
 	// minimum length of a synthesized piece of DNA
 	SyntheticMinLength int `mapstructure:"synthetic-min-length"`
+
+	// maximum length of a synthesized piece of DNA
+	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 }
 
 // New returns a new Config struct populated by settings from
@@ -133,20 +130,99 @@ type Config struct {
 // TODO: check for and error out on nonsense config values
 // TODO: add back the config file path setting
 func New() *Config {
-	// read in the default/base settings file first
-	viper.SetConfigType("yaml")
-	viper.SetConfigFile(RootSettingsFile)
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal(err)
-	}
+	// read in the default settings first
+	viper.SetDefault("addgene-cost", 65.0)
+	viper.SetDefault("igem-cost", 0.0)
+	viper.SetDefault("dnasu-cost", 55.0)
+	viper.SetDefault("pcr-bp-cost", 0.6)
+	viper.SetDefault("pcr-rxn-cost", 0.27)
+	viper.SetDefault("pcr-time-cost", 0.0)
+	viper.SetDefault("gibson-assembly-cost", 12.98)
+	viper.SetDefault("gibson-assembly-time-cost", 0.0)
+	viper.SetDefault("fragments-max-count", 6)
+	viper.SetDefault("fragments-min-junction-length", 15)
+	viper.SetDefault("fragments-max-junction-length", 120)
+	viper.SetDefault("fragments-max-junction-hairpin", 47.0)
+	viper.SetDefault("pcr-min-length", 60)
+	viper.SetDefault("pcr-primer-max-pair-penalty", 30.0)
+	viper.SetDefault("pcr-primer-max-embed-length", 20)
+	viper.SetDefault("pcr-primer-max-ectopic-tm", 55.0)
+	viper.SetDefault("pcr-buffer-length", 20)
+	viper.SetDefault("synthetic-min-length", 125)
+	viper.SetDefault("synthetic-max-length", 3000)
+	viper.SetDefault("synthetic-fragment-cost", map[int]SynthCost{
+		250: {
+			Fixed: true,
+			Cost: 89.0,
+		},
+		500: {
+			Fixed: true,
+			Cost: 89.0,
+		},
+		750: {
+			Fixed: true,
+			Cost: 129.0,
+		},
+		1000: {
+			Fixed: true,
+			Cost: 149.0,
+		},
+		1250: {
+			Fixed: true,
+			Cost: 209.0,
+		},
+		1500: {
+			Fixed: true,
+			Cost: 249.0,
+		},
+		1750: {
+			Fixed: true,
+			Cost: 289.0,
+		},
+		2000: {
+			Fixed: true,
+			Cost: 329.0,
+		},
+		2250: {
+			Fixed: true,
+			Cost: 399.0,
+		},
+		2500: {
+			Fixed: true,
+			Cost: 449.0,
+		},
+		2750: {
+			Fixed: true,
+			Cost: 499.0,
+	  	},	
+		3000: {
+			Fixed: true,
+			Cost: 549.0,
+	    },
+	})
+	viper.SetDefault("synthetic-plasmid-cost", map[int]SynthCost{
+		500: {
+			Fixed: true,
+			Cost: 160,
+		},
+		3000: {
+			Fixed: true,
+			Cost: 0.35,
+		},
+		30000: {
+			Fixed: false,
+			Cost: 0.6,
+		},
+	})
 
-	if userSettings := viper.GetString("settings"); userSettings != "" && userSettings != RootSettingsFile {
-		viper.SetConfigFile(userSettings)             // user has specified a new path for a settings file
+	if userConfig := viper.GetString("config"); userConfig != ""  {
+		viper.SetConfigType("yaml")
+		viper.SetConfigFile(userConfig)             // user has specified a new path for a settings file
 		if err := viper.MergeInConfig(); err != nil { // read in user defined settings file
 			log.Fatal(err)
 		}
 
-		file, _ := os.Open(userSettings)
+		file, _ := os.Open(userConfig)
 		userData := make(map[string]interface{})
 		if err := yaml.NewDecoder(file).Decode(userData); err != nil {
 			log.Fatal(err)
@@ -155,13 +231,6 @@ func New() *Config {
 		userConfig := &Config{}
 		if err := mapstructure.Decode(userData, userConfig); err != nil {
 			log.Fatal(err)
-		}
-
-		if userConfig.CostSyntheticFragment != nil {
-			viper.Set("synthetic-fragment-cost", userConfig.CostSyntheticFragment)
-		}
-		if userConfig.CostSynthPlasmid != nil {
-			viper.Set("synthetic-plasmid-cost", userConfig.CostSynthPlasmid)
 		}
 	}
 
@@ -182,12 +251,10 @@ func New() *Config {
 		log.Fatal("no ntthal executable available in PATH, try `make install`")
 	}
 
-	// build Config
 	config := &Config{}
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatalf("failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
-
 	return config
 }
 

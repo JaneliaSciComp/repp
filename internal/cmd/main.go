@@ -7,7 +7,6 @@ import (
 
 var (
 	featureDB = repp.NewFeatureDB()
-
 	enzymeDB = repp.NewEnzymeDB()
 )
 
