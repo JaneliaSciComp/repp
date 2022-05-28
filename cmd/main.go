@@ -1,8 +1,9 @@
 package main
 
 import (
-	"Lattice-Automation/repp/internal/cmd"
 	"log"
+
+	"github.com/Lattice-Automation/repp/internal/cmd"
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.

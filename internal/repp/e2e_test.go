@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Lattice-Automation/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 func Test_sequence_e2e(test *testing.T) {

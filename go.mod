@@ -1,9 +1,8 @@
-module Lattice-Automation/repp
+module github.com/Lattice-Automation/repp
 
 go 1.18
 
 require (
-	github.com/Lattice-Automation/repp v0.0.0-20200129205548-b29cb7f43bcb
 	github.com/jinzhu/copier v0.3.5
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0

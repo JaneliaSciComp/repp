@@ -15,12 +15,10 @@ PLATFORM:=$(shell uname)
 .PHONY: test dist docs
 .DEFAULT_GOAL: build
 
-ifeq ($(PLATFORM),Windows_NT)
-	$(error Windows not supported via make)
-endif
-
-build:
-	go get -d
+.PHONY: dist
+dist:
+	go mod tidy
+	go build -o ./bin/repp
 	env GOOS=linux go build -o ./bin/linux -v
 	env GOOS=darwin go build -o ./bin/darwin -v
 	env GOOS=windows go build -o ./bin/repp.exe -v
@@ -36,25 +34,6 @@ install:
 	cp ./assets/snapgene/features.tsv $(APP_DATA)
 	cp ./assets/neb/enzymes.tsv $(APP_DATA)
 
-ifeq ($(PLATFORM),Linux)
-	install ./bin/linux $(APP)
-	install -C ./vendor/linux/blastn $(LOCAL_BIN)
-	install -C ./vendor/linux/ntthal $(LOCAL_BIN)
-	install -C ./vendor/linux/primer3_core $(LOCAL_BIN)
-	install -C ./vendor/linux/blastdbcmd $(LOCAL_BIN)
-endif
-
-ifeq ($(PLATFORM),Darwin)
-	install ./bin/darwin $(APP)
-	install -C ./vendor/darwin/blastn $(LOCAL_BIN)
-	install -C ./vendor/darwin/ntthal $(LOCAL_BIN)
-	install -C ./vendor/darwin/primer3_core $(LOCAL_BIN)
-	install -C ./vendor/darwin/blastdbcmd $(LOCAL_BIN)
-endif
-
-windows: build
-	cd scripts && makensis windows_installer.nsi
-
 all: build install
 
 dbs:
@@ -67,25 +46,7 @@ uninstall: clean
 test: all
 	go test -timeout 200s ./internal/repp
 
-dist-dir:
-	mkdir -p ${DIST_SRC}
-	rsync -r --delete\
-	 --exclude={'.git','dist','test','scripts','bin/repp_install.exe','bin/repp.exe','vendor/windows','assets/addgene/addgene.json','assets/dnasu/DNASU*','assets/igem/xml*','assets/neb/*/'}\
-	 . ${DIST_SRC}
-	tar -czf ${DIST_SRC_TAR} ${DIST_SRC}
-	rm -rf ${DIST_SRC}
-
-dist: windows dist-dir
-	cp ./README.md ./docs/index.md
-
-	zip ${DIST_WIN_ZIP} ./bin/repp_install.exe
-
-	scp ${DIST_SRC_TAR} jjtimmons@frs.sourceforge.net:/home/frs/project/repplasmid/
-	scp ${DIST_WIN_ZIP} jjtimmons@frs.sourceforge.net:/home/frs/project/repplasmid/
-
-	rm ${DIST_SRC_TAR}
-	rm ${DIST_WIN_ZIP}
-
+.PHONY: docs
 docs:
 	go run ./docs/main.go
 	cp README.md ./docs/index.md

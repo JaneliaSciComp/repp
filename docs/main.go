@@ -1,11 +1,12 @@
 package main
 
 import (
-	"Lattice-Automation/repp/internal/cmd"
 	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/Lattice-Automation/repp/internal/cmd"
 
 	"github.com/spf13/cobra/doc"
 )

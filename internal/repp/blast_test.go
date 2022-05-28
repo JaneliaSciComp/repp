@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Lattice-Automation/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // test the ability to find test fragments in a mock database

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/Lattice-Automation/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // mismatchResults is a map from primer key to mismatch check results

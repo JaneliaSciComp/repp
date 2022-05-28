@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Lattice-Automation/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // Solution is a single solution to build up the target plasmid.

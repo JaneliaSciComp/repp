@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/Lattice-Automation/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
 )
 

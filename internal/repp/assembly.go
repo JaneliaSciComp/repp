@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Lattice-Automation/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // assembly is a slice of nodes ordered by the nodes
