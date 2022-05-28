@@ -90,7 +90,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 	} else {
 		// if the features weren't in a file, try and find each in the features database
 		// or one of the databases passed as a source of building fragments
-		featureNames := []string{}
+		var featureNames []string
 		if strings.Contains(flags.in, ",") {
 			featureNames = strings.Split(flags.in, ",") // comma separated
 		} else {
@@ -168,7 +168,7 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
 
 			if _, exists := featureMatches[m.entry]; !exists {
-				featureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+				featureMatches[m.entry] = []featureMatch{{featureIndex: i, match: m}}
 			} else {
 				featureMatches[m.entry] = append(featureMatches[m.entry], featureMatch{featureIndex: i, match: m})
 			}
@@ -373,7 +373,7 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
 
 			if _, exists := featureMatches[m.entry]; !exists {
-				featureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+				featureMatches[m.entry] = []featureMatch{{featureIndex: i, match: m}}
 			} else {
 				featureMatches[m.entry] = append(featureMatches[m.entry], featureMatch{featureIndex: i, match: m})
 			}
@@ -511,11 +511,11 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 		containing = []string{} // clear
 	}
 	if len(containing) > 0 {
-		fmt.Fprintf(w, strings.Join(containing, "\n"))
+		fmt.Fprint(w, strings.Join(containing, "\n"))
 	} else if len(lowDistance) > 0 {
-		fmt.Fprintf(w, strings.Join(lowDistance, "\n"))
+		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Fprintf(w, fmt.Sprintf("failed to find any features for %s", name))
+		fmt.Fprintf(w, "failed to find any features for %s", name)
 	}
 	w.Write([]byte("\n"))
 	w.Flush()

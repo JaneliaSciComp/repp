@@ -126,7 +126,7 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 		circular: true,
 	}
 
-	features := []match{}
+	var features []match
 	if len(dbs) < 1 {
 		// if the user selected another db, don't use the internal one
 		handleErr(b.input())

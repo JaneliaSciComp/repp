@@ -25,7 +25,7 @@ func Test_sequence_e2e(test *testing.T) {
 	}
 
 	tests := []testFlags{
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "backbone.fa"),
 			path.Join("..", "..", "test", "output", "backbone.json"),
 			"pSB1A3",
@@ -35,7 +35,7 @@ func Test_sequence_e2e(test *testing.T) {
 			false,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_K2224001.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2224001.json"),
 			"pSB1A3",
@@ -45,7 +45,7 @@ func Test_sequence_e2e(test *testing.T) {
 			false,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "110056.fa"),
 			path.Join("..", "..", "test", "output", "110056.json"),
 			"",
@@ -55,7 +55,7 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_K2602025.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2602025.json"),
 			"pSB1A3",
@@ -65,7 +65,7 @@ func Test_sequence_e2e(test *testing.T) {
 			false,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
 			"pSB1A3",
@@ -75,7 +75,7 @@ func Test_sequence_e2e(test *testing.T) {
 			false,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_E0610.fa"),
 			path.Join("..", "..", "test", "output", "BBa_E0610.json"),
 			"pSB1C3",
@@ -85,7 +85,7 @@ func Test_sequence_e2e(test *testing.T) {
 			false,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_I5310.fa"),
 			path.Join("..", "..", "test", "output", "BBa_I5310.json"),
 			"pSB1C3",
@@ -95,7 +95,7 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_K2651001.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2651001.json"),
 			"pSB1C3",
@@ -105,7 +105,7 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_K2779020.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K2779020.json"),
 			"pSB1A3",
@@ -115,7 +115,7 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "BBa_K1085023.fa"),
 			path.Join("..", "..", "test", "output", "BBa_K1085023.json"),
 			"pSB1C3",
@@ -125,7 +125,7 @@ func Test_sequence_e2e(test *testing.T) {
 			true,
 			true,
 		},
-		testFlags{
+		{
 			path.Join("..", "..", "test", "input", "113490.fa"),
 			path.Join("..", "..", "test", "output", "113490.json"),
 			"",
@@ -240,15 +240,15 @@ func Test_fragments(t *testing.T) {
 			"fragments with linear overlap",
 			args{
 				[]*Frag{
-					&Frag{
+					{
 						Seq:  "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
 						conf: c,
 					},
-					&Frag{
+					{
 						Seq:  "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 						conf: c,
 					},
-					&Frag{
+					{
 						Seq:  "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
 						conf: c,
 					},
@@ -259,15 +259,15 @@ func Test_fragments(t *testing.T) {
 				Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCGACTGATCACTAGCATCGACTAGCTAGAACTGATCTAG",
 			},
 			[]*Frag{
-				&Frag{
+				{
 					Seq:      "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
 					fragType: linear,
 				},
-				&Frag{
+				{
 					Seq:      "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 					fragType: linear,
 				},
-				&Frag{
+				{
 					Seq:      "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
 					fragType: linear,
 				},

@@ -19,7 +19,6 @@ func Test_primer3_shrink(t *testing.T) {
 		out    *os.File
 		p3Path string
 		p3Conf string
-		p3Dir  string
 	}
 	type args struct {
 		last        *Frag
@@ -190,7 +189,7 @@ func Test_mutatePrimers(t *testing.T) {
 					start: 10,
 					end:   39,
 					Primers: []Primer{
-						Primer{
+						{
 							Seq: "TGACCTCGGC",
 							Range: ranged{
 								start: 10,
@@ -198,7 +197,7 @@ func Test_mutatePrimers(t *testing.T) {
 							},
 							Strand: true,
 						},
-						Primer{
+						{
 							Seq: "CGCCGTAGTA", // rev comp TACTACGGCG
 							Range: ranged{
 								start: 30,
@@ -218,7 +217,7 @@ func Test_mutatePrimers(t *testing.T) {
 				start:  10,
 				end:    39,
 				Primers: []Primer{
-					Primer{
+					{
 						Seq: "CTCGATGACCTCGGC",
 						Range: ranged{
 							start: 5,
@@ -226,7 +225,7 @@ func Test_mutatePrimers(t *testing.T) {
 						},
 						Strand: true,
 					},
-					Primer{
+					{
 						Seq: "AAGAATCGCCGTAGTA", //  rev comp TACTACGGCGATTCTT
 						Range: ranged{
 							start: 30,
@@ -245,7 +244,7 @@ func Test_mutatePrimers(t *testing.T) {
 					start: 10,
 					end:   39,
 					Primers: []Primer{
-						Primer{
+						{
 							Seq: "TGACCTCGGC",
 							Range: ranged{
 								start: 10,
@@ -253,7 +252,7 @@ func Test_mutatePrimers(t *testing.T) {
 							},
 							Strand: true,
 						},
-						Primer{
+						{
 							Seq: "CGCCGTAGTA", // rev comp TACTACGGCG
 							Range: ranged{
 								start: 30,
@@ -273,7 +272,7 @@ func Test_mutatePrimers(t *testing.T) {
 				start:  10,
 				end:    39,
 				Primers: []Primer{
-					Primer{
+					{
 						Seq: "TGACCTCGGC",
 						Range: ranged{
 							start: 10,
@@ -281,7 +280,7 @@ func Test_mutatePrimers(t *testing.T) {
 						},
 						Strand: true,
 					},
-					Primer{
+					{
 						Seq: "CGCCGTAGTA", // rev comp TACTACGGCG
 						Range: ranged{
 							start: 30,

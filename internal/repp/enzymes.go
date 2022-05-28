@@ -287,7 +287,7 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 
 	if len(args) < 1 {
-		enzymeNames := make([]string, len(f.enzymes), len(f.enzymes))
+		enzymeNames := make([]string, len(f.enzymes))
 		i := 0
 		for name := range f.enzymes {
 			enzymeNames[i] = name
@@ -327,11 +327,11 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 		containing = []string{} // clear
 	}
 	if len(containing) > 0 {
-		fmt.Fprintf(w, strings.Join(containing, "\n"))
+		fmt.Fprint(w, strings.Join(containing, "\n"))
 	} else if len(lowDistance) > 0 {
-		fmt.Fprintf(w, strings.Join(lowDistance, "\n"))
+		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Fprintf(w, fmt.Sprintf("failed to find any enzymes for %s", name))
+		fmt.Fprintf(w, "failed to find any enzymes for %s", name)
 	}
 	w.Write([]byte("\n"))
 	w.Flush()
@@ -352,7 +352,7 @@ func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 	}
 	seq = strings.ToUpper(seq)
 
-	invalidChars := regexp.MustCompile("[^ATGCMRWYSKHDVBNX_\\^]")
+	invalidChars := regexp.MustCompile(`[^ATGCMRWYSKHDVBNX_\^]`)
 	seq = invalidChars.ReplaceAllString(seq, "")
 
 	if strings.Count(seq, "^") != 1 || strings.Count(seq, "_") != 1 {

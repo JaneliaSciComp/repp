@@ -107,18 +107,6 @@ func (a *assembly) len() int {
 	return len(a.frags) + a.synths
 }
 
-// log logs a description of the assembly (the entires in it and its cost).
-func (a *assembly) log() {
-	logString := ""
-	if len(a.frags) >= 1 {
-		for _, f := range a.frags {
-			logString += f.ID + ":" + f.fragType.String() + " "
-		}
-	}
-
-	fmt.Println(fmt.Sprintf("%s- $%.2f", logString, a.cost))
-}
-
 // fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
 // It can fail. For example, a PCR Frag may have off-targets in the parent plasmid.
 func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
@@ -137,7 +125,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		f := a.frags[0]
 
 		return []*Frag{
-			&Frag{
+			{
 				ID:       f.ID,
 				Seq:      strings.ToUpper(f.Seq)[0:len(target)], // it may be longer
 				fragType: circular,
@@ -277,7 +265,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		// it is the target plasmid. just return that as the assembly
 		if len(f.Seq) >= targetLength && !features {
 			return []assembly{
-				assembly{
+				{
 					frags:  []*Frag{f.copy()},
 					synths: 0,
 				},
@@ -286,7 +274,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 
 		// create a starting assembly for each fragment containing just it
 		frags[i].assemblies = []assembly{
-			assembly{
+			{
 				frags:  []*Frag{f.copy()}, // just self
 				cost:   f.costTo(f),       // just PCR,
 				synths: 0,                 // no synthetic frags at start

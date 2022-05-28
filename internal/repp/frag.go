@@ -312,7 +312,7 @@ func (f *Frag) reach(nodes []*Frag, i int, features bool) (reachable []int) {
 	reachable = []int{}
 
 	// accumulate the nodes that overlap with this one
-	for true {
+	for {
 		i++
 
 		// we've run out of nodes

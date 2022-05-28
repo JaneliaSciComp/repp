@@ -470,12 +470,12 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 			return nil, fmt.Errorf("failed to parse features from %s", path)
 		}
 
-		featureSplitRegex := regexp.MustCompile("\\w+\\s+\\w+")
+		featureSplitRegex := regexp.MustCompile(`\w+\s+\w+`)
 		featureStrings := featureSplitRegex.Split(splitOnFeatures[1], -1)
 
 		features := []*Frag{}
 		for featureIndex, feature := range featureStrings {
-			rangeRegex := regexp.MustCompile("(\\d*)\\.\\.(\\d*)")
+			rangeRegex := regexp.MustCompile(`(\d*)\.\.(\d*)`)
 			rangeIndexes := rangeRegex.FindStringSubmatch(feature)
 
 			if len(rangeIndexes) < 3 {
@@ -494,7 +494,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 			featureSeq := cleanedSeq[start-1 : end] // make 0-indexed
 			featureSeq = strings.ToUpper(featureSeq)
 
-			labelRegex := regexp.MustCompile("\\/label=(.*)")
+			labelRegex := regexp.MustCompile(`\/label=(.*)`)
 			labelMatch := labelRegex.FindStringSubmatch(feature)
 			label := ""
 			if len(labelMatch) > 1 {
@@ -513,7 +513,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 	}
 
 	// parse just the file's sequence
-	idRegex := regexp.MustCompile("LOCUS[ \\t]*([^ \\t]*)")
+	idRegex := regexp.MustCompile(`LOCUS[ \t]*([^ \t]*)`)
 	id := idRegex.FindString(genbankSplit[0])
 
 	if id == "" {
@@ -521,22 +521,9 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 	}
 
 	return []*Frag{
-		&Frag{
+		{
 			ID:  id,
 			Seq: cleanedSeq,
 		},
 	}, nil
-}
-
-// igemBackbone returns a backbone, as it was in the database,
-// if it corresponds to an iGEM backbone. They are not digested.
-// see: http://parts.igem.org/Help:Prefix-Suffix
-func igemBackbone(backbone string) bool {
-	for _, bb := range []string{"pSB1A3", "pSB1T3", "pSB1K3", "pSB1C3"} {
-		if bb == backbone {
-			return true
-		}
-	}
-
-	return false
 }

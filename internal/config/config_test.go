@@ -15,15 +15,15 @@ func TestConfig_SynthCost(t *testing.T) {
 
 	configFields := fields{
 		SynthesisCost: map[int]SynthCost{
-			50: SynthCost{
+			50: {
 				Fixed: true,
 				Cost:  5,
 			},
-			200: SynthCost{
+			200: {
 				Fixed: false,
 				Cost:  0.1,
 			},
-			10000: SynthCost{
+			10000: {
 				Fixed: false,
 				Cost:  0.50,
 			},

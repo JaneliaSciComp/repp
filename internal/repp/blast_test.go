@@ -59,25 +59,25 @@ func Test_cull(t *testing.T) {
 	// test fragment with 3 matches that should be removed
 	matches := []match{
 		// shouldn't be removed
-		match{
+		{
 			entry:      "m1",
 			queryStart: 15,
 			queryEnd:   19,
 		},
 		// should be removed because it fits within m3
-		match{
+		{
 			entry:      "m2",
 			queryStart: 29,
 			queryEnd:   34,
 		},
 		// shouldn't be removed
-		match{
+		{
 			entry:      "m3",
 			queryStart: 29,
 			queryEnd:   35,
 		},
 		// shouldn't be removed
-		match{
+		{
 			entry:      "m4",
 			queryStart: 31,
 			queryEnd:   72,
@@ -196,7 +196,7 @@ func Test_parentMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mismatchResult := parentMismatch([]Primer{Primer{Seq: tt.args.primer}}, tt.args.parent, testDB, conf)
+			mismatchResult := parentMismatch([]Primer{{Seq: tt.args.primer}}, tt.args.parent, testDB, conf)
 			gotMismatch := mismatchResult.wasMismatch
 			gotMatch := mismatchResult.m
 			err := mismatchResult.err

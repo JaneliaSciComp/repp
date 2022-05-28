@@ -14,9 +14,6 @@ import (
 	"github.com/Lattice-Automation/repp/internal/config"
 )
 
-// mismatchResults is a map from primer key to mismatch check results
-var mismatchResults = make(map[string]mismatchResult)
-
 // match is a blast "hit" in the blastdb.
 type match struct {
 	// entry of the matched building fragment in the database
@@ -88,9 +85,6 @@ type blastExec struct {
 	// internal if the db is a local/user owned list of fragments (ie free)
 	internal bool
 
-	// blast task. blastn, megablast, etc
-	task string
-
 	// the percentage identity for BLAST queries
 	identity int
 
@@ -116,28 +110,6 @@ func (m *match) length() int {
 	}
 
 	return subjectLength
-}
-
-// copyWithQueryRange returns a new match with the new start, end.
-func (m *match) copyWithQueryRange(start, end int) match {
-	return match{
-		entry:        m.entry,
-		uniqueID:     m.uniqueID,
-		seq:          m.seq,
-		queryStart:   start,
-		queryEnd:     end,
-		subjectStart: m.subjectStart,
-		subjectEnd:   m.subjectEnd,
-		db:           m.db,
-		circular:     m.circular,
-		mismatching:  m.mismatching,
-		internal:     m.internal,
-	}
-}
-
-// log the match in string format
-func (m *match) log() {
-	fmt.Printf("%s %d %d\n", m.entry, m.queryStart, m.queryEnd)
 }
 
 // blast the seq against all dbs and acculate matches.
@@ -469,7 +441,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	return ms, nil
 }
 
-// culling removes matches that are engulfed in others
+// cull removes matches that are engulfed in others
 //
 // culling fragment matches means removing those that are completely
 // self-contained in other fragments if limit == 1:
@@ -477,8 +449,6 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
 func cull(matches []match, targetLength, minSize, limit int) (culled []match) {
-	culled = []match{}
-
 	// remove fragments that are shorter the minimum cut off size
 	// separate the internal and external fragments. the internal
 	// ones should not be removed just if they're self-contained
@@ -505,30 +475,11 @@ func cull(matches []match, targetLength, minSize, limit int) (culled []match) {
 	// is how we circularize, so have to add back matches to the start or end
 	matchCount := make(map[string]int)
 	for _, m := range culled {
-		if _, counted := matchCount[m.uniqueID]; counted {
-			matchCount[m.uniqueID]++
-		} else {
-			matchCount[m.uniqueID] = 1
-		}
+		matchCount[m.uniqueID] += 1
 	}
 
 	// sort again now that we added copied matches
 	sortMatches(culled)
-
-	// fmt.Println("matches")
-	// for _, m := range matches {
-	// 	if m.queryStart < targetLength {
-	// 		m.log()
-	// 	}
-	// }
-
-	// fmt.Println("after culling")
-	// for _, m := range culled {
-	// if m.queryStart < targetLength {
-	// m.log()
-	// }
-	// }
-
 	return culled
 }
 

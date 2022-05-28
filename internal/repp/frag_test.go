@@ -407,7 +407,6 @@ func Test_Frag_junction(t *testing.T) {
 		end        int
 		db         string
 		assemblies []assembly
-		cost       float64
 		url        string
 		primers    []Primer
 		conf       *config.Config
