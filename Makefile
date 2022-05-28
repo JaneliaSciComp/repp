@@ -1,23 +1,12 @@
-NAME=repp
-
-.DEFAULT_GOAL: build
-
-.PHONY: dist
+.PHONY: build
 build:
 	go mod tidy && \
 		go mod vendor && \
 		go build -o ./bin/repp ./cmd
 
+.PHONY: install
 install:
-	mkdir -p $(APP_DATA)
-
-	cp $(SETTINGS) $(APP_DATA)/config.yaml
-	cp -r ./vendor/primer3_config $(APP_DATA) 
-	cp -r ./assets/addgene/db/** $(APP_DATA) 
-	cp -r ./assets/igem/db/** $(APP_DATA)
-	cp -r ./assets/dnasu/db/** $(APP_DATA)
-	cp ./assets/snapgene/features.tsv $(APP_DATA)
-	cp ./assets/neb/enzymes.tsv $(APP_DATA)
+	go install ./cmd/repp
 
 .PHONY: test
 test: all

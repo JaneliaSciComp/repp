@@ -12,22 +12,28 @@ We published a paper about REPP in PLOS One: [Timmons, J.J. & Densmore D. Reposi
 
 ## Installation
 
-Download links are available at SourceForge: [https://sourceforge.net/projects/repplasmid/files/](https://sourceforge.net/projects/repplasmid/files/)
+`REPP` depends on:
 
-### MacOS/Linux
+- [`Go >= 1.18.0`](https://go.dev/doc/install) for compilation and installation
+- BLAST+ suite and Primer3 at runtime
 
-```bash
-wget -O repp_src_0.1.0.tar.gz 'https://sourceforge.net/projects/repplasmid/files/repp_src_0.1.0.tar.gz/download'
-tar xzf repp_src_0.1.0.tar.gz
-cd repp_src_0.1.0
+### Mac
+
+```sh
+brew install blast primer3
+git clone https://github.com/Lattice-Automation/repp.git
+cd repp
 make install
 ```
 
-### Windows
+### Linux
 
-1. Download the most recent `repp_windows.*.zip` from [SourceForge](https://sourceforge.net/projects/repplasmid/files/)
-2. Unzip
-3. Run `repp_install.exe`
+```sh
+sudo apt-get install ncbi-blast+ primer3
+git clone https://github.com/Lattice-Automation/repp.git
+cd repp
+make install
+```
 
 ## Documentation
 

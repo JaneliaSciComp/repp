@@ -5,7 +5,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 
@@ -232,23 +231,6 @@ func New() *Config {
 		if err := mapstructure.Decode(userData, userConfig); err != nil {
 			log.Fatal(err)
 		}
-	}
-
-	// make sure all depedencies are available (may belong elsewhere)
-	if _, err := exec.LookPath("blastn"); err != nil {
-		log.Fatal("no blastn executable available in PATH, try `make install`")
-	}
-
-	if _, err := exec.LookPath("blastdbcmd"); err != nil {
-		log.Fatal("no blastdbcmd executable available in PATH, try `make install`")
-	}
-
-	if _, err := exec.LookPath("primer3_core"); err != nil {
-		log.Fatal("no primer3_core executable available in PATH, try `make install`")
-	}
-
-	if _, err := exec.LookPath("ntthal"); err != nil {
-		log.Fatal("no ntthal executable available in PATH, try `make install`")
 	}
 
 	config := &Config{}
