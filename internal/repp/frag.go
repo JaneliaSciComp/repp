@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Lattice-Automation/repp/config"
 	"github.com/jinzhu/copier"
-	"github.com/jjtimmons/repp/config"
 )
 
 var (

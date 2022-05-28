@@ -99,7 +99,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dnasu --dbs "protei
 
 ### Configuration
 
-The default settings file used by `REPP` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs. For more details, see [configuration](https://jjtimmons.github.io/repp/configuration).
+The default settings file used by `REPP` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs. For more details, see [configuration](https://Lattice-Automation.github.io/repp/configuration).
 
 To overwrite some `REPP` settings on a per-design basis, create another YAML file:
 

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/config"
 	"github.com/spf13/cobra"
 )
 

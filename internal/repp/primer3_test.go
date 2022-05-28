@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/config"
 )
 
 func Test_primer3_shrink(t *testing.T) {

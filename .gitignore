@@ -32,3 +32,5 @@ docs/_site
 
 # mypy
 .mypy_cache
+
+vendor

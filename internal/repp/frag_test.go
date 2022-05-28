@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/config"
 )
 
 func Test_Frag_distTo(t *testing.T) {

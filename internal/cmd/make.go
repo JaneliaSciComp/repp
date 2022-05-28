@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/jjtimmons/repp/config"
-	"github.com/jjtimmons/repp/internal/repp"
+	"Lattice-Automation/repp/config"
+	"Lattice-Automation/repp/internal/repp"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

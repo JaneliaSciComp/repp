@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/config"
 )
 
 func TestNewFeatureDB(t *testing.T) {

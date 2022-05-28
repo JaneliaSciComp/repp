@@ -87,7 +87,7 @@ dist: windows dist-dir
 	rm ${DIST_WIN_ZIP}
 
 docs:
-	go run . docs
+	go run ./docs/main.go
 	cp README.md ./docs/index.md
 	cd docs && bundle exec just-the-docs rake search:init
 	find ./docs -name *make* -type f -exec sed -i -e 's/\/Users\/josh/~/g' {} \;

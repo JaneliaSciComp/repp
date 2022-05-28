@@ -1,12 +1,12 @@
 package main
 
 import (
+	"Lattice-Automation/repp/internal/cmd"
 	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/jjtimmons/repp/cmd"
 	"github.com/spf13/cobra/doc"
 )
 
@@ -71,7 +71,7 @@ type meta struct {
 
 // map from the base Markdown file name to its build meta
 var metaMap = map[string]meta{
-	"repp": meta{
+	"repp": {
 		root,
 		"repp",
 		0,
@@ -79,7 +79,7 @@ var metaMap = map[string]meta{
 		"",
 		"",
 	},
-	"repp_make": meta{
+	"repp_make": {
 		childParent,
 		"make",
 		0,
@@ -87,7 +87,7 @@ var metaMap = map[string]meta{
 		"repp",
 		"",
 	},
-	"repp_make_sequence": meta{
+	"repp_make_sequence": {
 		grandchild,
 		"sequence",
 		0,
@@ -95,7 +95,7 @@ var metaMap = map[string]meta{
 		"make",
 		"repp",
 	},
-	"repp_make_features": meta{
+	"repp_make_features": {
 		grandchild,
 		"features",
 		1,
@@ -103,7 +103,7 @@ var metaMap = map[string]meta{
 		"make",
 		"repp",
 	},
-	"repp_make_fragments": meta{
+	"repp_make_fragments": {
 		grandchild,
 		"fragments",
 		2,
@@ -111,7 +111,7 @@ var metaMap = map[string]meta{
 		"make",
 		"repp",
 	},
-	"repp_find": meta{
+	"repp_find": {
 		childParent,
 		"find",
 		1,
@@ -119,7 +119,7 @@ var metaMap = map[string]meta{
 		"repp",
 		"",
 	},
-	"repp_find_sequence": meta{
+	"repp_find_sequence": {
 		grandchild,
 		"sequence",
 		0,
@@ -127,7 +127,7 @@ var metaMap = map[string]meta{
 		"find",
 		"repp",
 	},
-	"repp_find_fragment": meta{
+	"repp_find_fragment": {
 		grandchild,
 		"fragment",
 		1,
@@ -135,7 +135,7 @@ var metaMap = map[string]meta{
 		"find",
 		"repp",
 	},
-	"repp_find_feature": meta{
+	"repp_find_feature": {
 		grandchild,
 		"feature",
 		2,
@@ -143,7 +143,7 @@ var metaMap = map[string]meta{
 		"find",
 		"repp",
 	},
-	"repp_find_enzyme": meta{
+	"repp_find_enzyme": {
 		grandchild,
 		"enzyme",
 		3,
@@ -151,7 +151,7 @@ var metaMap = map[string]meta{
 		"find",
 		"repp",
 	},
-	"repp_set": meta{
+	"repp_set": {
 		childParent,
 		"set",
 		2,
@@ -159,7 +159,7 @@ var metaMap = map[string]meta{
 		"repp",
 		"",
 	},
-	"repp_set_feature": meta{
+	"repp_set_feature": {
 		grandchild,
 		"feature",
 		0,
@@ -167,7 +167,7 @@ var metaMap = map[string]meta{
 		"set",
 		"repp",
 	},
-	"repp_set_enzyme": meta{
+	"repp_set_enzyme": {
 		grandchild,
 		"enzyme",
 		1,
@@ -175,7 +175,7 @@ var metaMap = map[string]meta{
 		"set",
 		"repp",
 	},
-	"repp_delete": meta{
+	"repp_delete": {
 		childParent,
 		"delete",
 		3,
@@ -183,7 +183,7 @@ var metaMap = map[string]meta{
 		"repp",
 		"",
 	},
-	"repp_delete_feature": meta{
+	"repp_delete_feature": {
 		grandchild,
 		"feature",
 		0,
@@ -191,7 +191,7 @@ var metaMap = map[string]meta{
 		"delete",
 		"repp",
 	},
-	"repp_annotate": meta{
+	"repp_annotate": {
 		child,
 		"annotate",
 		4,
@@ -203,7 +203,7 @@ var metaMap = map[string]meta{
 
 // makeDocs parses the custom commands and outputs Markdown documentation files
 func makeDocs() {
-	if err := doc.GenMarkdownTreeCustom(cmd.RootCmd, "./docs", filePrepender, linkHandler); err != nil {
+	if err := doc.GenMarkdownTreeCustom(cmd.RootCmd, ".", filePrepender, linkHandler); err != nil {
 		fmt.Println(err.Error())
 	}
 }
@@ -214,7 +214,7 @@ func makeDocs() {
 func filePrepender(filename string) string {
 	name := filepath.Base(filename)
 	base := strings.TrimSuffix(name, path.Ext(name))
-	m, _ := metaMap[base]
+	m := metaMap[base]
 
 	switch m.docType {
 	case root:
@@ -235,4 +235,8 @@ func linkHandler(filename string) string {
 	name := filepath.Base(filename)
 	base := strings.TrimSuffix(name, path.Ext(name))
 	return base
+}
+
+func main() {
+	makeDocs()
 }
