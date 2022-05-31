@@ -63,7 +63,7 @@ Solutions have either a minimum fragment count or assembly cost (or both).`,
 func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	fragmentsCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
-	fragmentsCmd.Flags().StringP("out", "o", "", "output file name (FASTA)")
+	fragmentsCmd.Flags().StringP("out", "o", "", "output file name")
 	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
 	fragmentsCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	fragmentsCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
