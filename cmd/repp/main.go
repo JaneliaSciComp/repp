@@ -5,13 +5,15 @@ import (
 	"os/exec"
 
 	"github.com/Lattice-Automation/repp/internal/cmd"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 func main() {
 	checkDependencies()
+	config.Setup()
 
 	if err := cmd.RootCmd.Execute(); err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal(err)
 	}
 }
 

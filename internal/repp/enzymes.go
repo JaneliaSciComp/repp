@@ -279,10 +279,12 @@ func NewEnzymeDB() *EnzymeDB {
 	return &EnzymeDB{enzymes: enzymes}
 }
 
-// ReadCmd returns enzymes that are similar in name to the enzyme name requested.
+// EnzymesReadCmd returns enzymes that are similar in name to the enzyme name requested.
 // if multiple enzyme names include the enzyme name, they are all returned.
 // otherwise a list of enzyme names are returned (those beneath a levenshtein distance cutoff).
-func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
+func EnzymesReadCmd(cmd *cobra.Command, args []string) {
+	f := NewEnzymeDB()
+
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 
@@ -337,8 +339,10 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// SetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
-func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
+// EnzymesSetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
+func EnzymesSetCmd(cmd *cobra.Command, args []string) {
+	f := NewEnzymeDB()
+
 	if len(args) < 2 {
 		cmd.Help()
 		stderr.Fatalln("expecting two args: a name and recognition sequence.")
@@ -399,8 +403,10 @@ func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 	f.enzymes[name] = seq
 }
 
-// DeleteCmd the enzyme from the database
-func (f *EnzymeDB) DeleteCmd(cmd *cobra.Command, args []string) {
+// EnzymesDeleteCmd deletes an enzyme from the database
+func EnzymesDeleteCmd(cmd *cobra.Command, args []string) {
+	f := NewEnzymeDB()
+
 	if len(args) < 1 {
 		cmd.Help()
 		stderr.Fatalf("\nexpecting an enzymes name.")

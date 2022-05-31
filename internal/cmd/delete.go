@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,7 @@ var deleteCmd = &cobra.Command{
 var featuresDeleteCmd = &cobra.Command{
 	Use:                        "feature [name]",
 	Short:                      "Delete a feature from the features database",
-	Run:                        featureDB.DeleteCmd,
+	Run:                        repp.FeaturesDeleteCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp delete feature \"T7 terminator\"",
 	Long: `Delete a feature from the features database by its name.

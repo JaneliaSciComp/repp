@@ -2,9 +2,11 @@
 package config
 
 import (
+	"embed"
 	"log"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 
@@ -20,8 +22,18 @@ var (
 	// reppDir is the root directory where repp settings and database files live
 	reppDir = filepath.Join(home, ".repp")
 
-	// Primer3Config is the path to the embedded primer3 config directory
+	// configPath is the path to a local/default config file
+	configPath = filepath.Join(reppDir, "config.yaml")
+
+	// Primer3Config is the path to a primer3 config directory
+	// primer3 is (overly) particular about the trailing slash
 	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
+
+	// FeatureDB is the path to the features file
+	FeatureDB = filepath.Join(reppDir, "features.tsv")
+
+	// EnzymeDB is the path to the enzymes file
+	EnzymeDB = filepath.Join(reppDir, "enzymes.tsv")
 
 	// IGEMDB is the path to the iGEM db
 	IGEMDB = filepath.Join(reppDir, "igem")
@@ -31,12 +43,20 @@ var (
 
 	// DNASUDB is the path to the DNASU db
 	DNASUDB = filepath.Join(reppDir, "dnasu")
+)
 
-	// FeatureDB is the path to the features db
-	FeatureDB = filepath.Join(reppDir, "features.tsv")
+var (
+	//go:embed config.yaml
+	DefaultConfig []byte
 
-	// EnzymeDB is the path to the enzymes db file
-	EnzymeDB = filepath.Join(reppDir, "enzymes.tsv")
+	//go:embed enzymes.tsv
+	DefaultEnzymes []byte
+
+	//go:embed features.tsv
+ 	DefaultFeatures []byte
+
+	//go:embed primer3_config primer3_config/interpretations
+	DefaultPrimer3Config embed.FS
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain
@@ -56,6 +76,9 @@ type SynthCost struct {
 type Config struct {
 	// Vebose is whether to log debug messages to the stdout
 	Verbose bool
+
+	// the config file's version
+	Version string `mapstructure:"version"`
 
 	// the cost of a single Addgene plasmid
 	CostAddgene float64 `mapstructure:"addgene-cost"`
@@ -122,6 +145,85 @@ type Config struct {
 	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 }
 
+// Setup checks that the REPP data directory exists.
+// It creates one and writes default config files to it otherwise.
+func Setup() {
+	// create the REPP directory if it doesn't exist
+	_, err := os.Stat(reppDir)
+	if os.IsNotExist(err) {
+		if err = os.Mkdir(reppDir, 0755); err != nil {
+			log.Fatal(err)
+		}
+	} else if err != nil {
+		log.Fatal(err)
+	}
+
+	// copy the default config file if it doesn't exist
+	_, err = os.Stat(configPath)
+	if os.IsNotExist(err) {
+		if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
+			log.Fatal(err)
+		}
+	} else if err != nil {
+		log.Fatal(err)
+	}
+
+	// create the features DB if it doesn't exist
+	_, err = os.Stat(FeatureDB)
+	if os.IsNotExist(err) {
+		if err = os.WriteFile(FeatureDB, DefaultFeatures, 0644); err != nil {
+			log.Fatal(err)
+		}
+	} else if err != nil {
+		log.Fatal(err)
+	}
+
+	// create the enzymes DB if it doesn't exist
+	_, err = os.Stat(EnzymeDB)
+	if os.IsNotExist(err) {
+		if err = os.WriteFile(EnzymeDB, DefaultEnzymes, 0644); err != nil {
+			log.Fatal(err)
+		}
+	} else if err != nil {
+		log.Fatal(err)
+	}
+
+	// create the primer3 config directory if it does not exist
+	_, err = os.Stat(Primer3Config)
+	if os.IsNotExist(err) {
+		copyFromEmbeded(DefaultPrimer3Config, "primer3_config", Primer3Config)
+	} else if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// copyFrom copies an embedded directory to a local directory recursively
+func copyFromEmbeded(fs embed.FS, from, to string) {
+	if err := os.Mkdir(to, 0755); err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+
+	entries, err := fs.ReadDir(from)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			copyFromEmbeded(fs, path.Join(from, entry.Name()), path.Join(to, entry.Name()))
+			continue
+		}
+
+		contents, err := fs.ReadFile(path.Join(from, entry.Name()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = os.WriteFile(path.Join(to, entry.Name()), contents, 0644); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
 // New returns a new Config struct populated by settings from
 // config.yaml, in the repo, or some other settings file the user
 // points to with the "--config" command
@@ -130,89 +232,11 @@ type Config struct {
 // TODO: add back the config file path setting
 func New() *Config {
 	// read in the default settings first
-	viper.SetDefault("addgene-cost", 65.0)
-	viper.SetDefault("igem-cost", 0.0)
-	viper.SetDefault("dnasu-cost", 55.0)
-	viper.SetDefault("pcr-bp-cost", 0.6)
-	viper.SetDefault("pcr-rxn-cost", 0.27)
-	viper.SetDefault("pcr-time-cost", 0.0)
-	viper.SetDefault("gibson-assembly-cost", 12.98)
-	viper.SetDefault("gibson-assembly-time-cost", 0.0)
-	viper.SetDefault("fragments-max-count", 6)
-	viper.SetDefault("fragments-min-junction-length", 15)
-	viper.SetDefault("fragments-max-junction-length", 120)
-	viper.SetDefault("fragments-max-junction-hairpin", 47.0)
-	viper.SetDefault("pcr-min-length", 60)
-	viper.SetDefault("pcr-primer-max-pair-penalty", 30.0)
-	viper.SetDefault("pcr-primer-max-embed-length", 20)
-	viper.SetDefault("pcr-primer-max-ectopic-tm", 55.0)
-	viper.SetDefault("pcr-buffer-length", 20)
-	viper.SetDefault("synthetic-min-length", 125)
-	viper.SetDefault("synthetic-max-length", 3000)
-	viper.SetDefault("synthetic-fragment-cost", map[int]SynthCost{
-		250: {
-			Fixed: true,
-			Cost: 89.0,
-		},
-		500: {
-			Fixed: true,
-			Cost: 89.0,
-		},
-		750: {
-			Fixed: true,
-			Cost: 129.0,
-		},
-		1000: {
-			Fixed: true,
-			Cost: 149.0,
-		},
-		1250: {
-			Fixed: true,
-			Cost: 209.0,
-		},
-		1500: {
-			Fixed: true,
-			Cost: 249.0,
-		},
-		1750: {
-			Fixed: true,
-			Cost: 289.0,
-		},
-		2000: {
-			Fixed: true,
-			Cost: 329.0,
-		},
-		2250: {
-			Fixed: true,
-			Cost: 399.0,
-		},
-		2500: {
-			Fixed: true,
-			Cost: 449.0,
-		},
-		2750: {
-			Fixed: true,
-			Cost: 499.0,
-	  	},	
-		3000: {
-			Fixed: true,
-			Cost: 549.0,
-	    },
-	})
-	viper.SetDefault("synthetic-plasmid-cost", map[int]SynthCost{
-		500: {
-			Fixed: true,
-			Cost: 160,
-		},
-		3000: {
-			Fixed: true,
-			Cost: 0.35,
-		},
-		30000: {
-			Fixed: false,
-			Cost: 0.6,
-		},
-	})
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(configPath)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatal(err)
+	}
 
 	if userConfig := viper.GetString("config"); userConfig != ""  {
 		viper.SetConfigType("yaml")

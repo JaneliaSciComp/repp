@@ -20,7 +20,7 @@ If there is no exact match, similar entries are returned`,
 var featureFindCmd = &cobra.Command{
 	Use:                        "feature [name]",
 	Short:                      "Find features in the features database",
-	Run:                        featureDB.ReadCmd,
+	Run:                        repp.FeaturesReadCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp find feature terminator",
 	Long: `Find features in the features database that are similar to [name].
@@ -35,7 +35,7 @@ Otherwise, all features with names similar to the feature name are writen to std
 var enzymeFindCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
 	Short:                      "Find enzymes available for linearizing backbones",
-	Run:                        enzymeDB.ReadCmd,
+	Run:                        repp.EnzymesReadCmd,
 	Example:                    "  repp find enzyme EcoRI",
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar name as the argument.

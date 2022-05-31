@@ -1,3 +1,6 @@
+# Version of the config file. Used to alert on breaking changes in configs.
+version: 1.0
+
 # Maximum number of fragments in a final assembly
 # limited by Gibson diminishing efficiency with fragment count
 fragments-max-count: 6

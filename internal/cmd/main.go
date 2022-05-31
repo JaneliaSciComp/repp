@@ -1,13 +1,7 @@
 package cmd
 
 import (
-	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
-)
-
-var (
-	featureDB = repp.NewFeatureDB()
-	enzymeDB = repp.NewEnzymeDB()
 )
 
 // RootCmd represents the base command when called without any subcommands.

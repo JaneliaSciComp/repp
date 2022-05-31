@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,7 @@ be passed to the --enzyme flag`,
 var featureCreateCmd = &cobra.Command{
 	Use:                        "feature [name] [sequence]",
 	Short:                      "Add a feature to the features database",
-	Run:                        featureDB.SetCmd,
+	Run:                        repp.FeaturesSetCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       "\nSet a feature in the features database so it can be use used in 'repp make features'",
 	Aliases:                    []string{"add", "update"},
@@ -31,7 +32,7 @@ var featureCreateCmd = &cobra.Command{
 var enzymeCreateCmd = &cobra.Command{
 	Use:                        "enzyme [name] [sequence]",
 	Short:                      "Add an enzyme to the enzymes database",
-	Run:                        enzymeDB.SetCmd,
+	Run:                        repp.EnzymesSetCmd,
 	SuggestionsMinimumDistance: 2,
 	Long: `
 Set an enzyme in the enzymes database so it can be used to linearize backbones.

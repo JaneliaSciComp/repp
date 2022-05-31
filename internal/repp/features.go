@@ -421,14 +421,13 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 
 // NewFeatureDB returns a new copy of the features db
 func NewFeatureDB() *FeatureDB {
-	features := make(map[string]string)
-
 	featureFile, err := os.Open(config.FeatureDB)
 	if err != nil {
 		stderr.Fatal(err)
 	}
 
 	// https://golang.org/pkg/bufio/#example_Scanner_lines
+	features := make(map[string]string)
 	scanner := bufio.NewScanner(featureFile)
 	for scanner.Scan() {
 		columns := strings.Split(scanner.Text(), "	")
@@ -442,10 +441,12 @@ func NewFeatureDB() *FeatureDB {
 	return &FeatureDB{features: features}
 }
 
-// ReadCmd returns features that are similar in name to the feature name requested.
+// FeaturesReadCmd returns features that are similar in name to the feature name requested.
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
-func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
+func FeaturesReadCmd(cmd *cobra.Command, args []string) {
+	f := NewFeatureDB()
+
 	if len(args) < 1 {
 		// no feature name passed, log all of them
 		featNames := []string{}
@@ -521,8 +522,10 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// SetCmd the feature's seq in the database (or create if it isn't in the feature db)
-func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
+// FeaturesSetCmd the feature's seq in the database (or create if it isn't in the feature db)
+func FeaturesSetCmd(cmd *cobra.Command, args []string) {
+	f := NewFeatureDB()
+
 	if len(args) < 2 {
 		cmd.Help()
 		stderr.Fatalln("\nexpecting two args: a features name and sequence.")
@@ -576,8 +579,10 @@ func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
 	f.features[name] = seq
 }
 
-// DeleteCmd the feature from the database
-func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
+// FeaturesDeleteCmd the feature from the database
+func FeaturesDeleteCmd(cmd *cobra.Command, args []string) {
+	f := NewFeatureDB()
+
 	if len(args) < 1 {
 		cmd.Help()
 		stderr.Fatalln("\nno features name passed.")

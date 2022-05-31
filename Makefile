@@ -1,8 +1,8 @@
 .PHONY: build
 build:
-	go mod tidy && \
-		go mod vendor && \
-		go build -o ./bin/repp ./cmd
+	go mod tidy
+	go mod vendor
+	go build -o ./bin/repp ./cmd/repp
 
 .PHONY: install
 install:
