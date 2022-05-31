@@ -38,7 +38,7 @@ var enzymeFindCmd = &cobra.Command{
 	Run:                        enzymeDB.ReadCmd,
 	Example:                    "  repp find enzyme EcoRI",
 	SuggestionsMinimumDistance: 2,
-	Long: `List out all the enzymes with the same or a similar a similar name as the argument.
+	Long: `List out all the enzymes with the same or a similar name as the argument.
 
 'repp find enzyme' without any arguments logs all enzymes available.`,
 	Aliases: []string{"enzymes"},
