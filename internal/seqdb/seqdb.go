@@ -16,14 +16,15 @@ import (
 	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
+	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
 // Manifest is a serializable list of sequence databases.
 //
 // If sequence databases did not also include meta about cost, this could
-// be removed in favor of a simple embedded list of FASTA files/sources.
-// This is kept here because of some hypothetical future where the cost
+// be removed in favor of a simple directory of FASTA files/sources.
+// This is here because of some hypothetical future where the cost
 // of sequences depends on their length, shipping method, etc.
 type Manifest struct {
 	DBs []DB `json:"dbs"`
@@ -141,6 +142,10 @@ func (m *Manifest) Add(from string, cost float64) error {
 		return err
 	}
 
+	if err = repp.MakeBlastDB(to); err != nil {
+		return err
+	}
+
 	m.DBs = append(m.DBs, DB{
 		Path: to,
 		Cost: cost,
@@ -153,6 +158,7 @@ func (m *Manifest) Remove(name string) error {
 	dbs := []DB{}
 	for _, db := range m.DBs {
 		if path.Base(db.Path) == name {
+			// TODO: also remove the other BLAST files, rather than just deleting the FASTA
 			if err := os.Remove(db.Path); err != nil {
 				return err
 			}

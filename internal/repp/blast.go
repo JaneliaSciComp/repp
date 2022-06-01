@@ -829,3 +829,19 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 
 	return temp > c.PCRMaxOfftargetTm
 }
+
+// MakeBlastDB runs makeblastdb against a FASTA file.
+func MakeBlastDB(db string) error {
+	// make a blastdbcmd command (for querying a DB, very different from blastn)
+	makeDbCmd := exec.Command(
+		"makeblastdb",
+		"-dbtype", "nucl",
+		"-in", db,
+	)
+
+	// execute
+	if _, err := makeDbCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("warning: failed to makeblastdb %w", err)
+	}
+	return nil
+}

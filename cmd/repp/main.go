@@ -26,6 +26,10 @@ func checkDependencies() {
 		log.Fatal(`No blastdbcmd found. Is BLAST installed? https://blast.ncbi.nlm.nih.gov/Blast.cgi`)
 	}
 
+	if _, err := exec.LookPath("makeblastdb"); err != nil {
+		log.Fatal(`No makeblastdb found. Is BLAST installed? https://blast.ncbi.nlm.nih.gov/Blast.cgi`)
+	}
+
 	if _, err := exec.LookPath("primer3_core"); err != nil {
 		log.Fatal(`No primer3_core found. Is Primer3 installed? https://primer3.org/manual.html`)
 	}
