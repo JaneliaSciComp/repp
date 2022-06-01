@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/Lattice-Automation/repp/internal/repp"
-	"github.com/Lattice-Automation/repp/internal/seqdb"
 	"github.com/spf13/cobra"
 )
 
@@ -22,10 +21,11 @@ be passed to the --enzyme flag`,
 var databaseAddCmd = &cobra.Command{
 	Use:                        "database [path] [cost-per-seq]",
 	Short:                      "Import a FASTA sequence database along with its cost",
-	Run:                        seqdb.AddCmd,
+	Run:                        repp.AddCmd,
 	SuggestionsMinimumDistance: 2,
-	Long:                       "\nImport a new sequence database so it sequences can be use used in 'repp make'",
-	Example:                    "  repp add database ./igem.fa 65.0",
+	Long:                       "\nImport a new sequence database so its sequences are available to 'repp make'",
+	Example:                    "  repp add database ./addgene.fa 65.0",
+	Aliases: []string{"db"},
 }
 
 // featureAddCmd is for adding a new feature to the features db

@@ -64,7 +64,7 @@ func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	fragmentsCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
 	fragmentsCmd.Flags().StringP("out", "o", "", "output file name")
-	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
+	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases by name")
 	fragmentsCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	fragmentsCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	fragmentsCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
@@ -73,7 +73,7 @@ func init() {
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	featuresCmd.Flags().StringP("out", "o", "", "output file name")
-	featuresCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
+	featuresCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases by name")
 	featuresCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	featuresCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	featuresCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")
@@ -85,7 +85,7 @@ func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	sequenceCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
 	sequenceCmd.Flags().StringP("out", "o", "", "output file name")
-	sequenceCmd.Flags().StringP("dbs", "d", "", "list of local fragment databases")
+	sequenceCmd.Flags().StringP("dbs", "d", "", "list of sequence databases by name")
 	sequenceCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
 	sequenceCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
 	sequenceCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU repository")

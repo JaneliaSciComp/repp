@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/Lattice-Automation/repp/internal/repp"
-	"github.com/Lattice-Automation/repp/internal/seqdb"
 	"github.com/spf13/cobra"
 )
 
@@ -19,9 +18,11 @@ var deleteCmd = &cobra.Command{
 var databaseDeleteCmd = &cobra.Command{
 	Use:                        "database [name]",
 	Short:                      "Delete a sequence database",
-	Run:                        seqdb.DeleteCmd,
+	Run:                        repp.DeleteCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp delete database \"igem\"",
+	Aliases: []string{"db"},
+
 }
 
 // featuresDeleteCmd is for deleting features from the feature db

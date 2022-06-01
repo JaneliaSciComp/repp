@@ -22,4 +22,4 @@ docs:
 	rm ./*-e
 
 serve/docs: docs 
-	cd docs && bundle exec jekyll serve
+	bundle exec jekyll serve

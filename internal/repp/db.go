@@ -1,34 +1,28 @@
-// Package seqdb is for interacting with local sequence databases.
-//
-// DBs are loaded from FASTA files and stored locally along with the cost
-// per sequence from the database.
-package seqdb
+package repp
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
-	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
 
-// Manifest is a serializable list of sequence databases.
+// manifest is a serializable list of sequence databases.
 //
 // If sequence databases did not also include meta about cost, this could
 // be removed in favor of a simple directory of FASTA files/sources.
 // This is here because of some hypothetical future where the cost
 // of sequences depends on their length, shipping method, etc.
-type Manifest struct {
+type manifest struct {
 	DBs []DB `json:"dbs"`
-	path string
 }
 
 // DB is a single sequence database. It holds the names, sequences, and
@@ -56,12 +50,12 @@ func AddCmd(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	m, err := NewManifest()
+	m, err := newManifest()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = m.Add(src, costFloat); err != nil {
+	if err = m.add(src, costFloat); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -73,18 +67,18 @@ func ListCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("not expecting any arguments")
 	}
 
-	m, err := NewManifest()
+	m, err := newManifest()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintf(w, "db\tcost\n")
 	for _, db := range m.DBs {
-		w.Write([]byte(path.Base(db.Path)))
-		w.Write([]byte(fmt.Sprintf("%f", db.Cost)))
-		w.Flush()
+		fmt.Fprintf(w, "%s\t%.2f\n", path.Base(db.Path), db.Cost)
 	}
+	w.Flush()
 }
 
 // DeleteCmd deletes an existing sequence database from the REPP directory.
@@ -94,55 +88,61 @@ func DeleteCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("expecting one arg: a sequence database name")
 	}
 
-	db := args[1]
-	m, err := NewManifest()
+	db := args[0]
+	m, err := newManifest()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = m.Remove(db); err != nil {
+	if err = m.remove(db); err != nil {
 		log.Fatal(err)
 	}
 }
 
-// NewManifest returns a new deserialize Manifest.
-func NewManifest() (*Manifest, error) {
-	contents, err := ioutil.ReadFile(config.SeqDatabaseManifest)
+// newManifest returns a new deserialize Manifest.
+func newManifest() (*manifest, error) {
+	contents, err := os.ReadFile(config.SeqDatabaseManifest)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Manifest{
-				path: config.SeqDatabaseManifest,
+			return &manifest{
 				DBs: []DB{},
 			}, nil
 		}
 		return nil, err
 	}
 
-	var manifest *Manifest
-	if err = json.Unmarshal(contents, manifest); err != nil {
+	m := &manifest{}
+	if err = json.Unmarshal(contents, m); err != nil {
 		return nil, err
 	}
-	return manifest, nil
+	return m, nil
 }
 
-// Add imports a FASTA sequence database into REPP, storing it in the manifest.
-func (m *Manifest) Add(from string, cost float64) error {
+// add imports a FASTA sequence database into REPP, storing it in the manifest.
+func (m *manifest) add(from string, cost float64) error {
+	// TODO: quiteee the hack to avoid duplicates
+	m.remove(path.Base(from))
+
 	src, err := os.Open(from)
 	if err != nil {
 		return err
 	}
+	defer src.Close()
 
-	to := path.Join(m.path, path.Base(from))
-	dst, err := os.Open(to)
+	toBase := strings.Replace(path.Base(from), path.Ext(from), "", 1)
+	to := path.Join(config.SeqDatabaseDir, toBase)
+	dst, err := os.Create(to)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(src, dst)
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
 	if err != nil {
 		return err
 	}
 
-	if err = repp.MakeBlastDB(to); err != nil {
+	if err = makeblastdb(to); err != nil {
 		return err
 	}
 
@@ -153,8 +153,8 @@ func (m *Manifest) Add(from string, cost float64) error {
 	return m.save()
 }
 
-// Remove deletes a local, repp-managed FASTA file and removes it from the manifest
-func (m *Manifest) Remove(name string) error {
+// remove deletes a local, repp-managed FASTA file and removes it from the manifest
+func (m *manifest) remove(name string) error {
 	dbs := []DB{}
 	for _, db := range m.DBs {
 		if path.Base(db.Path) == name {
@@ -174,10 +174,10 @@ func (m *Manifest) Remove(name string) error {
 	return m.save()
 }
 
-func (m *Manifest) save() error {
+func (m *manifest) save() error {
 	contents, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(m.path, contents, 0644)
+	return os.WriteFile(config.SeqDatabaseManifest, contents, 0644)
 }

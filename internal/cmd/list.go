@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/Lattice-Automation/repp/internal/repp"
-	"github.com/Lattice-Automation/repp/internal/seqdb"
 
 	"github.com/spf13/cobra"
 )
@@ -14,18 +13,18 @@ var listCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long: `List features or enzymes by name.
 If there is no exact match, similar entries are returned`,
-	Aliases: []string{"ls", "list", "get"},
+	Aliases: []string{"ls", "get"},
 }
 
 // databaseListCmd is for reading features (close to the one requested) from the db.
 var databaseListCmd = &cobra.Command{
 	Use:                        "database [name]",
-	Short:                      "List databases",
-	Run:                        seqdb.ListCmd,
+	Short:                      "List sequence databases",
+	Run:                        repp.ListCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp list database",
 	Long: "List all sequence databases and their costs",
-	Aliases: []string{"databases"},
+	Aliases: []string{"db", "dbs", "databases"},
 }
 
 // featureListCmd is for reading features (close to the one requested) from the db.

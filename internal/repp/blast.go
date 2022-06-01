@@ -830,18 +830,16 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 	return temp > c.PCRMaxOfftargetTm
 }
 
-// MakeBlastDB runs makeblastdb against a FASTA file.
-func MakeBlastDB(db string) error {
-	// make a blastdbcmd command (for querying a DB, very different from blastn)
+// makeblastdb runs makeblastdb against a FASTA file.
+func makeblastdb(db string) error {
 	makeDbCmd := exec.Command(
 		"makeblastdb",
 		"-dbtype", "nucl",
 		"-in", db,
 	)
 
-	// execute
-	if _, err := makeDbCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("warning: failed to makeblastdb %w", err)
+	if stdout, err := makeDbCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to makeblastdb: %s %w", string(stdout), err)
 	}
 	return nil
 }
