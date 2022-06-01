@@ -339,8 +339,8 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// EnzymesSetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
-func EnzymesSetCmd(cmd *cobra.Command, args []string) {
+// EnzymesAddCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
+func EnzymesAddCmd(cmd *cobra.Command, args []string) {
 	f := NewEnzymeDB()
 
 	if len(args) < 2 {

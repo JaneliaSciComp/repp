@@ -35,6 +35,12 @@ var (
 	// EnzymeDB is the path to the enzymes file
 	EnzymeDB = filepath.Join(reppDir, "enzymes.tsv")
 
+	// SeqDatabaseDir is the path to a directory of sequence databases.
+	SeqDatabaseDir = filepath.Join(reppDir, "dbs")
+
+	// SeqDatabaseManifest is the path to the manifest file for the sequence databases.
+	SeqDatabaseManifest = filepath.Join(SeqDatabaseDir, "manifest.json")
+
 	// IGEMDB is the path to the iGEM db
 	IGEMDB = filepath.Join(reppDir, "igem")
 
@@ -157,6 +163,16 @@ func Setup() {
 	} else if err != nil {
 		log.Fatal(err)
 	}
+	
+	// create the sequence database directory if it doesn't exist
+	_, err = os.Stat(SeqDatabaseDir)
+	if os.IsNotExist(err) {
+		if err = os.Mkdir(SeqDatabaseDir, 0755); err != nil {
+			log.Fatal(err)
+		}
+	} else if err != nil {
+		log.Fatal(err)
+	}
 
 	// copy the default config file if it doesn't exist
 	_, err = os.Stat(configPath)
@@ -233,13 +249,12 @@ func copyFromEmbeded(fs embed.FS, from, to string) {
 func New() *Config {
 	// read in the default settings first
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(configPath)
+	viper.SetConfigFile(configPath)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
 
 	if userConfig := viper.GetString("config"); userConfig != ""  {
-		viper.SetConfigType("yaml")
 		viper.SetConfigFile(userConfig)             // user has specified a new path for a settings file
 		if err := viper.MergeInConfig(); err != nil { // read in user defined settings file
 			log.Fatal(err)
@@ -265,7 +280,7 @@ func New() *Config {
 }
 
 // SynthFragmentCost returns the cost of synthesizing a linear stretch of DNA
-func (c Config) SynthFragmentCost(fragLength int) float64 {
+func (c *Config) SynthFragmentCost(fragLength int) float64 {
 	// by default, we try to synthesize the whole thing in one piece
 	// we may optionally need to split it into multiple
 	fragCount := math.Ceil(float64(fragLength) / float64(c.SyntheticMaxLength))
@@ -280,7 +295,7 @@ func (c Config) SynthFragmentCost(fragLength int) float64 {
 }
 
 // SynthPlasmidCost returns the cost of synthesizing the insert and having it delivered in a plasmid
-func (c Config) SynthPlasmidCost(insertLength int) float64 {
+func (c *Config) SynthPlasmidCost(insertLength int) float64 {
 	cost := synthCost(insertLength, c.CostSynthPlasmid)
 	if cost.Fixed {
 		return cost.Cost

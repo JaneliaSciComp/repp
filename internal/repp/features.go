@@ -522,8 +522,8 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// FeaturesSetCmd the feature's seq in the database (or create if it isn't in the feature db)
-func FeaturesSetCmd(cmd *cobra.Command, args []string) {
+// FeaturesAddCmd the feature's seq in the database (or create if it isn't in the feature db)
+func FeaturesAddCmd(cmd *cobra.Command, args []string) {
 	f := NewFeatureDB()
 
 	if len(args) < 2 {

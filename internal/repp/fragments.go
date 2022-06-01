@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// FragmentFindCmd logs the building fragment with the name passed.
-func FragmentFindCmd(cmd *cobra.Command, args []string) {
+// FragmentListCmd logs the building fragment with the name passed.
+func FragmentListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		cmd.Help()
 		stderr.Fatalln("\nno fragment name passed.")

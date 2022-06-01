@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SequenceFindCmd is for BLAST'ing a sequence against the dbs and finding matches
-func SequenceFindCmd(cmd *cobra.Command, args []string) {
+// SequenceListCmd is for BLAST'ing a sequence against the dbs and finding matches
+func SequenceListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		cmd.Help()
 		stderr.Fatalln("\nno sequence passed.")
