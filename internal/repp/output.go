@@ -38,12 +38,6 @@ type Output struct {
 	// Execution is the number of seconds it took to execute the command
 	Execution float64 `json:"execution"`
 
-	// PlasmidSynthesisCost is the cost of a full gene synthesis within a plasmid
-	// PlasmidSynthesisCost float64 `json:"plasmidSynthesisCost"`
-
-	// InsertSynthesisCost is the cost of just synthesizing the insert with homology for a linearized backbone
-	// InsertSynthesisCost float64 `json:"insertSynthesisCost"`
-
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
 
@@ -91,14 +85,6 @@ func writeJSON(
 
 			f.Type = f.fragType.String() // freeze fragment type
 
-			if f.URL == "" && f.fragType != synthetic {
-				f.URL = parseURL(f.ID, f.db)
-			}
-
-			if f.URL != "" {
-				f.ID = "" // just log one or the other
-			}
-
 			// round to two decimal places
 			if f.Cost, err = roundCost(f.cost(true)); err != nil {
 				return nil, err
@@ -118,11 +104,11 @@ func writeJSON(
 		}
 
 		if gibson {
-			assemblyCost += conf.CostGibson + conf.CostTimeGibson
+			assemblyCost += conf.GibsonAssemblyCost + conf.GibsonAssemblyTimeCost
 		}
 
 		if hasPCR {
-			assemblyCost += conf.CostTimePCR
+			assemblyCost += conf.PcrTimeCost
 		}
 
 		solutionCost, err := roundCost(assemblyCost)
@@ -154,7 +140,7 @@ func writeJSON(
 	if err != nil {
 		return nil, err
 	}
-	insertSynthCost += conf.CostGibson
+	insertSynthCost += conf.GibsonAssemblyCost
 
 	if backbone.Seq == "" {
 		backbone = nil

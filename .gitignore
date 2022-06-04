@@ -24,13 +24,13 @@ dist
 *.gz
 *.zip
 
-# test output files
-test/output
-
 # doc site build output
 docs/_site
 
 # mypy
 .mypy_cache
 
+# go mod vendor
 vendor
+
+.vscode

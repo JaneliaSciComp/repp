@@ -44,7 +44,7 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 
 	seenIds := make(map[string]bool)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
-	fmt.Fprintf(writer, "entry\tqstart\tqend\tsstart\tsend\tdatabase\tURL\t\n")
+	fmt.Fprintf(writer, "entry\tqstart\tqend\tsstart\tsend\tdatabase\t\n")
 	for _, m := range matches {
 		if _, seen := seenIds[key(m)]; seen {
 			continue
@@ -54,7 +54,7 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db, parseURL(m.entry, m.db))
+		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db.GetName())
 		seenIds[key(m)] = true
 	}
 	writer.Flush()
@@ -154,12 +154,12 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 		tw.Flush()
 	}
 	if err != nil {
-		dbMessage := strings.Join(input.dbs, ", ")
+		dbMessage := strings.Join(dbNames(input.dbs), ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(target.Seq), conf.PCRMinLength, 1)
+	matches = cull(matches, len(target.Seq), conf.PcrMinLength, 1)
 	if conf.Verbose {
 		fmt.Printf("%d matches after culling\n", len(matches)/2)
 	}

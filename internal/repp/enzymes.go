@@ -125,7 +125,6 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 				db:       frag.db,
 			},
 			&Backbone{
-				URL:      parseURL(frag.ID, frag.db),
 				Seq:      frag.Seq,
 				Enzymes:  []string{cut.enzyme.name},
 				Cutsites: []int{cut.index},
@@ -171,7 +170,6 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 			db:       frag.db,
 		},
 		&Backbone{
-			URL:      parseURL(frag.ID, frag.db),
 			Seq:      frag.Seq,
 			Enzymes:  []string{cut1.enzyme.name, cut2.enzyme.name},
 			Cutsites: []int{cut1Index, cut2Index},

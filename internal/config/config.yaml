@@ -125,18 +125,3 @@ synthetic-plasmid-cost:
   30000:
     fixed: false
     cost: 0.6
-
-# Cost of a single addgene plasmid
-addgene-cost: 65.0
-
-# Cost of a single igem part
-#
-# "The iGEM Labs program provides members with program benefits such as
-# access to the Registry of Standard Biological parts. As a member of an
-# iGEM lab, you would receive the annual DNA distribution and up to
-# 75 individual part requests. The current cost of joining the iGEM Labs
-# program is $500 per subscription year."
-igem-cost: 0.0
-
-# Cost of single DNASU plasmid. 55 for academic customers, 65 for corporate
-dnasu-cost: 55.0

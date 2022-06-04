@@ -46,9 +46,6 @@ type Frag struct {
 	// Cost to make the fragment
 	Cost float64 `json:"cost"`
 
-	// URL, eg link to a plasmid's addgene page
-	URL string `json:"url,omitempty"`
-
 	// fragment/plasmid's sequence
 	Seq string `json:"seq,omitempty"`
 
@@ -69,7 +66,7 @@ type Frag struct {
 	fullSeq string
 
 	// db that the frag came from
-	db string
+	db DB
 
 	// start of this Frag on the target plasmid
 	start int
@@ -137,30 +134,9 @@ func newFrag(m match, conf *config.Config) *Frag {
 		start:    m.queryStart,
 		end:      m.queryEnd,
 		db:       m.db,
-		URL:      parseURL(m.entry, m.db),
 		conf:     conf,
 		fragType: fType,
 	}
-}
-
-// parseURL turns a fragment identifier into a URL to its repository
-func parseURL(entry, db string) string {
-	if strings.Contains(db, "addgene") {
-		// create a link to the source Addgene page
-		entries := strings.Split(entry, ".")
-		return fmt.Sprintf("https://www.addgene.org/%s/", entries[0])
-	}
-
-	if strings.Contains(db, "igem") {
-		// create a source to the source iGEM page
-		return fmt.Sprintf("http://parts.igem.org/Part:%s", entry)
-	}
-
-	if strings.Contains(db, "dnasu") {
-		return fmt.Sprintf("http://dnasu.org/DNASU/GetCloneDetail.do?cloneid=%s", entry)
-	}
-
-	return ""
 }
 
 // newFlags is the plural of newFlag
@@ -176,7 +152,7 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 		selfJunction := f.junction(f, min, max)
 		if selfJunction != "" {
 			f.end -= len(selfJunction)
-			if f.end-f.start < conf.PCRMinLength {
+			if f.end-f.start < conf.PcrMinLength {
 				continue
 			}
 			f.Seq = f.Seq[:len(f.Seq)-len(selfJunction)]
@@ -200,19 +176,13 @@ func (f *Frag) copy() (newFrag *Frag) {
 // cost returns the estimated cost of a fragment. Combination of source and preparation
 func (f *Frag) cost(procure bool) (c float64) {
 	if procure {
-		if strings.Contains(f.URL, "addgene") {
-			c += f.conf.CostAddgene
-		} else if strings.Contains(f.URL, "igem") {
-			c += f.conf.CostIGEM
-		} else if strings.Contains(f.URL, "dnasu") {
-			c += f.conf.CostDNASU
-		}
+		return f.db.Cost
 	}
 
 	if f.fragType == pcr && f.Primers != nil {
 		// cost of primers plus the cost of a single PCR reaction
-		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.CostBP
-		c += f.conf.CostPCR
+		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PcrBpCost
+		c += f.conf.PcrRxnCost
 	} else if f.fragType == synthetic {
 		c += f.conf.SynthFragmentCost(len(f.Seq))
 	}
@@ -230,7 +200,7 @@ func (f *Frag) distTo(other *Frag) (bpDist int) {
 // overlapsViaPCR returns whether this Frag could overlap the other Frag through homology
 // created via PCR
 func (f *Frag) overlapsViaPCR(other *Frag) bool {
-	return f.distTo(other) <= f.conf.PCRMaxEmbedLength
+	return f.distTo(other) <= f.conf.PcrPrimerMaxEmbedLength
 }
 
 // overlapsViaHomology returns whether this Frag already has sufficient overlap with the
@@ -270,8 +240,8 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 // in assembly.add()
 func (f *Frag) costTo(other *Frag) (cost float64) {
 	needsPCR := f.fragType == pcr || f.fragType == circular
-	pcrNoHomology := 50.0 * f.conf.CostBP // pcr no homology
-	pcrHomology := (50.0 + float64(f.conf.FragmentsMinHomology)) * f.conf.CostBP
+	pcrNoHomology := 50.0 * f.conf.PcrBpCost // pcr no homology
+	pcrHomology := (50.0 + float64(f.conf.FragmentsMinHomology)) * f.conf.PcrBpCost
 
 	if other == f {
 		if needsPCR {
@@ -466,9 +436,9 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	addLeft, addRight, err := psExec.input(
 		conf.FragmentsMinHomology,
 		conf.FragmentsMaxHomology,
-		conf.PCRMaxEmbedLength,
-		conf.PCRMinLength,
-		conf.PCRBufferLength,
+		conf.PcrPrimerMaxEmbedLength,
+		conf.PcrMinLength,
+		conf.PcrBufferLength,
 	)
 	if err != nil {
 		primerErrs[pHash] = err
@@ -489,12 +459,12 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	mutatePrimers(f, seq, addLeft, addRight)
 
 	// make sure the fragment's length is still long enough for PCR
-	if len(f.PCRSeq) < conf.PCRMinLength {
+	if len(f.PCRSeq) < conf.PcrMinLength {
 		err = fmt.Errorf(
 			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
 			f.ID,
 			f.end-f.start,
-			conf.PCRMinLength,
+			conf.PcrMinLength,
 		)
 		f.Primers = nil
 		primerErrs[pHash] = err
@@ -502,11 +472,11 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	// 1. check for whether the primers have too have a pair penalty score
-	if f.Primers[0].PairPenalty > conf.PCRMaxPenalty {
+	if f.Primers[0].PairPenalty > conf.PcrPrimerMaxPairPenalty {
 		err = fmt.Errorf(
 			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
 			f.Primers[0].PairPenalty,
-			conf.PCRMaxPenalty,
+			conf.PcrPrimerMaxPairPenalty,
 			f.Primers[0],
 			f.Primers[1],
 		)
@@ -525,7 +495,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		mismatchExists = mismatchResult.wasMismatch
 		mm = mismatchResult.m
 		err = mismatchResult.err
-	} else if f.db != "" {
+	} else if f.db.Path != "" {
 		// otherwise, query the fragment from the DB (try to find it) and then check for mismatches
 		mismatchResult := parentMismatch(f.Primers, f.ID, f.db, conf)
 		mismatchExists = mismatchResult.wasMismatch

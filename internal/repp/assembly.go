@@ -57,7 +57,7 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newA
 	}
 
 	assemblyEnd := lastEnd
-	if newCount > maxCount || (end-assemblyEnd < f.conf.PCRMinLength && !features) {
+	if newCount > maxCount || (end-assemblyEnd < f.conf.PcrMinLength && !features) {
 		return assembly{}, false, false
 	}
 
@@ -129,7 +129,6 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 				ID:       f.ID,
 				Seq:      strings.ToUpper(f.Seq)[0:len(target)], // it may be longer
 				fragType: circular,
-				URL:      f.URL,
 				conf:     conf,
 			},
 		}, nil

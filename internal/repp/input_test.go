@@ -1,64 +1,10 @@
 package repp
 
 import (
-	"fmt"
 	"path"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
-
-func Test_inputParser_dbPaths(t *testing.T) {
-	parser := inputParser{}
-
-	db1 := "../exampleDir/exampleDB.fa"
-	dbAbs1, _ := filepath.Abs(db1)
-
-	db2 := "otherBLASTDir/otherDB.fa"
-	dbAbs2, _ := filepath.Abs(db2)
-
-	type args struct {
-		dbList string
-	}
-	tests := []struct {
-		name      string
-		args      args
-		wantPaths []string
-		wantError error
-	}{
-		{
-			"single blast path",
-			args{
-				dbList: db1,
-			},
-			[]string{dbAbs1},
-			nil,
-		},
-		{
-			"multi fasta db paths",
-			args{
-				dbList: fmt.Sprintf("%s, %s", db1, db2),
-			},
-			[]string{dbAbs1, dbAbs2},
-			nil,
-		},
-		{
-			"empty",
-			args{
-				dbList: fmt.Sprintf(", %s", db1),
-			},
-			[]string{dbAbs1},
-			nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if gotPaths, _ := parser.dbPaths(tt.args.dbList); !reflect.DeepEqual(gotPaths, tt.wantPaths) {
-				t.Errorf("parseDBs() = %v, want %v", gotPaths, tt.wantPaths)
-			}
-		})
-	}
-}
 
 func Test_inputParser_parseOut(t *testing.T) {
 	parser := inputParser{}
@@ -183,5 +129,51 @@ func Test_read(t *testing.T) {
 				t.Errorf("failed to parse a sequence for Frag %s", f.ID)
 			}
 		}
+	}
+}
+
+func Test_inputParser_parseDBs(t *testing.T) {
+	testDB := DB{
+		Path: "/tmp/test.fa",
+	}
+
+	type args struct {
+		manifest *manifest
+		dbInput string
+	}
+	tests := []struct {
+		name    string
+		p       *inputParser
+		args    args
+		wantDbs []DB
+		wantErr bool
+	}{
+		{
+			name: "return all by default",
+			p: &inputParser{},
+			args: args{
+				manifest: &manifest{
+					DBs: map[string]DB{
+						"test": testDB,
+					},
+				},
+				dbInput: "",
+			},
+			wantDbs: []DB{testDB},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &inputParser{}
+			gotDbs, err := p.parseDBs(tt.args.manifest, tt.args.dbInput)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("inputParser.parseDBs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotDbs, tt.wantDbs) {
+				t.Errorf("inputParser.parseDBs() = %v, want %v", gotDbs, tt.wantDbs)
+			}
+		})
 	}
 }

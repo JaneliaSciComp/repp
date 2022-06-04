@@ -41,7 +41,7 @@ type match struct {
 	subjectEnd int
 
 	// the db that was BLASTed against (used later for checking off-targets in parents)
-	db string
+	db DB
 
 	// titles from the db. eg: year it was created
 	title string
@@ -51,9 +51,6 @@ type match struct {
 
 	// mismatching number of bps in the match (for primer off-targets)
 	mismatching int
-
-	// internal if the fragment doesn't have to be procured from a remote repository (eg Addgene, iGEM)
-	internal bool
 
 	// forward if the match is along the sequence strand versus the reverse complement strand
 	forward bool
@@ -70,8 +67,8 @@ type blastExec struct {
 	// whether to circularize the queries sequence in the input file
 	circular bool
 
-	// the path to the database we're BLASTing against
-	db string
+	// the database we're BLASTing against
+	db DB
 
 	// the input BLAST file
 	in *os.File
@@ -81,9 +78,6 @@ type blastExec struct {
 
 	// optional path to a FASTA file with a subject FASTA sequence
 	subject string
-
-	// internal if the db is a local/user owned list of fragments (ie free)
-	internal bool
 
 	// the percentage identity for BLAST queries
 	identity int
@@ -116,7 +110,8 @@ func (m *match) length() int {
 func blast(
 	name, seq string,
 	circular bool,
-	dbs, filters []string,
+	dbs []DB,
+	filters []string,
 	identity int,
 	tw *tabwriter.Writer,
 ) ([]match, error) {
@@ -134,11 +129,6 @@ func blast(
 
 	matches := []match{}
 	for _, db := range dbs {
-		internal := true
-		if strings.Contains(db, "addgene") || strings.Contains(db, "igem") || strings.Contains(db, "dnasu") {
-			internal = false
-		}
-
 		b := &blastExec{
 			name:     name,
 			seq:      seq,
@@ -146,13 +136,12 @@ func blast(
 			db:       db,
 			in:       in,
 			out:      out,
-			internal: internal,
 			identity: identity,
 		}
 
 		// make sure the db exists
-		if _, err := os.Stat(db); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find a BLAST database at %s", db)
+		if _, err := os.Stat(db.Path); os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to find a BLAST database at %s", db.Path)
 		}
 
 		// create the input file
@@ -171,7 +160,7 @@ func blast(
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
 
-		fmt.Fprintf(tw, "%s\t%d\t%s\n", name, len(dbMatches), db)
+		fmt.Fprintf(tw, "%s\t%d\t%s\n", name, len(dbMatches), db.GetName())
 
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)
@@ -199,11 +188,6 @@ func blastAgainst(
 	}
 	defer os.Remove(out.Name())
 
-	internal := true
-	if strings.Contains(name, "addgene") || strings.Contains(name, "igem") || strings.Contains(name, "dnasu") {
-		internal = false
-	}
-
 	b := &blastExec{
 		name:     name,
 		seq:      seq,
@@ -211,7 +195,6 @@ func blastAgainst(
 		subject:  subject,
 		in:       in,
 		out:      out,
-		internal: internal,
 		identity: identity,
 	}
 
@@ -270,7 +253,7 @@ func (b *blastExec) run() (err error) {
 
 	flags := []string{
 		"-task", "blastn",
-		"-db", b.db,
+		"-db", b.db.Path,
 		"-query", b.in.Name(),
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
@@ -326,7 +309,7 @@ func (b *blastExec) run() (err error) {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db, err, string(output))
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db.GetName(), err, string(output))
 	}
 
 	return
@@ -372,7 +355,6 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		// check whether the mismatch ratio is less than the set limit
 		matchRatio := float64(len(seq)-(mismatching+gaps)) / float64(len(seq))
 		if matchRatio < identityThreshold {
-			// fmt.Printf("getting rid of %s", entry)
 			continue
 		}
 
@@ -431,7 +413,6 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			subjectEnd:   subjectEnd,
 			circular:     strings.Contains(entry+titles, "CIRCULAR"),
 			mismatching:  mismatching + gaps,
-			internal:     b.internal,
 			db:           b.db,
 			title:        titles,
 			forward:      forward,
@@ -444,31 +425,27 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 // cull removes matches that are engulfed in others
 //
 // culling fragment matches means removing those that are completely
-// self-contained in other fragments if limit == 1:
-// the larger of the available fragments
+// self-contained in other fragments
+// if limit == 1 the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
 func cull(matches []match, targetLength, minSize, limit int) (culled []match) {
 	// remove fragments that are shorter the minimum cut off size
-	// separate the internal and external fragments. the internal
-	// ones should not be removed just if they're self-contained
-	// in another, because they may be cheaper to make
-	var internal []match
-	var external []match
+	// propertize by source because this isn't smart enough to propertize based on
+	// cost as well. Ie we want to avoid propertizing a small fragment enclosed in a larger
+	// but far more expensive fragment (and instead calculate that later)
+	groupedMatches := map[string][]match{}
 	for _, m := range matches {
 		if minSize > 0 && m.length() < minSize {
 			continue // too short
 		}
-
-		if m.internal {
-			internal = append(internal, m)
-		} else {
-			external = append(external, m)
-		}
+		groupedMatches[m.db.Path] = append(groupedMatches[m.db.Path], m)
 	}
 
 	// create culled matches (non-self contained)
-	culled = append(properize(internal, limit), properize(external, limit)...)
+	for _, group := range groupedMatches {
+		culled = append(culled, properize(group, limit)...)
+	}
 
 	// because we culled the matches, we may have removed a match from the
 	// start or the end. right now, a match showing up twice in the plasmid
@@ -517,7 +494,7 @@ func sortMatches(matches []match) {
 }
 
 // queryDatabases is for finding a fragment/plasmid with the entry name in one of the dbs
-func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
+func queryDatabases(entry string, dbs []DB) (f *Frag, err error) {
 	// first try to get the entry out of a local file
 	if frags, err := read(entry, false); err == nil && len(frags) > 0 {
 		return frags[0], nil // it was a local file
@@ -525,11 +502,11 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 
 	// channel that returns filename to an output result from blastdbcmd
 	outFileCh := make(chan string, len(dbs))
-	dbSourceCh := make(chan string, len(dbs))
+	dbSourceCh := make(chan DB, len(dbs))
 
 	// move through each db and see if it contains the entry
 	for _, db := range dbs {
-		go func(db string) {
+		go func(db DB) {
 			// if outFile is defined here we managed to query the entry from the db
 			outFile, _, err := blastdbcmd(entry, db)
 			if err == nil && outFile != nil {
@@ -537,7 +514,7 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 				dbSourceCh <- db
 			} else {
 				outFileCh <- ""
-				dbSourceCh <- ""
+				dbSourceCh <- db
 			}
 		}(db)
 	}
@@ -570,9 +547,7 @@ func queryDatabases(entry string, dbs []string) (f *Frag, err error) {
 	close(outFileCh)
 	close(dbSourceCh)
 
-	sep := "\n\t"
-
-	return &Frag{}, fmt.Errorf("failed to find %s in any of:%s", entry, sep+strings.Join(dbs, sep))
+	return &Frag{}, fmt.Errorf("failed to find frag %s in any of: %s", entry, strings.Join(dbNames(dbs), ","))
 }
 
 // seqMismatch queries for any mismatching primer locations in the parent sequence
@@ -606,7 +581,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 
 // parentMismatch both searches for a the parent fragment in its source DB and queries for
 // any mismatches in the seq before returning
-func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mismatchResult {
+func parentMismatch(primers []Primer, parent string, db DB, conf *config.Config) mismatchResult {
 	// try and query for the parent in the source DB and write to a file
 	parentFile, parentSeq, err := blastdbcmd(parent, db)
 
@@ -652,7 +627,7 @@ func parentMismatch(primers []Primer, parent, db string, conf *config.Config) mi
 // results to a temporary file (to be BLAST'ed against)
 //
 // entry here is the ID that's associated with the fragment in its source DB (db)
-func blastdbcmd(entry, db string) (output *os.File, parentSeq string, err error) {
+func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err error) {
 	// path to the entry batch file to hold the entry accession
 	entryFile, err := ioutil.TempFile("", "blastcmd-in-*")
 	if err != nil {
@@ -677,7 +652,7 @@ func blastdbcmd(entry, db string) (output *os.File, parentSeq string, err error)
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
 	queryCmd := exec.Command(
 		"blastdbcmd",
-		"-db", db,
+		"-db", db.Path,
 		"-dbtype", "nucl",
 		"-entry_batch", entryFile.Name(),
 		"-out", output.Name(),
@@ -686,7 +661,7 @@ func blastdbcmd(entry, db string) (output *os.File, parentSeq string, err error)
 
 	// execute
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return nil, "", fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db, err.Error())
+		return nil, "", fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db.GetName(), err.Error())
 	}
 
 	// read in the results as fragments. set their sequence to the full one returned from blastdbcmd
@@ -698,7 +673,7 @@ func blastdbcmd(entry, db string) (output *os.File, parentSeq string, err error)
 		}
 	}
 
-	return nil, "", fmt.Errorf("warning: failed to query %s from %s", entry, db)
+	return nil, "", fmt.Errorf("warning: failed to query %s from %s", entry, db.GetName())
 }
 
 // mismatch finds mismatching sequences between the query sequence and
@@ -827,16 +802,12 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 		stderr.Fatalln(err)
 	}
 
-	return temp > c.PCRMaxOfftargetTm
+	return temp > c.PcrPrimerMaxOfftargetTm
 }
 
 // makeblastdb runs makeblastdb against a FASTA file.
 func makeblastdb(db string) error {
-	makeDbCmd := exec.Command(
-		"makeblastdb",
-		"-dbtype", "nucl",
-		"-in", db,
-	)
+	makeDbCmd := exec.Command("makeblastdb", "-dbtype", "nucl", "-in", db)
 
 	if stdout, err := makeDbCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to makeblastdb: %s %w", string(stdout), err)

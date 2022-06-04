@@ -47,11 +47,11 @@ var enzymeListCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
 	Short:                      "List enzymes available for linearizing backbones",
 	Run:                        repp.EnzymesReadCmd,
-	Example:                    "  repp find enzyme EcoRI",
+	Example:                    "  repp list enzyme EcoRI",
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar name as the argument.
 
-'repp find enzyme' without any arguments logs all enzymes available.`,
+'repp list enzyme' without any arguments logs all enzymes available.`,
 	Aliases: []string{"enzymes"},
 }
 
@@ -78,15 +78,9 @@ var sequenceListCmd = &cobra.Command{
 
 // set flags
 func init() {
-	fragmentListCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
-	fragmentListCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
-	fragmentListCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
-	fragmentListCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU respository")
+	fragmentListCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases")
 
-	sequenceListCmd.Flags().StringP("dbs", "d", "", "comma separated list of local fragment databases")
-	sequenceListCmd.Flags().BoolP("addgene", "a", false, "use the Addgene repository")
-	sequenceListCmd.Flags().BoolP("igem", "g", false, "use the iGEM repository")
-	sequenceListCmd.Flags().BoolP("dnasu", "u", false, "use the DNASU respository")
+	sequenceListCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases")
 	sequenceListCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceListCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
 

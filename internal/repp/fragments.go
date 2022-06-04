@@ -25,7 +25,7 @@ func FragmentListCmd(cmd *cobra.Command, args []string) {
 		frag.Seq = frag.Seq[:len(frag.Seq)/2]
 	}
 
-	fmt.Printf("%s\t%s\n%s\n", name, frag.db, frag.Seq)
+	fmt.Printf("%s\t%s\n%s\n", name, frag.db.GetName(), frag.Seq)
 }
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
@@ -147,14 +147,7 @@ func validateJunctions(frags []*Frag, conf *config.Config) error {
 			}
 
 			left := f.ID
-			if left == "" {
-				left = f.URL
-			}
 			right := next.ID
-			if right == "" {
-				right = next.URL
-			}
-
 			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", left, right, s1, s2)
 		}
 	}

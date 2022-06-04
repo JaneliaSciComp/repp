@@ -29,7 +29,7 @@ func Test_queryFeatures(t *testing.T) {
 			args{
 				&Flags{
 					in:  "SV40 origin,p10 promoter,mEGFP",
-					dbs: []string{config.AddgeneDB, config.IGEMDB},
+					dbs: []DB{},
 				},
 			},
 			[][]string{
@@ -43,7 +43,7 @@ func Test_queryFeatures(t *testing.T) {
 			args{
 				&Flags{
 					in:  "SV40 origin,p10 promoter,mEGFP:rev",
-					dbs: []string{config.AddgeneDB, config.IGEMDB},
+					dbs: []DB{},
 				},
 			},
 			[][]string{
@@ -75,7 +75,7 @@ func Test_blastFeatures(t *testing.T) {
 			"blast a feature against the part databases",
 			args{
 				flags: &Flags{
-					dbs:      []string{config.AddgeneDB, config.IGEMDB},
+					dbs:      []DB{},
 					filters:  []string{},
 					identity: 96.0,
 				},

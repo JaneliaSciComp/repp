@@ -92,7 +92,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.
 To design a plasmid based on the features it should contain, specify the features by name. By default, these should refer to features that are in repp's feature database (`~/.repp/features.tsv`). Features can also refer to fragments, as in the following example where a plasmid is specified by its constituent list of iGEM parts:
 
 ```bash
-repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --igem
+repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --db igem
 ```
 
 ### Fragments
@@ -152,7 +152,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --settings "./custom_
 The plasmid sequence in the input file is designed as a circular plasmid by default. In other words, repp assumes that the sequence includes an insert sequence as well as a backbone. To use the sequence in the input file as an insert sequence but another fragment as a backbone, use the `--backbone` and `--enzymes` command in combination. This will lookup `--backbone` in the fragment databases and digest it with the enzyme selected through the `--enzymes` flag. The linearized backbone will be concatenated to the insert sequence. For example, to insert a `GFP_CDS` sequence into iGEM's `pSB1A3` backbone after linearizing it with `PstI` and `EcoRI`:
 
 ```bash
-repp make sequence --in "./GFP_CDS.fa" --addgene --igem --backbone pSB1A3 --enzymes "PstI,EcoRI"
+repp make sequence --in "./GFP_CDS.fa" --dbs addgene,igem --backbone pSB1A3 --enzymes "PstI,EcoRI"
 ```
 
 The largest linearized fragment post-digestion with all enzymes is used as the backbone in the Gibson Assembly.

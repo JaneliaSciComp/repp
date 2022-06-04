@@ -4,6 +4,10 @@ import (
 	"testing"
 )
 
+func TestMain(m *testing.M) {
+	Setup()
+}
+
 func TestConfig_SynthCost(t *testing.T) {
 	type fields struct {
 		SynthesisCost      map[int]SynthCost
@@ -65,7 +69,7 @@ func TestConfig_SynthCost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Config{
-				CostSyntheticFragment: tt.fields.SynthesisCost,
+				SyntheticFragmentCost: tt.fields.SynthesisCost,
 				SyntheticMaxLength:    tt.fields.SyntheticMaxLength,
 			}
 			if got := c.SynthFragmentCost(tt.args.fragLength); got != tt.want {

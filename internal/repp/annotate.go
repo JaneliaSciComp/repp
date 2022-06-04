@@ -51,31 +51,17 @@ func Annotate(cmd *cobra.Command, args []string) {
 	toCull, _ := cmd.Flags().GetBool("cull")
 	namesOnly, _ := cmd.Flags().GetBool("names")
 
-	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
+	dbflag, err := cmd.Flags().GetString("dbs")
 	if err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse addgene flag: %v", err)
-	}
-
-	igem, err := cmd.Flags().GetBool("igem") // use igem db?
-	if err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse igem flag: %v", err)
-	}
-
-	dnasu, err := cmd.Flags().GetBool("dnasu") // use dnasu db?
-	if err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse dnasu flag: %v", err)
-	}
-
-	dbString, err := cmd.Flags().GetString("dbs")
-	if err != nil && !addgene {
 		cmd.Help()
 		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 
-	dbs, err := p.parseDBs(dbString, addgene, igem, dnasu)
+	m, err := newManifest()
+	if err != nil {
+		stderr.Fatalf("failed to get DB manifest: %v", err)
+	}
+	dbs, err := p.parseDBs(m, dbflag)
 	if err != nil {
 		stderr.Fatalf("failed to find any fragment databases: %v", err)
 	}
@@ -84,7 +70,7 @@ func Annotate(cmd *cobra.Command, args []string) {
 }
 
 // annotate is for executing blast against the query sequence.
-func annotate(name, seq, output string, identity int, dbs, filters []string, toCull, namesOnly bool) {
+func annotate(name, seq, output string, identity int, dbs []DB, filters []string, toCull, namesOnly bool) {
 	handleErr := func(err error) {
 		if err != nil {
 			stderr.Fatalln(err)

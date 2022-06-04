@@ -129,7 +129,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 						"%s\ncheck features database with 'repp features find [feature name]'",
 					f,
 					config.FeatureDB,
-					sep+strings.Join(flags.dbs, sep)+sep,
+					sep+strings.Join(dbNames(flags.dbs), sep)+sep,
 				)
 			}
 		}
@@ -330,7 +330,7 @@ func extendMatches(feats [][]string, featureMatches map[string][]featureMatch) (
 // create a subject database to query specifically for all
 // features. Needed because the first BLAST may not return
 // all feature matches on each fragment
-func subjectDatabase(extendedMatches []match, dbs []string) (filename string, frags []*Frag) {
+func subjectDatabase(extendedMatches []match, dbs []DB) (filename string, frags []*Frag) {
 	subject := ""
 	for _, m := range extendedMatches {
 		frag, err := queryDatabases(m.entry, dbs)

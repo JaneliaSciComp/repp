@@ -28,7 +28,7 @@ type Flags struct {
 	out string
 
 	// a list of dbs to run BLAST against (their names' on the filesystem)
-	dbs []string
+	dbs []DB
 
 	// the backbone (optional) to insert the pieces into
 	backbone *Frag
@@ -49,20 +49,10 @@ type inputParser struct{}
 // NewFlags makes a new flags object manually. for testing.
 func NewFlags(
 	in, out, backbone, filter string,
-	enzymes, dbs []string,
-	addgene, igem, dnasu bool,
+	enzymes []string,
+	dbs []DB,
 ) (*Flags, *config.Config) {
 	c := config.New()
-
-	if addgene {
-		dbs = append(dbs, config.AddgeneDB)
-	}
-	if igem {
-		dbs = append(dbs, config.IGEMDB)
-	}
-	if dnasu {
-		dbs = append(dbs, config.DNASUDB)
-	}
 
 	p := inputParser{}
 	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
@@ -119,30 +109,6 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		}
 	}
 
-	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
-	if strict && err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse addgene flag: %v", err)
-	}
-
-	igem, err := cmd.Flags().GetBool("igem") // use igem db?
-	if strict && err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse igem flag: %v", err)
-	}
-
-	dnasu, err := cmd.Flags().GetBool("dnasu") // use dnasu db?
-	if strict && err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse dnasu flag: %v", err)
-	}
-
-	dbString, err := cmd.Flags().GetString("dbs")
-	if strict && err != nil && !addgene {
-		cmd.Help()
-		stderr.Fatalf("failed to parse building fragments: %v", err)
-	}
-
 	filters, err := cmd.Flags().GetString("exclude")
 	if strict && err != nil && cmdName != "fragments" {
 		cmd.Help()
@@ -158,14 +124,16 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	// set identity for blastn searching
 	fs.identity = identity
 
-	if dbString == "" && !addgene && !igem && !dnasu {
-		fmt.Println("no fragment databases chosen [-agu]: using Addgene, DNASU, and iGEM by default")
-		addgene = true
-		igem = true
-		dnasu = true
-	}
 	// read in the BLAST DB paths
-	if fs.dbs, err = p.parseDBs(dbString, addgene, igem, dnasu); err != nil || len(fs.dbs) == 0 {
+	dbString, err := cmd.Flags().GetString("dbs")
+	if err != nil {
+		stderr.Fatalf("failed to get dbs flag: %v", err)
+	}
+	m, err := newManifest()
+	if err != nil {
+		log.Fatalf("failed to get DB manifest: %v", err)
+	}
+	if fs.dbs, err = p.parseDBs(m, dbString); err != nil || len(fs.dbs) == 0 {
 		stderr.Fatalf("failed to find any fragment databases: %v", err)
 	}
 
@@ -242,45 +210,32 @@ func (p *inputParser) guessOutput(in string) (out string) {
 }
 
 // parseDBs returns a list of absolute paths to BLAST databases.
-func (p *inputParser) parseDBs(dbs string, addgene, igem, dnasu bool) (paths []string, err error) {
-	if addgene {
-		dbs += "," + config.AddgeneDB
-	}
-	if igem {
-		dbs += "," + config.IGEMDB
-	}
-	if dnasu {
-		dbs += "," + config.DNASUDB
+func (p *inputParser) parseDBs(m *manifest, dbInput string) (dbs []DB, err error) {
+	dbNames := p.parseCommaList(dbInput)
+
+	// if none filtered for, return all databases
+	if len(dbNames) == 0 {
+		for _, db := range m.DBs {
+			dbs = append(dbs, db)
+		}
+		return
 	}
 
-	if paths, err = p.dbPaths(dbs); err != nil {
-		return nil, err
-	}
-
-	// make sure all the blast databases exist in the user's FS
-	for _, path := range paths {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find a BLAST database at %s", path)
+	// filter for matching databases, error if none present
+	for _, dbName := range dbNames {
+		db, ok := m.DBs[dbName]
+		if ok {
+			dbs = append(dbs, db)
+		} else {
+			return nil, fmt.Errorf(
+				"failed to find a DB with name: %s\n\tknown DBs: %s",
+				dbName,
+				strings.Join(m.GetNames(), ","),
+			)
 		}
 	}
 
-	return paths, nil
-}
-
-// dbPaths turns a single string of comma separated BLAST dbs into a
-// slice of absolute paths to the BLAST dbs on the local fs.
-func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
-	dbPaths := p.parseCommaList(dbList)
-
-	for _, db := range dbPaths {
-		absPath, err := filepath.Abs(db)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create absolute path: %v", err)
-		}
-		paths = append(paths, absPath)
-	}
-
-	return
+	return dbs, nil
 }
 
 // parseCommaList converts a comma separated list of strings into a list
@@ -302,7 +257,8 @@ func (p *inputParser) parseCommaList(commaList string) (newList []string) {
 // backbone, and returns the linearized backbone as a Frag.
 func (p *inputParser) parseBackbone(
 	bbName string,
-	enzymeNames, dbs []string,
+	enzymeNames []string,
+	dbs []DB,
 	c *config.Config,
 ) (f *Frag, backbone *Backbone, err error) {
 	// if no backbone was specified, return an empty Frag
@@ -406,7 +362,7 @@ func readFasta(path, contents string) (frags []*Frag, err error) {
 	for i, line := range lines {
 		if strings.HasPrefix(line, ">") {
 			headerIndices = append(headerIndices, i)
-			ids = append(ids, line[1:])
+			ids = append(ids, strings.TrimSpace(line[1:]))
 			if strings.Contains(line, "circular") {
 				fragTypes = append(fragTypes, circular)
 			} else {

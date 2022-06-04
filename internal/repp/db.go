@@ -18,22 +18,37 @@ import (
 // manifest is a serializable list of sequence databases.
 //
 // If sequence databases did not also include meta about cost, this could
-// be removed in favor of a simple directory of FASTA files/sources.
+// be removed in favor of a simple directory of FASTA files (1 per database).
+//
 // This is here because of some hypothetical future where the cost
 // of sequences depends on their length, shipping method, etc.
 type manifest struct {
-	DBs []DB `json:"dbs"`
+	// DBs is a map from DB name (base of originally added DB file) to DB
+	DBs map[string]DB `json:"dbs"`
+}
+
+// GetNames returns the list of known DB names.
+func (m *manifest) GetNames() (names []string) {
+	for _, db := range m.DBs {
+		names = append(names, db.GetName())
+	}
+	return names
 }
 
 // DB is a single sequence database. It holds the names, sequences, and
 // cost of a single sequence source.
 type DB struct {
-	// path to the local database in FASTA format.
+	// Path to the local database in FASTA format.
 	Path string `json:"path"`
 
-	// cost per order from this sequence provider.
+	// Cost per order from this sequence provider.
 	// Eg $65 to order from Addgene.
 	Cost float64 `json:"cost"`
+}
+
+// GetName returns the name of the database. Just base without an extension right now.
+func (d *DB) GetName() string {
+	return strings.Replace(path.Base(d.Path), path.Ext(d.Path), "", 1)
 }
 
 // AddCmd imports a new sequence database to the REPP directory.
@@ -105,7 +120,7 @@ func newManifest() (*manifest, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			return &manifest{
-				DBs: []DB{},
+				DBs: map[string]DB{},
 			}, nil
 		}
 		return nil, err
@@ -120,18 +135,18 @@ func newManifest() (*manifest, error) {
 
 // add imports a FASTA sequence database into REPP, storing it in the manifest.
 func (m *manifest) add(from string, cost float64) error {
-	// TODO: quiteee the hack to avoid duplicates
-	m.remove(path.Base(from))
-
 	src, err := os.Open(from)
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	toBase := strings.Replace(path.Base(from), path.Ext(from), "", 1)
-	to := path.Join(config.SeqDatabaseDir, toBase)
-	dst, err := os.Create(to)
+	db := DB{
+		Path: path.Join(config.SeqDatabaseDir, path.Base(from)),
+		Cost: cost,
+	}
+
+	dst, err := os.Create(db.Path)
 	if err != nil {
 		return err
 	}
@@ -142,35 +157,20 @@ func (m *manifest) add(from string, cost float64) error {
 		return err
 	}
 
-	if err = makeblastdb(to); err != nil {
+	if err = makeblastdb(db.Path); err != nil {
 		return err
 	}
 
-	m.DBs = append(m.DBs, DB{
-		Path: to,
-		Cost: cost,
-	})
+	m.DBs[db.GetName()] = db
 	return m.save()
 }
 
 // remove deletes a local, repp-managed FASTA file and removes it from the manifest
 func (m *manifest) remove(name string) error {
-	dbs := []DB{}
-	for _, db := range m.DBs {
-		if path.Base(db.Path) == name {
-			// TODO: also remove the other BLAST files, rather than just deleting the FASTA
-			if err := os.Remove(db.Path); err != nil {
-				return err
-			}
-		} else {
-			dbs = append(dbs, db)
-		}
+	if _, ok := m.DBs[name]; !ok {
+		return fmt.Errorf("no DB found with name %s", name)
 	}
-	if len(dbs) == len(m.DBs) {
-		return fmt.Errorf("no DB found with name: %s", name)
-	}
-
-	m.DBs = dbs
+	delete(m.DBs, name)
 	return m.save()
 }
 
@@ -180,4 +180,11 @@ func (m *manifest) save() error {
 		return err
 	}
 	return os.WriteFile(config.SeqDatabaseManifest, contents, 0644)
+}
+
+func dbNames(dbs []DB) (names []string) {
+	for _, d := range dbs {
+		names = append(names, d.GetName())
+	}
+	return
 }

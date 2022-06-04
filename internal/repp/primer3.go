@@ -89,7 +89,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength, pcrBuffer)
 	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength, pcrBuffer)
 
-	if length-leftBuffer-rightBuffer < p.f.conf.PCRMinLength {
+	if length-leftBuffer-rightBuffer < p.f.conf.PcrMinLength {
 		leftBuffer = 0
 		rightBuffer = 0
 	}
