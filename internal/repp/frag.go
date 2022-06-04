@@ -178,7 +178,7 @@ func (f *Frag) copy() (newFrag *Frag) {
 // cost returns the estimated cost of a fragment. Combination of source and preparation
 func (f *Frag) cost(procure bool) (c float64) {
 	if procure {
-		return f.db.Cost
+		c += f.db.Cost
 	}
 
 	if f.fragType == pcr && f.Primers != nil {
@@ -238,8 +238,7 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 // Otherwise we find the total synthesis distance between this and
 // the other fragment and divide that by the cost per bp of synthesized DNA
 //
-// This does not add in the cost of procurement, which is added to the assembly cost
-// in assembly.add()
+// This does not add in the cost of procurement which is in assembly.add()
 func (f *Frag) costTo(other *Frag) (cost float64) {
 	needsPCR := f.fragType == pcr || f.fragType == circular
 	pcrNoHomology := 50.0 * f.conf.PcrBpCost // pcr no homology

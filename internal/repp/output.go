@@ -128,20 +128,6 @@ func writeJSON(
 		return solutions[i].Count < solutions[j].Count
 	})
 
-	// get the cost of full synthesis (comes in plasmid)
-	// fullSynthCost, err := roundCost(conf.SynthPlasmidCost(insertSeqLength))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// estimate the cost of making the insert, with overhang for the backbone,
-	// from the synthesis provider and then the Gibson assembly cost
-	// insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength + conf.FragmentsMinHomology*2))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// insertSynthCost += conf.GibsonAssemblyCost
-
 	if backbone.Seq == "" {
 		backbone = nil
 	}
@@ -153,8 +139,6 @@ func writeJSON(
 		Execution: seconds,
 		Solutions: solutions,
 		Backbone:  backbone,
-		// PlasmidSynthesisCost: fullSynthCost,
-		// InsertSynthesisCost: insertSynthCost,
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")

@@ -228,7 +228,7 @@ func Test_queryDatabases(t *testing.T) {
 		{
 			name: "query 85039.2",
 			args: args{
-				entry: "85039.2",
+				entry: "addgene:85039.2",
 				dbs:   []DB{testDB},
 			},
 			wantF: Frag{

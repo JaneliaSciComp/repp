@@ -452,7 +452,7 @@ func cull(matches []match, targetLength, minSize, limit int) (culled []match) {
 	// is how we circularize, so have to add back matches to the start or end
 	matchCount := make(map[string]int)
 	for _, m := range culled {
-		matchCount[m.uniqueID] += 1
+		matchCount[m.uniqueID]++
 	}
 
 	// sort again now that we added copied matches
@@ -661,7 +661,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 
 	// execute
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return nil, "", fmt.Errorf("warning: failed to query %s from %s\n\t%s", entry, db.GetName(), err.Error())
+		return nil, "", fmt.Errorf("warning: failed to query %s from %s db\n\t%s", entry, db.GetName(), err.Error())
 	}
 
 	// read in the results as fragments. set their sequence to the full one returned from blastdbcmd
@@ -673,7 +673,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 		}
 	}
 
-	return nil, "", fmt.Errorf("warning: failed to query %s from %s", entry, db.GetName())
+	return nil, "", fmt.Errorf("warning: failed to query %s from %s db", entry, db.GetName())
 }
 
 // mismatch finds mismatching sequences between the query sequence and
@@ -807,9 +807,14 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 
 // makeblastdb runs makeblastdb against a FASTA file.
 func makeblastdb(db string) error {
-	makeDbCmd := exec.Command("makeblastdb", "-dbtype", "nucl", "-in", db)
+	cmd := exec.Command(
+		"makeblastdb",
+		"-dbtype", "nucl",
+		"-in", db,
+		"-parse_seqids",
+	)
 
-	if stdout, err := makeDbCmd.CombinedOutput(); err != nil {
+	if stdout, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to makeblastdb: %s %w", string(stdout), err)
 	}
 	return nil
