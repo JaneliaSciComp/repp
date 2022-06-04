@@ -50,9 +50,9 @@ func Test_assembly_add(t *testing.T) {
 
 	// create the frags for testing
 	type fields struct {
-		frags    []*Frag
-		cost     float64
-		synths   int
+		frags  []*Frag
+		cost   float64
+		synths int
 	}
 	type args struct {
 		n *Frag
@@ -195,9 +195,9 @@ func Test_assembly_len(t *testing.T) {
 	}
 
 	type fields struct {
-		frags    []*Frag
-		cost     float64
-		synths   int
+		frags  []*Frag
+		cost   float64
+		synths int
 	}
 	tests := []struct {
 		name   string

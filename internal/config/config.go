@@ -50,7 +50,7 @@ var (
 	DefaultEnzymes []byte
 
 	//go:embed features.json
- 	DefaultFeatures []byte
+	DefaultFeatures []byte
 
 	//go:embed primer3_config primer3_config/interpretations
 	DefaultPrimer3Config embed.FS
@@ -145,7 +145,7 @@ func Setup() {
 	} else if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	// create the sequence database directory if it doesn't exist
 	_, err = os.Stat(SeqDatabaseDir)
 	if os.IsNotExist(err) {
@@ -236,8 +236,8 @@ func New() *Config {
 		log.Fatal(err)
 	}
 
-	if userConfig := viper.GetString("config"); userConfig != ""  {
-		viper.SetConfigFile(userConfig)             // user has specified a new path for a settings file
+	if userConfig := viper.GetString("config"); userConfig != "" {
+		viper.SetConfigFile(userConfig)               // user has specified a new path for a settings file
 		if err := viper.MergeInConfig(); err != nil { // read in user defined settings file
 			log.Fatal(err)
 		}

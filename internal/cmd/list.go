@@ -23,8 +23,8 @@ var databaseListCmd = &cobra.Command{
 	Run:                        repp.ListCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp list database",
-	Long: "List all sequence databases and their costs",
-	Aliases: []string{"db", "dbs", "databases"},
+	Long:                       "List all sequence databases and their costs",
+	Aliases:                    []string{"db", "dbs", "databases"},
 }
 
 // featureListCmd is for reading features (close to the one requested) from the db.

@@ -9,7 +9,7 @@ import (
 // used for enzymes and features right now.
 type kv struct {
 	contents map[string]string
-	path string
+	path     string
 }
 
 func newKV(path string) *kv {
@@ -25,7 +25,7 @@ func newKV(path string) *kv {
 
 	return &kv{
 		contents: contents,
-		path: path,
+		path:     path,
 	}
 }
 

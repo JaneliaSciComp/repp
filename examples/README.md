@@ -5,7 +5,7 @@
 The `As0.output.json` file was created with the following command:
 
 ```bash
-repp make seq -i As0.input.fa -o As0.output.json --db addgene --settings twist.yaml -v
+repp make seq -i As0.input.fa -o As0.output.json --dbs addgene --settings twist.yaml -v
 ```
 
 Which approximates to asking REPP to:

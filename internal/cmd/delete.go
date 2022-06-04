@@ -21,8 +21,7 @@ var databaseDeleteCmd = &cobra.Command{
 	Run:                        repp.DeleteCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp delete database \"igem\"",
-	Aliases: []string{"db"},
-
+	Aliases:                    []string{"db"},
 }
 
 // featuresDeleteCmd is for deleting features from the feature db

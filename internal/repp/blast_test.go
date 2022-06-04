@@ -243,7 +243,7 @@ func Test_queryDatabases(t *testing.T) {
 				entry: "jahf9a8f9",
 				dbs:   []DB{testDB},
 			},
-			wantF: Frag{},
+			wantF:   Frag{},
 			wantErr: true,
 		},
 	}

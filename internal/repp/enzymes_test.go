@@ -160,7 +160,7 @@ func Test_digest(t *testing.T) {
 				},
 				[]enzyme{
 					{recog: "CCCAGC", compCutIndex: 1, seqCutIndex: 5},
-					}, // rev comp = GCTGGG
+				}, // rev comp = GCTGGG
 			},
 			&Frag{
 				uniqueID: "backbone",
@@ -183,7 +183,7 @@ func Test_digest(t *testing.T) {
 				},
 				[]enzyme{
 					{recog: "CCCAGC", compCutIndex: 5, seqCutIndex: 1},
-					}, // rev comp = GCTGGG
+				}, // rev comp = GCTGGG
 			},
 			&Frag{
 				uniqueID: "backbone",
@@ -206,7 +206,7 @@ func Test_digest(t *testing.T) {
 				},
 				[]enzyme{
 					{recog: "CTGCAG", seqCutIndex: 5, compCutIndex: 1},
-					}, // rev comp = CTGCAG
+				}, // rev comp = CTGCAG
 			},
 			&Frag{
 				uniqueID: "backbone",

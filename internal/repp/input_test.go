@@ -139,7 +139,7 @@ func Test_inputParser_parseDBs(t *testing.T) {
 
 	type args struct {
 		manifest *manifest
-		dbInput string
+		dbInput  string
 	}
 	tests := []struct {
 		name    string
@@ -150,7 +150,7 @@ func Test_inputParser_parseDBs(t *testing.T) {
 	}{
 		{
 			name: "return all by default",
-			p: &inputParser{},
+			p:    &inputParser{},
 			args: args{
 				manifest: &manifest{
 					DBs: map[string]DB{

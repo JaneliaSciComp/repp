@@ -546,9 +546,9 @@ func Test_setPrimers(t *testing.T) {
 				"CAGTCAATCTTTCACAAATTTTGT",
 				"TACAGCTTCATGTGCATGTTCT", // rev-comp: ACATGAAGCTGTACATGGAGGG
 			},
-			wantErr: false,
+			wantErr:   false,
 			wantStart: 0,
-			wantEnd: 1050,
+			wantEnd:   1050,
 		},
 		{
 			name: "create with added homology",
@@ -577,9 +577,9 @@ func Test_setPrimers(t *testing.T) {
 				"GCGGTAAGCAGGCGCTGGAAACAGTACAGC",
 				"AATGCTTGTTTCCCTCCGTCATGCGACG",
 			},
-			wantErr: false,
+			wantErr:   false,
 			wantStart: 500,
-			wantEnd: 800,
+			wantEnd:   800,
 		},
 		{
 			name: "embed additional sequence between fragments",
@@ -608,9 +608,9 @@ func Test_setPrimers(t *testing.T) {
 				"CTTACGCTGGGGCTTCTTTGGCGGATTTTTACAGATACT",
 				"CGCCTGTGTAAGTCCCCAATAACACGCTCTTTACCCGA", // rev comp is TCGGGTAAAGAGCGTGTTATTGGGGGACTTACACAGGC
 			},
-			wantErr: false,
+			wantErr:   false,
 			wantStart: 50,
-			wantEnd: 350,
+			wantEnd:   350,
 		},
 		{
 			name: "optimize when synthesizing neighbors",
@@ -639,9 +639,9 @@ func Test_setPrimers(t *testing.T) {
 				"TGGGTTAAGGCAAATAACTTCGT",
 				"AAGTGGGGGCATAGAATCGG",
 			},
-			wantErr: false,
+			wantErr:   false,
 			wantStart: 135, // deprecation test only, got this from the output and confirmed it made sense
-			wantEnd: 700,
+			wantEnd:   700,
 		},
 		{
 			name: "optimize when there are large overlaps with neighbors",
@@ -670,9 +670,9 @@ func Test_setPrimers(t *testing.T) {
 				"TTGAGGATTTAGCCGCGCTA",
 				"ACGCTCTTTACCCGAATCCC",
 			},
-			wantErr: false,
+			wantErr:   false,
 			wantStart: 98, // deprecation test only, got this from the output and confirmed it made sense
-			wantEnd: 343,
+			wantEnd:   343,
 		},
 	}
 	for _, tt := range tests {

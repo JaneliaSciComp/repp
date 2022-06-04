@@ -25,7 +25,7 @@ var databaseAddCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long:                       "\nImport a new sequence database so its sequences are available to 'repp make'",
 	Example:                    "  repp add database ./addgene.fa 65.0",
-	Aliases: []string{"db"},
+	Aliases:                    []string{"db"},
 }
 
 // featureAddCmd is for adding a new feature to the features db

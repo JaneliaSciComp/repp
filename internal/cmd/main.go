@@ -12,4 +12,3 @@ Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments`,
 	Version: "1.0.0",
 }
-
