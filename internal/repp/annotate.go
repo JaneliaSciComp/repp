@@ -86,11 +86,11 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 	defer os.Remove(out.Name())
 
 	// create a subject file with all the blast features
-	fDB := NewFeatureDB()
+	featureKV := NewFeatureDB()
 	featIndex := 0
 	var featureSubjects strings.Builder
 	indexToFeature := make(map[int]string)
-	for feat, featSeq := range fDB.features {
+	for feat, featSeq := range featureKV.contents {
 		indexToFeature[featIndex] = feat
 		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq))
 		featIndex++
@@ -130,7 +130,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 
 			featureIndex, _ := strconv.Atoi(f.entry)
 			f.entry = indexToFeature[featureIndex]
-			if len(f.seq) < len(fDB.features[f.entry]) {
+			if len(f.seq) < len(featureKV.contents[f.entry]) {
 				continue
 			}
 

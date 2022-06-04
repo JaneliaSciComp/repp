@@ -10,7 +10,7 @@ import (
 func TestNewFeatureDB(t *testing.T) {
 	db := NewFeatureDB()
 
-	if len(db.features) < 1 {
+	if len(db.contents) < 1 {
 		t.Fail()
 	}
 }

@@ -30,10 +30,10 @@ var (
 	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
 
 	// FeatureDB is the path to the features file
-	FeatureDB = filepath.Join(reppDir, "features.tsv")
+	FeatureDB = filepath.Join(reppDir, "features.json")
 
 	// EnzymeDB is the path to the enzymes file
-	EnzymeDB = filepath.Join(reppDir, "enzymes.tsv")
+	EnzymeDB = filepath.Join(reppDir, "enzymes.json")
 
 	// SeqDatabaseDir is the path to a directory of sequence databases.
 	SeqDatabaseDir = filepath.Join(reppDir, "dbs")
@@ -46,10 +46,10 @@ var (
 	//go:embed config.yaml
 	DefaultConfig []byte
 
-	//go:embed enzymes.tsv
+	//go:embed enzymes.json
 	DefaultEnzymes []byte
 
-	//go:embed features.tsv
+	//go:embed features.json
  	DefaultFeatures []byte
 
 	//go:embed primer3_config primer3_config/interpretations

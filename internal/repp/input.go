@@ -296,7 +296,7 @@ func (p *inputParser) parseBackbone(
 func (p *inputParser) getEnzymes(enzymeNames []string) (enzymes []enzyme, err error) {
 	enzymeDB := NewEnzymeDB()
 	for _, enzymeName := range enzymeNames {
-		if cutseq, exists := enzymeDB.enzymes[enzymeName]; exists {
+		if cutseq, exists := enzymeDB.contents[enzymeName]; exists {
 			enzymes = append(enzymes, newEnzyme(enzymeName, cutseq))
 		} else {
 			return enzymes, fmt.Errorf(

@@ -1,7 +1,6 @@
 package repp
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -110,7 +109,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 				fwd = !strings.Contains(strings.ToLower(ns[1]), "rev")
 			}
 
-			if seq, contained := featureDB.features[f]; contained {
+			if seq, contained := featureDB.contents[f]; contained {
 				if !fwd {
 					f = f + ":REV"
 					seq = reverseComplement(seq)
@@ -420,25 +419,8 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 }
 
 // NewFeatureDB returns a new copy of the features db
-func NewFeatureDB() *FeatureDB {
-	featureFile, err := os.Open(config.FeatureDB)
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	features := make(map[string]string)
-	scanner := bufio.NewScanner(featureFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		features[columns[0]] = columns[1] // feature name = feature seq
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	return &FeatureDB{features: features}
+func NewFeatureDB() *kv {
+	return newKV(config.FeatureDB)
 }
 
 // FeaturesReadCmd returns features that are similar in name to the feature name requested.
@@ -450,7 +432,7 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		// no feature name passed, log all of them
 		featNames := []string{}
-		for feat := range f.features {
+		for feat := range f.contents {
 			featNames = append(featNames, feat)
 		}
 
@@ -464,7 +446,7 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 		// print all their names to the console and the first few bp
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, '-', tabwriter.TabIndent)
 		for _, feat := range featNames {
-			seq := f.features[feat]
+			seq := f.contents[feat]
 			if len(seq) > 20 {
 				seq = seq[:20] + "..."
 			}
@@ -488,7 +470,7 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	containing := []string{}
 	lowDistance := []string{}
 
-	for fName, fSeq := range f.features {
+	for fName, fSeq := range f.contents {
 		if strings.Contains(fName, name) {
 			containing = append(containing, fName+"\t"+fSeq)
 		} else if len(fName) > ldCutoff && ld(name, fName, true) <= ldCutoff {
@@ -498,7 +480,7 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 
 	// check for an exact match
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
-	matchedFeature, exactMatch := f.features[name]
+	matchedFeature, exactMatch := f.contents[name]
 	if exactMatch && len(containing) < 2 {
 		fmt.Fprintf(w, name+"\t"+matchedFeature)
 		w.Write([]byte("\n"))
@@ -539,44 +521,10 @@ func FeaturesAddCmd(cmd *cobra.Command, args []string) {
 		seq = args[len(args)-1]
 	}
 
-	featureFile, err := os.Open(config.FeatureDB)
-	if err != nil {
+	f.contents[name] = seq
+	if err := f.save(); err != nil {
 		stderr.Fatal(err)
 	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	var output strings.Builder
-	updated := false
-	scanner := bufio.NewScanner(featureFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		if columns[0] == name {
-			output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
-			updated = true
-		} else {
-			output.WriteString(scanner.Text())
-		}
-	}
-
-	// create from nothing
-	if !updated {
-		output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(config.FeatureDB, []byte(output.String()), 0644); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if updated {
-		fmt.Printf("updated %s in the features database\n", name)
-	}
-
-	// update in memory
-	f.features[name] = seq
 }
 
 // FeaturesDeleteCmd the feature from the database
@@ -593,43 +541,13 @@ func FeaturesDeleteCmd(cmd *cobra.Command, args []string) {
 		name = strings.Join(args, " ")
 	}
 
-	if _, contained := f.features[name]; !contained {
+	if _, contained := f.contents[name]; !contained {
 		fmt.Printf("failed to find %s in the features database\n", name)
 	}
 
-	featureFile, err := os.Open(config.FeatureDB)
-	if err != nil {
+	delete(f.contents, name)
+	if err := f.save(); err != nil {
 		stderr.Fatal(err)
-	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	var output strings.Builder
-	deleted := false
-	scanner := bufio.NewScanner(featureFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		if columns[0] != name {
-			output.WriteString(scanner.Text())
-		} else {
-			deleted = true
-		}
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(config.FeatureDB, []byte(output.String()), 0644); err != nil {
-		stderr.Fatal(err)
-	}
-
-	// delete from memory
-	delete(f.features, name)
-
-	if deleted {
-		fmt.Printf("deleted %s from the features database\n", name)
-	} else {
-		fmt.Printf("failed to find %s in the features database\n", name)
 	}
 }
 
