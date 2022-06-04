@@ -95,7 +95,9 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 			}
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
-			cmd.Help()
+			if helperr := cmd.Help(); helperr != nil {
+				stderr.Fatal(helperr)
+			}
 			stderr.Fatal(err)
 		}
 	}
@@ -104,14 +106,18 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		fs.out = p.guessOutput(fs.in) // guess at an output name
 
 		if fs.out == "" {
-			cmd.Help()
+			if helperr := cmd.Help(); helperr != nil {
+				stderr.Fatal(helperr)
+			}
 			stderr.Fatal("no output path")
 		}
 	}
 
 	filters, err := cmd.Flags().GetString("exclude")
 	if strict && err != nil && cmdName != "fragments" {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatalf("failed to parse filters: %v", err)
 	}
 	// try to split the filter fields into a list

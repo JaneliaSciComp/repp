@@ -14,11 +14,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// FeatureDB is a struct for accessing repps features db
-type FeatureDB struct {
-	features map[string]string // features is a map between a features name and its sequence
-}
-
 type featureMatch struct {
 	featureIndex int
 	match        match
@@ -60,7 +55,7 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 		insertLength += len(f[1])
 	}
 
-	writeJSON(
+	if _, err := writeJSON(
 		flags.out,
 		flags.in,
 		target,
@@ -69,7 +64,9 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 		time.Since(start).Seconds(),
 		flags.backboneMeta,
 		conf,
-	)
+	); err != nil {
+		stderr.Fatal(err)
+	}
 
 	return solutions
 }
@@ -345,7 +342,9 @@ func subjectDatabase(extendedMatches []match, dbs []DB) (filename string, frags 
 		stderr.Fatal(err)
 	}
 
-	in.WriteString(subject)
+	if _, err := in.WriteString(subject); err != nil {
+		stderr.Fatal(err)
+	}
 
 	return in.Name(), frags
 }
@@ -483,7 +482,9 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	matchedFeature, exactMatch := f.contents[name]
 	if exactMatch && len(containing) < 2 {
 		fmt.Fprintf(w, name+"\t"+matchedFeature)
-		w.Write([]byte("\n"))
+		if _, err := w.Write([]byte("\n")); err != nil {
+			stderr.Fatal(err)
+		}
 		w.Flush()
 		return
 	}
@@ -498,9 +499,10 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	} else if len(lowDistance) > 0 {
 		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Fprintf(w, "failed to find any features for %s", name)
+		if _, err := fmt.Fprintf(w, "failed to find any features for %s", name); err != nil {
+			stderr.Fatal(err)
+		}
 	}
-	w.Write([]byte("\n"))
 	w.Flush()
 }
 
@@ -509,7 +511,9 @@ func FeaturesAddCmd(cmd *cobra.Command, args []string) {
 	f := NewFeatureDB()
 
 	if len(args) < 2 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatalln("\nexpecting two args: a features name and sequence.")
 	}
 
@@ -532,7 +536,9 @@ func FeaturesDeleteCmd(cmd *cobra.Command, args []string) {
 	f := NewFeatureDB()
 
 	if len(args) < 1 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatalln("\nno features name passed.")
 	}
 

@@ -168,7 +168,9 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 // nodes in different assemblies
 func (f *Frag) copy() (newFrag *Frag) {
 	newFrag = &Frag{}
-	copier.Copy(newFrag, f)
+	if err := copier.Copy(newFrag, f); err != nil {
+		stderr.Fatal(err)
+	}
 
 	return
 }

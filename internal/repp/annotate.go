@@ -3,6 +3,7 @@ package repp
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -36,7 +37,9 @@ func Annotate(cmd *cobra.Command, args []string) {
 	} else {
 		in, err := cmd.Flags().GetString("in")
 		if in == "" || err != nil {
-			cmd.Help()
+			if helperr := cmd.Help(); helperr != nil {
+				log.Fatal(helperr)
+			}
 			stderr.Fatalln("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
 		}
 
@@ -53,7 +56,9 @@ func Annotate(cmd *cobra.Command, args []string) {
 
 	dbflag, err := cmd.Flags().GetString("dbs")
 	if err != nil {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
 		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 

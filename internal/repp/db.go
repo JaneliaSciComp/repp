@@ -54,7 +54,9 @@ func (d *DB) GetName() string {
 // AddCmd imports a new sequence database to the REPP directory.
 func AddCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
 		log.Fatal("expecting two args: a sequence database and the cost per sequence procurement")
 	}
 
@@ -78,7 +80,9 @@ func AddCmd(cmd *cobra.Command, args []string) {
 // ListCmd lists the sequence databases and their costs.
 func ListCmd(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
 		log.Fatal("not expecting any arguments")
 	}
 
@@ -99,7 +103,9 @@ func ListCmd(cmd *cobra.Command, args []string) {
 // DeleteCmd deletes an existing sequence database from the REPP directory.
 func DeleteCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		log.Fatal("expecting one arg: a sequence database name")
 	}
 

@@ -11,7 +11,9 @@ import (
 // FragmentListCmd logs the building fragment with the name passed.
 func FragmentListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatalln("\nno fragment name passed.")
 	}
 	name := args[0]
@@ -51,7 +53,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	target, solution := fragments(frags, conf)
 
 	// write the single list of fragments as a possible solution to the output file
-	writeJSON(
+	if _, err := writeJSON(
 		flags.out,
 		flags.in,
 		target.Seq,
@@ -60,7 +62,9 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 		0,
 		flags.backboneMeta,
 		conf,
-	)
+	); err != nil {
+		stderr.Fatal(err)
+	}
 }
 
 // fragments pieces together a list of fragments into a single plasmid

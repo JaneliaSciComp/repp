@@ -136,11 +136,11 @@ func writeJSON(
 
 	// estimate the cost of making the insert, with overhang for the backbone,
 	// from the synthesis provider and then the Gibson assembly cost
-	insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength + conf.FragmentsMinHomology*2))
-	if err != nil {
-		return nil, err
-	}
-	insertSynthCost += conf.GibsonAssemblyCost
+	// insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength + conf.FragmentsMinHomology*2))
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// insertSynthCost += conf.GibsonAssemblyCost
 
 	if backbone.Seq == "" {
 		backbone = nil

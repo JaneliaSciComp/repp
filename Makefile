@@ -1,5 +1,5 @@
 .PHONY: build
-build: fmt
+build: fmt lint
 	go mod tidy
 	go mod vendor
 	go build -o ./bin/repp ./cmd/repp

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -92,8 +94,12 @@ func init() {
 	// config is an optional parameter for a settings file (that overrides defaults)
 	makeCmd.PersistentFlags().StringP("config", "c", "", "path to a config file")
 	makeCmd.PersistentFlags().BoolP("verbose", "v", false, "whether to log results to stdout")
-	viper.BindPFlag("config", makeCmd.PersistentFlags().Lookup("config"))
-	viper.BindPFlag("verbose", makeCmd.PersistentFlags().Lookup("verbose"))
+	if err := viper.BindPFlag("config", makeCmd.PersistentFlags().Lookup("config")); err != nil {
+		log.Fatal(err)
+	}
+	if err := viper.BindPFlag("verbose", makeCmd.PersistentFlags().Lookup("verbose")); err != nil {
+		log.Fatal(err)
+	}
 
 	RootCmd.AddCommand(makeCmd)
 }

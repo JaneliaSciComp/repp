@@ -247,12 +247,6 @@ func recogRegex(recog string) (decoded string) {
 	return regexDecoder.String()
 }
 
-// EnzymeDB is a struct for accessing repps enzymes db.
-type EnzymeDB struct {
-	// enzymes is a map between a enzymes name and its sequence
-	enzymes map[string]string
-}
-
 // NewEnzymeDB returns a new copy of the enzymes db.
 func NewEnzymeDB() *kv {
 	return newKV(config.EnzymeDB)
@@ -314,7 +308,9 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Fprintf(w, "failed to find any enzymes for %s", name)
 	}
-	w.Write([]byte("\n"))
+	if _, err := w.Write([]byte("\n")); err != nil {
+		stderr.Fatal(err)
+	}
 	w.Flush()
 }
 
@@ -323,7 +319,9 @@ func EnzymesAddCmd(cmd *cobra.Command, args []string) {
 	f := NewEnzymeDB()
 
 	if len(args) < 2 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatalln("expecting two args: a name and recognition sequence.")
 	}
 
@@ -353,7 +351,9 @@ func EnzymesDeleteCmd(cmd *cobra.Command, args []string) {
 	f := NewEnzymeDB()
 
 	if len(args) < 1 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatal("\nexpected an enzyme name")
 	}
 

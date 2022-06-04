@@ -16,7 +16,9 @@ import (
 // SequenceListCmd is for BLAST'ing a sequence against the dbs and finding matches
 func SequenceListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
+		if helperr := cmd.Help(); helperr != nil {
+			stderr.Fatal(helperr)
+		}
 		stderr.Fatalln("\nno sequence passed.")
 	}
 	seq := args[0]
