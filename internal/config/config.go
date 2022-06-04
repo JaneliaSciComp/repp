@@ -43,15 +43,20 @@ var (
 )
 
 var (
+	// DefaultConfig is the initiate client config that's embedded with repp
+	// and installed on the first run
 	//go:embed config.yaml
 	DefaultConfig []byte
 
+	// DefaultEnzymes is the JSON file of default enzymes embedded with repp
 	//go:embed enzymes.json
 	DefaultEnzymes []byte
 
+	// DefaultFeatures is the JSON file of default features embedded with repp
 	//go:embed features.json
 	DefaultFeatures []byte
 
+	// DefaultPrimer3Config is the FS of Primer3, needed to run primer3_core, etc
 	//go:embed primer3_config primer3_config/interpretations
 	DefaultPrimer3Config embed.FS
 )

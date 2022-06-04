@@ -14,7 +14,7 @@ var addCmd = &cobra.Command{
 	Long: `Create/update a feature or enzyme with its name and sequence/recognition-site.
 Set features can be passed to the 'repp build features' command and enzymes can
 be passed to the --enzyme flag`,
-	Aliases: []string{"set", "update"},
+	Aliases: []string{"set"},
 }
 
 // databaseAddCmd is for adding a new sequence db

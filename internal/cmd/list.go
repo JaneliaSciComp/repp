@@ -13,7 +13,7 @@ var listCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long: `List features or enzymes by name.
 If there is no exact match, similar entries are returned`,
-	Aliases: []string{"ls", "get"},
+	Aliases: []string{"ls"},
 }
 
 // databaseListCmd is for reading features (close to the one requested) from the db.
@@ -62,7 +62,7 @@ var fragmentListCmd = &cobra.Command{
 	Example:                    "  repp list fragment pSB1C3 --dbs igem",
 	Run:                        repp.FragmentListCmd,
 	SuggestionsMinimumDistance: 2,
-	Long:                       `List a fragment with a given name in the databases requested.`,
+	Long:                       `List fragments with a passed name in the specified databases`,
 }
 
 // sequenceListCmd is for finding a sequence in the dbs

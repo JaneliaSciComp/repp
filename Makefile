@@ -1,5 +1,5 @@
 .PHONY: build
-build:
+build: fmt
 	go mod tidy
 	go mod vendor
 	go build -o ./bin/repp ./cmd/repp
@@ -18,3 +18,9 @@ docs:
 
 docs/serve: docs
 	cd docs && make serve
+
+fmt:
+	gofmt -l ./internal
+
+lint:
+	golangci-lint run
