@@ -1,6 +1,7 @@
 package repp
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -218,6 +219,10 @@ func (p *inputParser) guessOutput(in string) (out string) {
 // parseDBs returns a list of absolute paths to BLAST databases.
 func (p *inputParser) parseDBs(m *manifest, dbInput string) (dbs []DB, err error) {
 	dbNames := p.parseCommaList(dbInput)
+
+	if m.empty() {
+		return nil, errors.New("no databases loaded. See 'repp add database'")
+	}
 
 	// if none filtered for, return all databases
 	if len(dbNames) == 0 {

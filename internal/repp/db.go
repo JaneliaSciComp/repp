@@ -91,6 +91,10 @@ func ListCmd(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
+	if m.empty() {
+		stderr.Fatal("No databases loaded. See 'repp add database'")
+	}
+
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintf(w, "db\tcost\n")
@@ -169,6 +173,11 @@ func (m *manifest) add(from string, cost float64) error {
 
 	m.DBs[db.GetName()] = db
 	return m.save()
+}
+
+// empty returns whether the manifest lacks any database
+func (m *manifest) empty() bool {
+	return len(m.DBs) == 0
 }
 
 // remove deletes a local, repp-managed FASTA file and removes it from the manifest
