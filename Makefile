@@ -14,12 +14,7 @@ test:
 
 .PHONY: docs
 docs:
-	cd docs
-	go run ./main.go
-	cp ../README.md ./index.md
-	bundle exec just-the-docs rake search:init
-	find . -name *make* -type f -exec sed -i -e 's/\/Users\/josh/~/g' {} \;
-	rm ./*-e
+	cd docs && make
 
-serve/docs: docs 
-	bundle exec jekyll serve
+docs/serve: docs
+	cd docs && make serve

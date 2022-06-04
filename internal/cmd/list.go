@@ -59,7 +59,7 @@ var enzymeListCmd = &cobra.Command{
 var fragmentListCmd = &cobra.Command{
 	Use:                        "fragment [name]",
 	Short:                      "List a fragment in the databases",
-	Example:                    "  repp list fragment pSB1C3 --igem",
+	Example:                    "  repp list fragment pSB1C3 --dbs igem",
 	Run:                        repp.FragmentListCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `List a fragment with a given name in the databases requested.`,
@@ -70,7 +70,7 @@ var sequenceListCmd = &cobra.Command{
 	Use:                        "sequence [seq]",
 	Short:                      "List a sequence in the databases",
 	Run:                        repp.SequenceListCmd,
-	Example:                    "  repp list sequence GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --igem",
+	Example:                    "  repp list sequence GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --dbs igem",
 	SuggestionsMinimumDistance: 2,
 	Long:                       `List a sequence's BLAST matches among databases.`,
 	Aliases:                    []string{"seq"},

@@ -54,7 +54,7 @@ make install
 
 ## Sequence Databases
 
-`repp` uses sequence databases for plasmid assembly. These are imported as FASTA files -- along with the cost per plasmid procurement from that source.
+`repp` uses sequence databases for plasmid assembly. These are imported as FASTA files along with the cost per plasmid procurement from that source.
 
 Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and installing each via the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
 
@@ -92,7 +92,7 @@ repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.
 To design a plasmid based on the features it should contain, specify the features by name. By default, these should refer to features that are in repp's feature database (`~/.repp/features.tsv`). Features can also refer to fragments, as in the following example where a plasmid is specified by its constituent list of iGEM parts:
 
 ```bash
-repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --db igem
+repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --dbs igem
 ```
 
 ### Fragments
@@ -110,20 +110,6 @@ And call the file from `repp make fragments`:
 
 ```bash
 repp make fragments --in "./fragments.fa" --out "plasmid.json"
-```
-
-### Databases
-
-`repp` includes three embedded databases from large public repositories: [Addgene](https://www.addgene.org/), [iGEM](http://parts.igem.org/Main_Page), and [DNASU](https://dnasu.org/DNASU/Home.do). Each embedded database and its file path after installation are as follows:
-
-- Addgene, `--addgene`, `~/.repp/addgene`
-- DNASU, `--dnasu`, `~/.repp/dnasu`
-- iGEM, `--igem`, `~/.repp/igem`
-
-Users can also use their or their lab's fragment databases through the `--dbs` as a list of comma-separated fragment [BLAST databases](https://www.ncbi.nlm.nih.gov/books/NBK279688/). An example of a plasmid design using Addgene, DNASU, and multiple user-defined BLAST repositories is below:
-
-```bash
-repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dnasu --dbs "proteins.fa,backbones.fa"
 ```
 
 ### Configuration
