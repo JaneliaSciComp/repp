@@ -76,9 +76,6 @@ type SynthCost struct {
 // of settings available in config.yaml and those
 // available from the command line
 type Config struct {
-	// Vebose is whether to log debug messages to the stdout
-	Verbose bool
-
 	// the config file's version
 	Version string `mapstructure:"version"`
 

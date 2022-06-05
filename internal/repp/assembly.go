@@ -310,10 +310,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		cost:   mockStart.costTo(mockEnd),
 		synths: len(synths),
 	})
-
-	if conf.Verbose {
-		fmt.Printf("%d assemblies made\n", len(assemblies))
-	}
+	rlog.Debugw("assemblies made", "count", len(assemblies))
 
 	return assemblies
 }
@@ -363,7 +360,7 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 			if err != nil || filledFragments == nil {
 				// assemblyToFill.log()
 				// fmt.Println("error", err.Error())
-				// stderr.Fatal(err)
+				// Log.Fatal(err)
 				continue
 			}
 

@@ -58,7 +58,7 @@ func NewFlags(
 	p := inputParser{}
 	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
 	if err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	if strings.Contains(in, ",") {
@@ -92,14 +92,14 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		} else if cmdName == "sequence" && len(args) > 0 {
 			fs.in = "input.fa"
 			if err = ioutil.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
-				stderr.Fatal(err)
+				rlog.Fatal(err)
 			}
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
 			if helperr := cmd.Help(); helperr != nil {
-				stderr.Fatal(helperr)
+				rlog.Fatal(helperr)
 			}
-			stderr.Fatal(err)
+			rlog.Fatal(err)
 		}
 	}
 
@@ -108,18 +108,18 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 
 		if fs.out == "" {
 			if helperr := cmd.Help(); helperr != nil {
-				stderr.Fatal(helperr)
+				rlog.Fatal(helperr)
 			}
-			stderr.Fatal("no output path")
+			rlog.Fatal("no output path")
 		}
 	}
 
 	filters, err := cmd.Flags().GetString("exclude")
 	if strict && err != nil && cmdName != "fragments" {
 		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
+			rlog.Fatal(helperr)
 		}
-		stderr.Fatalf("failed to parse filters: %v", err)
+		rlog.Fatal("failed to parse filters: %v", err)
 	}
 	// try to split the filter fields into a list
 	fs.filters = p.getFilters(filters)
@@ -134,14 +134,14 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	// read in the BLAST DB paths
 	dbString, err := cmd.Flags().GetString("dbs")
 	if err != nil {
-		stderr.Fatalf("failed to get dbs flag: %v", err)
+		rlog.Fatal("failed to get dbs flag: %v", err)
 	}
 	m, err := newManifest()
 	if err != nil {
-		log.Fatalf("failed to get DB manifest: %v", err)
+		rlog.Fatalf("failed to get DB manifest: %v", err)
 	}
 	if fs.dbs, err = p.parseDBs(m, dbString); err != nil || len(fs.dbs) == 0 {
-		stderr.Fatalf("failed to find any fragment databases: %v", err)
+		rlog.Fatal("failed to find any fragment databases: %v", err)
 	}
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
@@ -154,7 +154,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	// try to digest the backbone with the enzyme
 	fs.backbone, fs.backboneMeta, err = p.parseBackbone(backbone, enzymes, fs.dbs, c)
 	if strict && err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	return fs, c

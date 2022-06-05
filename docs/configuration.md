@@ -25,7 +25,7 @@ synthetic-fragment-cost:
 And reference it during plasmid design via `--settings`:
 
 ```bash
-repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --settings "./custom_settings.yaml"
+repp make sequence --in "./2ndVal_mScarlet-I.fa" --dbs addgene --settings "./custom_settings.yaml"
 ```
 
 ## Parameters

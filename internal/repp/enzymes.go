@@ -309,7 +309,7 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(w, "failed to find any enzymes for %s", name)
 	}
 	if _, err := w.Write([]byte("\n")); err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 	w.Flush()
 }
@@ -330,12 +330,12 @@ func EnzymesAddCmd(cmd *cobra.Command, args []string) {
 	seq = invalidChars.ReplaceAllString(seq, "")
 
 	if strings.Count(seq, "^") != 1 || strings.Count(seq, "_") != 1 {
-		stderr.Fatalf("%s is not a valid enzyme recognition sequence. see 'repp find enzyme --help'\n", seq)
+		rlog.Fatal("%s is not a valid enzyme recognition sequence. see 'repp find enzyme --help'\n", seq)
 	}
 
 	f.contents[name] = seq
 	if err := f.save(); err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 }
 
@@ -345,9 +345,9 @@ func EnzymesDeleteCmd(cmd *cobra.Command, args []string) {
 
 	if len(args) < 1 {
 		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
+			rlog.Fatal(helperr)
 		}
-		stderr.Fatal("\nexpected an enzyme name")
+		rlog.Fatal("\nexpected an enzyme name")
 	}
 
 	name := args[0]
@@ -361,6 +361,6 @@ func EnzymesDeleteCmd(cmd *cobra.Command, args []string) {
 
 	delete(f.contents, name)
 	if err := f.save(); err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 }

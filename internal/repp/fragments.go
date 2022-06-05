@@ -12,16 +12,16 @@ import (
 func FragmentListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
+			rlog.Fatal(helperr)
 		}
-		stderr.Fatalln("\nno fragment name passed.")
+		rlog.Fatal("\nno fragment name passed.")
 	}
 	name := args[0]
 
 	flags, _ := parseCmdFlags(cmd, args, false)
 	frag, err := queryDatabases(name, flags.dbs)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 	if frag.fragType == circular {
 		frag.Seq = frag.Seq[:len(frag.Seq)/2]
@@ -37,7 +37,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	// read in the constituent fragments
 	frags, err := read(flags.in, false)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	// add in the backbone if it was provided
@@ -63,7 +63,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 		flags.backboneMeta,
 		conf,
 	); err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 }
 
@@ -72,7 +72,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Frag) {
 	// piece together the adjacent fragments
 	if len(frags) < 1 {
-		stderr.Fatalln("failed: no fragments to assemble")
+		rlog.Fatal("failed: no fragments to assemble")
 	}
 
 	// anneal the fragments together, shift their junctions and create the plasmid sequence
@@ -88,7 +88,7 @@ func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Fr
 	a := assembly{frags: frags}
 	solution, err := a.fill(target.Seq, conf)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	return target, solution

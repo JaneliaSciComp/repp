@@ -169,7 +169,7 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 func (f *Frag) copy() (newFrag *Frag) {
 	newFrag = &Frag{}
 	if err := copier.Copy(newFrag, f); err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	return

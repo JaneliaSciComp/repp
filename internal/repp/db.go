@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strconv"
@@ -53,25 +52,25 @@ func AddCmd(cmd *cobra.Command, args []string) {
 	_, err := os.Stdin.Stat()
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
+			rlog.Fatal(helperr)
 		}
-		stderr.Fatal("no stdin passed to 'repp add database'. See example.")
+		rlog.Fatal("no stdin passed to 'repp add database'. See example.")
 	}
 
 	name := cmd.Flag("name").Value.String()
 	cost := cmd.Flag("cost").Value.String()
 	costFloat, err := strconv.ParseFloat(cost, 64)
 	if err != nil {
-		log.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	m, err := newManifest()
 	if err != nil {
-		log.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	if err = m.add(name, costFloat); err != nil {
-		log.Fatal(err)
+		rlog.Fatal(err)
 	}
 }
 
@@ -79,11 +78,11 @@ func AddCmd(cmd *cobra.Command, args []string) {
 func ListCmd(cmd *cobra.Command, args []string) {
 	m, err := newManifest()
 	if err != nil {
-		log.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	if m.empty() {
-		stderr.Fatal("No databases loaded. See 'repp add database'")
+		rlog.Fatal("No databases loaded. See 'repp add database'")
 	}
 
 	// from https://golang.org/pkg/text/tabwriter/
@@ -100,15 +99,15 @@ func DeleteCmd(cmd *cobra.Command, args []string) {
 	db := args[0]
 	m, err := newManifest()
 	if err != nil {
-		log.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	if err = m.remove(db); err != nil {
-		log.Fatal(err)
+		rlog.Fatal(err)
 	}
 }
 
-// newManifest returns a new deserialize Manifest.
+// newManifest returns a new deserialized Manifest.
 func newManifest() (*manifest, error) {
 	contents, err := os.ReadFile(config.SeqDatabaseManifest)
 	if err != nil {
@@ -135,25 +134,31 @@ func (m *manifest) add(name string, cost float64) error {
 		Cost: cost,
 	}
 
+	l := rlog.With("path", db.Path, "name", name, "cost", cost)
 	dst, err := os.Create(db.Path)
 	if err != nil {
+		l.Error("failed to create db")
 		return err
 	}
+	l.Debug("created db")
 	defer dst.Close()
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		if _, err := dst.Write(scanner.Bytes()); err != nil {
-			stderr.Fatal(err)
-		}
-		if _, err := dst.WriteString("\n"); err != nil {
-			stderr.Fatal(err)
-		}
+	reader := bufio.NewReader(os.Stdin)
+	n, err := reader.WriteTo(dst)
+	if err != nil {
+		l.Errorw("failed copying stdin", "err", err)
+		return err
+	}
+	l.Debugw("copied stdin", "bytes", n)
+	if n == 0 {
+		l.Fatal("no stdin to create db")
 	}
 
 	if err = makeblastdb(db.Path); err != nil {
+		l.Error("failed to makeblastdb")
 		return err
 	}
+	l.Debug("ran makeblastdb")
 
 	m.DBs[db.Name] = db
 	return m.save()

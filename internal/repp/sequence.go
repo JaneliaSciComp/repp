@@ -17,9 +17,9 @@ import (
 func SequenceListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
+			rlog.Fatal(helperr)
 		}
-		stderr.Fatalln("\nno sequence passed.")
+		rlog.Fatal("\nno sequence passed.")
 	}
 	seq := args[0]
 
@@ -27,11 +27,11 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 	tw := blastWriter()
 	matches, err := blast("find_cmd", seq, true, flags.dbs, flags.filters, flags.identity, tw)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	if len(matches) == 0 {
-		stderr.Fatalln("no matches found")
+		rlog.Fatal("no matches found")
 	}
 
 	// sort so the largest matches are first
@@ -73,7 +73,7 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 
 	insert, target, solutions, err := sequence(flags, conf) // build up the assemblies that make the sequence
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	// write the results to a file
@@ -89,12 +89,10 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 		conf,
 	)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
-	if conf.Verbose {
-		fmt.Printf("%s\n\n", elapsed)
-	}
+	rlog.Debugw("execution time", "execution", elapsed)
 
 	return solutions
 }
@@ -139,9 +137,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	target = fragments[0]
-	if conf.Verbose {
-		fmt.Printf("Building %s\n", target.ID)
-	}
+	rlog.Debugw("building plasmid", "targetID", target.ID)
 
 	// if a backbone was specified, add it to the sequence of the target frag
 	insert = target.copy() // store a copy for logging later
@@ -152,9 +148,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	// get all the matches against the target plasmid
 	tw := blastWriter()
 	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity, tw)
-	if conf.Verbose {
-		tw.Flush()
-	}
+	// TODO: write blastWriter results to logger here
 	if err != nil {
 		dbMessage := strings.Join(dbNames(input.dbs), ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
@@ -162,9 +156,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// keep only "proper" arcs (non-self-contained)
 	matches = cull(matches, len(target.Seq), conf.PcrMinLength, 1)
-	if conf.Verbose {
-		fmt.Printf("%d matches after culling\n", len(matches)/2)
-	}
+	rlog.Debugw("culled matches", "remaining", len(matches)/2)
 
 	// map fragment Matches to nodes
 	frags := newFrags(matches, conf)

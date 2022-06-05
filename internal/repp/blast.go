@@ -799,7 +799,7 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 	ntthalOutString := string(ntthalOut)
 	temp, err := strconv.ParseFloat(strings.TrimSpace(ntthalOutString), 64)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	return temp > c.PcrPrimerMaxOfftargetTm

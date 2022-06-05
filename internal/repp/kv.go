@@ -15,12 +15,12 @@ type kv struct {
 func newKV(path string) *kv {
 	dat, err := ioutil.ReadFile(path)
 	if err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	contents := make(map[string]string)
 	if err = json.Unmarshal(dat, &contents); err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	return &kv{

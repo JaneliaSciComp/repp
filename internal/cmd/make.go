@@ -99,11 +99,7 @@ func init() {
 
 	// config is an optional parameter for a settings file (that overrides defaults)
 	makeCmd.PersistentFlags().StringP("config", "c", "", "path to a config file")
-	makeCmd.PersistentFlags().BoolP("verbose", "v", false, "whether to log results to stdout")
 	if err := viper.BindPFlag("config", makeCmd.PersistentFlags().Lookup("config")); err != nil {
-		log.Fatal(err)
-	}
-	if err := viper.BindPFlag("verbose", makeCmd.PersistentFlags().Lookup("verbose")); err != nil {
 		log.Fatal(err)
 	}
 

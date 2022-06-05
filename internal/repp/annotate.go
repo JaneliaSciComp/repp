@@ -3,7 +3,6 @@ package repp
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -38,14 +37,14 @@ func Annotate(cmd *cobra.Command, args []string) {
 		in, err := cmd.Flags().GetString("in")
 		if in == "" || err != nil {
 			if helperr := cmd.Help(); helperr != nil {
-				log.Fatal(helperr)
+				rlog.Fatal(helperr)
 			}
-			stderr.Fatalln("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
+			rlog.Fatal("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
 		}
 
 		frags, err := read(in, false)
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 		name = frags[0].ID
 		query = frags[0].Seq
@@ -57,18 +56,18 @@ func Annotate(cmd *cobra.Command, args []string) {
 	dbflag, err := cmd.Flags().GetString("dbs")
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
-			log.Fatal(helperr)
+			rlog.Fatal(helperr)
 		}
-		stderr.Fatalf("failed to parse building fragments: %v", err)
+		rlog.Fatal("failed to parse building fragments: %v", err)
 	}
 
 	m, err := newManifest()
 	if err != nil {
-		stderr.Fatalf("failed to get DB manifest: %v", err)
+		rlog.Fatal("failed to get DB manifest: %v", err)
 	}
 	dbs, err := p.parseDBs(m, dbflag)
 	if err != nil {
-		stderr.Fatalf("failed to find any fragment databases: %v", err)
+		rlog.Fatal("failed to find any fragment databases: %v", err)
 	}
 
 	annotate(name, query, output, identity, dbs, excludeFilters, toCull, namesOnly)
@@ -78,7 +77,7 @@ func Annotate(cmd *cobra.Command, args []string) {
 func annotate(name, seq, output string, identity int, dbs []DB, filters []string, toCull, namesOnly bool) {
 	handleErr := func(err error) {
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 	}
 
@@ -153,7 +152,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 	}
 
 	if len(features) < 1 {
-		stderr.Fatal("no features found")
+		rlog.Fatal("no features found")
 	}
 
 	sortMatches(features)

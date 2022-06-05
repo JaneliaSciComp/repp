@@ -26,11 +26,10 @@ See [the docs](https://lattice-automation.github.io/repp/) or `--help` for any c
 
 ### From Docker
 
-Pull and run an image from Docker Hub:
+Run `repp` via Docker:
 
 ```sh
-# alias repp="docker run -v repp:/root/.repp -i jjtimmons/repp:latest"
-alias repp="docker run -v repp:/root/.repp repp:latest"
+alias repp="docker run -i --rm -v repp:/root/.repp jjtimmons/repp:latest"
 repp --help
 ```
 
@@ -50,7 +49,7 @@ make install
 
 ## Sequence Databases
 
-`repp` uses sequence databases for plasmid assembly. These are imported as FASTA files along with the cost per plasmid procurement from that source.
+`repp` uses sequence databases for plasmid assembly. These are added as FASTA files along with the name and cost per plasmid from that source.
 
 Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and installing each via the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
 
@@ -60,17 +59,17 @@ for db in igem addgene dnasu; do
   gzip -d "$db.fa.gz"
 done
 
-# add sequence DBs with the plasmid cost from each source
-repp add database igem.fa 0.0
-repp add database addgene.fa 65.0
-repp add database dnasu.fa 55.0
+# add sequence DBs with the cost of ordering a plasmid from each source
+repp add database --name igem --cost 0.0 < igem.fa
+repp add database --name addgene --cost 65.0 < addgene.fa
+repp add database --name dnasu --cost 55.0 < dnasu.fa
 ```
 
 ## Plasmid Design
 
 ### Sequence
 
-To design a plasmid based on its expected sequence save it to a FASTA or Genbank file. For example:
+To design a plasmid based on its target sequence save it to a FASTA file. For example:
 
 ```
 >2ndVal_mScarlet-I
@@ -80,7 +79,7 @@ CAACCTTACCAGAGGGCGCCCCAGCTGGCAATTCCGACGTCTAAGAAACCATTATTATCA...
 Then call `repp make sequence` to design it. The following example uses Addgene and a local BLAST database `parts_library.fa` as fragment sources:
 
 ```bash
-repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.fa"
+repp make sequence --in "./2ndVal_mScarlet-I.fa" --dbs "addgene,parts_library.fa"
 ```
 
 ### Features
@@ -126,7 +125,7 @@ synthetic-fragment-cost:
 And reference it during plasmid design:
 
 ```bash
-repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --settings "./custom_settings.yaml"
+repp make sequence --in "./2ndVal_mScarlet-I.fa" --dbs addgene --settings "./custom_settings.yaml"
 ```
 
 ### Backbones and Enzymes

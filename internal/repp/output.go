@@ -209,6 +209,6 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "")
 	err := ioutil.WriteFile(filename, []byte(gb), 0644)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 }

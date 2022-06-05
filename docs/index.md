@@ -4,15 +4,15 @@
 
 Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low.
 
-`repp` enables such plasmid design. It turns plasmid specifications into designs using the least expensive design with both existing DNA fragments (PCR) and newly synthesized DNA fragments. Plasmids are specifiable using their target sequence, features, or sub-fragments.
+`repp` does such plasmid design. It turns specifications into assembly plans that use the least expensive combination of existing (PCR) and newly synthesized DNA fragments. Target plasmids are specifiable using their target sequence, features, or sub-fragments.
 
 ## Publication
 
-We published a paper about repp in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0223935) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
+We published a paper about `repp` in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0223935) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
 
 ## Examples
 
-See [/examples](/examples) to see input/output from repp.
+See [/examples](/examples) to see input/output from `repp`.
 
 <br>
 
@@ -24,27 +24,23 @@ See [the docs](https://lattice-automation.github.io/repp/) or `--help` for any c
 
 ## Installation
 
-### From source
+### From Docker
 
-#### Dependencies
+Run `repp` via Docker:
 
-Note: `repp` depends on [BLAST+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) and [Primer3](https://github.com/primer3-org/primer3) at runtime. A couple examples of how to install those are below.
-
-##### Mac
-
-```
-brew install blast primer3
+```sh
+# alias repp="docker run -i --rm -v repp:/root/.repp -i jjtimmons/repp:latest"
+alias repp="docker run -i --rm -v repp:/root/.repp repp:latest"
+repp --help
 ```
 
-##### Linux
+### From Source
 
-```
-apt-get install ncbi-blast+ primer3
-```
+Note: `repp` depends on:
 
-#### Compiling and installing
-
-Note: `repp` depends on [`Go >= 1.18.0`](https://go.dev/doc/install) for compilation and installation
+- [`Go >= 1.18.0`](https://go.dev/doc/install) for compilation
+- [BLAST+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) for sequence alignment
+- [Primer3](https://github.com/primer3-org/primer3) for hairpin detection and off-target primer-binding detection
 
 ```sh
 git clone https://github.com/Lattice-Automation/repp.git
@@ -54,7 +50,7 @@ make install
 
 ## Sequence Databases
 
-`repp` uses sequence databases for plasmid assembly. These are imported as FASTA files along with the cost per plasmid procurement from that source.
+`repp` uses sequence databases for plasmid assembly. These are added as FASTA files along with the name and cost per plasmid from that source.
 
 Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and installing each via the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
 
@@ -64,17 +60,17 @@ for db in igem addgene dnasu; do
   gzip -d "$db.fa.gz"
 done
 
-# add sequence DBs with the plasmid cost from each source
-repp add database igem.fa 0.0
-repp add database addgene.fa 65.0
-repp add database dnasu.fa 55.0
+# add sequence DBs with the cost of ordering a plasmid from each source
+repp add database --name igem --cost 0.0 < igem.fa
+repp add database --name addgene --cost 65.0 < addgene.fa
+repp add database --name dnasu --cost 55.0 < dnasu.fa
 ```
 
 ## Plasmid Design
 
 ### Sequence
 
-To design a plasmid based on its expected sequence save it to a FASTA or Genbank file. For example:
+To design a plasmid based on its target sequence save it to a FASTA file. For example:
 
 ```
 >2ndVal_mScarlet-I
@@ -84,12 +80,12 @@ CAACCTTACCAGAGGGCGCCCCAGCTGGCAATTCCGACGTCTAAGAAACCATTATTATCA...
 Then call `repp make sequence` to design it. The following example uses Addgene and a local BLAST database `parts_library.fa` as fragment sources:
 
 ```bash
-repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --dbs "parts_library.fa"
+repp make sequence --in "./2ndVal_mScarlet-I.fa" --dbs "addgene,parts_library.fa"
 ```
 
 ### Features
 
-To design a plasmid based on the features it should contain, specify the features by name. By default, these should refer to features that are in repp's feature database (`~/.repp/features.tsv`). Features can also refer to fragments, as in the following example where a plasmid is specified by its constituent list of iGEM parts:
+To design a plasmid based on the features it should contain, specify the features by name. By default, these should refer to features that are in `repp`'s feature database (`~/.repp/features.tsv`). Features can also refer to fragments, as in the following example where a plasmid is specified by its constituent list of iGEM parts:
 
 ```bash
 repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --dbs igem
@@ -97,7 +93,7 @@ repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbon
 
 ### Fragments
 
-To design a plasmid from its constiuent fragments, save them to a multi-FASTA.
+To design a plasmid from its constituent fragments, save them to a multi-FASTA.
 
 ```txt
 >GFP
@@ -130,12 +126,12 @@ synthetic-fragment-cost:
 And reference it during plasmid design:
 
 ```bash
-repp make sequence --in "./2ndVal_mScarlet-I.fa" --addgene --settings "./custom_settings.yaml"
+repp make sequence --in "./2ndVal_mScarlet-I.fa" --dbs addgene --settings "./custom_settings.yaml"
 ```
 
 ### Backbones and Enzymes
 
-The plasmid sequence in the input file is designed as a circular plasmid by default. In other words, repp assumes that the sequence includes an insert sequence as well as a backbone. To use the sequence in the input file as an insert sequence but another fragment as a backbone, use the `--backbone` and `--enzymes` command in combination. This will lookup `--backbone` in the fragment databases and digest it with the enzyme selected through the `--enzymes` flag. The linearized backbone will be concatenated to the insert sequence. For example, to insert a `GFP_CDS` sequence into iGEM's `pSB1A3` backbone after linearizing it with `PstI` and `EcoRI`:
+The plasmid sequence in the input file is designed as a circular plasmid by default. In other words, `repp` assumes that the sequence includes an insert sequence as well as a backbone. To use the sequence in the input file as an insert sequence but another fragment as a backbone, use the `--backbone` and `--enzymes` command in combination. This will lookup `--backbone` in the fragment databases and digest it with the enzyme selected through the `--enzymes` flag. The linearized backbone will be concatenated to the insert sequence. For example, to insert a `GFP_CDS` sequence into iGEM's `pSB1A3` backbone after linearizing it with `PstI` and `EcoRI`:
 
 ```bash
 repp make sequence --in "./GFP_CDS.fa" --dbs addgene,igem --backbone pSB1A3 --enzymes "PstI,EcoRI"
