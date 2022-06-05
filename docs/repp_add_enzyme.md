@@ -1,9 +1,9 @@
 ---
 layout: default
-title: 
-nav_order: 0
-has_children: true
-permalink: /repp
+title: enzyme
+parent: add
+grand_parent: repp
+nav_order: 1
 ---
 ## repp add enzyme
 

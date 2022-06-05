@@ -1,9 +1,9 @@
 ---
 layout: default
-title: 
-nav_order: 0
-has_children: true
-permalink: /repp
+title: fragment
+parent: list
+grand_parent: repp
+nav_order: 1
 ---
 ## repp list fragment
 

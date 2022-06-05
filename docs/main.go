@@ -112,68 +112,84 @@ var metaMap = map[string]meta{
 		"make",
 		"repp",
 	},
-	"repp_find": {
+	"repp_list": {
 		childParent,
-		"find",
+		"list",
 		1,
 		true,
 		"repp",
 		"",
 	},
-	"repp_find_sequence": {
+	"repp_list_database": {
+		grandchild,
+		"database",
+		0,
+		false,
+		"list",
+		"repp",
+	},
+	"repp_list_sequence": {
 		grandchild,
 		"sequence",
 		0,
 		false,
-		"find",
+		"list",
 		"repp",
 	},
-	"repp_find_fragment": {
+	"repp_list_fragment": {
 		grandchild,
 		"fragment",
 		1,
 		false,
-		"find",
+		"list",
 		"repp",
 	},
-	"repp_find_feature": {
+	"repp_list_feature": {
 		grandchild,
 		"feature",
 		2,
 		false,
-		"find",
+		"list",
 		"repp",
 	},
-	"repp_find_enzyme": {
+	"repp_list_enzyme": {
 		grandchild,
 		"enzyme",
 		3,
 		false,
-		"find",
+		"list",
 		"repp",
 	},
-	"repp_set": {
+	"repp_add": {
 		childParent,
-		"set",
+		"add",
 		2,
 		true,
 		"repp",
 		"",
 	},
-	"repp_set_feature": {
+	"repp_add_database": {
+		grandchild,
+		"database",
+		0,
+		false,
+		"add",
+		"repp",
+	},
+	"repp_add_feature": {
 		grandchild,
 		"feature",
 		0,
 		false,
-		"set",
+		"add",
 		"repp",
 	},
-	"repp_set_enzyme": {
+	"repp_add_enzyme": {
 		grandchild,
 		"enzyme",
 		1,
 		false,
-		"set",
+		"add",
 		"repp",
 	},
 	"repp_delete": {
@@ -183,6 +199,14 @@ var metaMap = map[string]meta{
 		true,
 		"repp",
 		"",
+	},
+	"repp_delete_database": {
+		grandchild,
+		"database",
+		0,
+		false,
+		"delete",
+		"repp",
 	},
 	"repp_delete_feature": {
 		grandchild,

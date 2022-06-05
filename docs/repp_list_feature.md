@@ -1,9 +1,9 @@
 ---
 layout: default
-title: 
-nav_order: 0
-has_children: true
-permalink: /repp
+title: feature
+parent: list
+grand_parent: repp
+nav_order: 2
 ---
 ## repp list feature
 

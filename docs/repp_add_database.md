@@ -1,9 +1,9 @@
 ---
 layout: default
-title: 
+title: database
+parent: add
+grand_parent: repp
 nav_order: 0
-has_children: true
-permalink: /repp
 ---
 ## repp add database
 

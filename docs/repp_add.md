@@ -1,9 +1,9 @@
 ---
 layout: default
-title: 
-nav_order: 0
+title: add
+parent: repp
+nav_order: 2
 has_children: true
-permalink: /repp
 ---
 ## repp add
 

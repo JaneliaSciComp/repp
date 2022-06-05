@@ -1,9 +1,9 @@
 ---
 layout: default
-title: 
+title: feature
+parent: add
+grand_parent: repp
 nav_order: 0
-has_children: true
-permalink: /repp
 ---
 ## repp add feature
 
