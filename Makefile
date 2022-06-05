@@ -1,3 +1,5 @@
+VERSION=v1.0.0
+
 .PHONY: build
 build: fmt lint
 	go mod tidy
@@ -10,10 +12,14 @@ install:
 
 .PHONY: image
 image:
-	docker build -t jjtimmons/repp:latest .
+	docker build -t jjtimmons/repp:$(VERSION) -t jjtimmons/repp:latest .
 
 image/push: image
+	docker push jjtimmons/repp:$(VERSION)
 	docker push jjtimmons/repp:latest
+
+release: image/push
+	gh release create $(VERSION) -t $(VERSION) --generate-notes -d
 
 .PHONY: test
 test:
