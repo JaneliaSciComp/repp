@@ -1,6 +1,7 @@
 package repp
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ type Flags struct {
 	out string
 
 	// a list of dbs to run BLAST against (their names' on the filesystem)
-	dbs []string
+	dbs []DB
 
 	// the backbone (optional) to insert the pieces into
 	backbone *Frag
@@ -49,25 +50,15 @@ type inputParser struct{}
 // NewFlags makes a new flags object manually. for testing.
 func NewFlags(
 	in, out, backbone, filter string,
-	enzymes, dbs []string,
-	addgene, igem, dnasu bool,
+	enzymes []string,
+	dbs []DB,
 ) (*Flags, *config.Config) {
 	c := config.New()
-
-	if addgene {
-		dbs = append(dbs, config.AddgeneDB)
-	}
-	if igem {
-		dbs = append(dbs, config.IGEMDB)
-	}
-	if dnasu {
-		dbs = append(dbs, config.DNASUDB)
-	}
 
 	p := inputParser{}
 	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
 	if err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	if strings.Contains(in, ",") {
@@ -101,12 +92,14 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		} else if cmdName == "sequence" && len(args) > 0 {
 			fs.in = "input.fa"
 			if err = ioutil.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
-				stderr.Fatal(err)
+				rlog.Fatal(err)
 			}
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
 			// check whether an input fail was specified
-			cmd.Help()
-			stderr.Fatal(err)
+			if helperr := cmd.Help(); helperr != nil {
+				rlog.Fatal(helperr)
+			}
+			rlog.Fatal(err)
 		}
 	}
 
@@ -114,39 +107,19 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 		fs.out = p.guessOutput(fs.in) // guess at an output name
 
 		if fs.out == "" {
-			cmd.Help()
-			stderr.Fatal("no output path")
+			if helperr := cmd.Help(); helperr != nil {
+				rlog.Fatal(helperr)
+			}
+			rlog.Fatal("no output path")
 		}
-	}
-
-	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
-	if strict && err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse addgene flag: %v", err)
-	}
-
-	igem, err := cmd.Flags().GetBool("igem") // use igem db?
-	if strict && err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse igem flag: %v", err)
-	}
-
-	dnasu, err := cmd.Flags().GetBool("dnasu") // use dnasu db?
-	if strict && err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse dnasu flag: %v", err)
-	}
-
-	dbString, err := cmd.Flags().GetString("dbs")
-	if strict && err != nil && !addgene {
-		cmd.Help()
-		stderr.Fatalf("failed to parse building fragments: %v", err)
 	}
 
 	filters, err := cmd.Flags().GetString("exclude")
 	if strict && err != nil && cmdName != "fragments" {
-		cmd.Help()
-		stderr.Fatalf("failed to parse filters: %v", err)
+		if helperr := cmd.Help(); helperr != nil {
+			rlog.Fatal(helperr)
+		}
+		rlog.Fatal("failed to parse filters: %v", err)
 	}
 	// try to split the filter fields into a list
 	fs.filters = p.getFilters(filters)
@@ -158,15 +131,17 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	// set identity for blastn searching
 	fs.identity = identity
 
-	if dbString == "" && !addgene && !igem && !dnasu {
-		fmt.Println("no fragment databases chosen [-agu]: using Addgene, DNASU, and iGEM by default")
-		addgene = true
-		igem = true
-		dnasu = true
-	}
 	// read in the BLAST DB paths
-	if fs.dbs, err = p.parseDBs(dbString, addgene, igem, dnasu); err != nil || len(fs.dbs) == 0 {
-		stderr.Fatalf("failed to find any fragment databases: %v", err)
+	dbString, err := cmd.Flags().GetString("dbs")
+	if err != nil {
+		rlog.Fatal("failed to get dbs flag: %v", err)
+	}
+	m, err := newManifest()
+	if err != nil {
+		rlog.Fatalf("failed to get DB manifest: %v", err)
+	}
+	if fs.dbs, err = p.parseDBs(m, dbString); err != nil || len(fs.dbs) == 0 {
+		rlog.Fatal("failed to find any fragment databases: %v", err)
 	}
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
@@ -179,7 +154,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 	// try to digest the backbone with the enzyme
 	fs.backbone, fs.backboneMeta, err = p.parseBackbone(backbone, enzymes, fs.dbs, c)
 	if strict && err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	return fs, c
@@ -242,45 +217,36 @@ func (p *inputParser) guessOutput(in string) (out string) {
 }
 
 // parseDBs returns a list of absolute paths to BLAST databases.
-func (p *inputParser) parseDBs(dbs string, addgene, igem, dnasu bool) (paths []string, err error) {
-	if addgene {
-		dbs += "," + config.AddgeneDB
-	}
-	if igem {
-		dbs += "," + config.IGEMDB
-	}
-	if dnasu {
-		dbs += "," + config.DNASUDB
+func (p *inputParser) parseDBs(m *manifest, dbInput string) (dbs []DB, err error) {
+	dbNames := p.parseCommaList(dbInput)
+
+	if m.empty() {
+		return nil, errors.New("no databases loaded. See 'repp add database'")
 	}
 
-	if paths, err = p.dbPaths(dbs); err != nil {
-		return nil, err
+	// if none filtered for, return all databases
+	if len(dbNames) == 0 {
+		for _, db := range m.DBs {
+			dbs = append(dbs, db)
+		}
+		return
 	}
 
-	// make sure all the blast databases exist in the user's FS
-	for _, path := range paths {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find a BLAST database at %s", path)
+	// filter for matching databases, error if none present
+	for _, dbName := range dbNames {
+		db, ok := m.DBs[dbName]
+		if ok {
+			dbs = append(dbs, db)
+		} else {
+			return nil, fmt.Errorf(
+				"failed to find a DB with name: %s\n\tknown DBs: %s",
+				dbName,
+				strings.Join(m.GetNames(), ","),
+			)
 		}
 	}
 
-	return paths, nil
-}
-
-// dbPaths turns a single string of comma separated BLAST dbs into a
-// slice of absolute paths to the BLAST dbs on the local fs.
-func (p *inputParser) dbPaths(dbList string) (paths []string, err error) {
-	dbPaths := p.parseCommaList(dbList)
-
-	for _, db := range dbPaths {
-		absPath, err := filepath.Abs(db)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create absolute path: %v", err)
-		}
-		paths = append(paths, absPath)
-	}
-
-	return
+	return dbs, nil
 }
 
 // parseCommaList converts a comma separated list of strings into a list
@@ -302,7 +268,8 @@ func (p *inputParser) parseCommaList(commaList string) (newList []string) {
 // backbone, and returns the linearized backbone as a Frag.
 func (p *inputParser) parseBackbone(
 	bbName string,
-	enzymeNames, dbs []string,
+	enzymeNames []string,
+	dbs []DB,
 	c *config.Config,
 ) (f *Frag, backbone *Backbone, err error) {
 	// if no backbone was specified, return an empty Frag
@@ -340,7 +307,7 @@ func (p *inputParser) parseBackbone(
 func (p *inputParser) getEnzymes(enzymeNames []string) (enzymes []enzyme, err error) {
 	enzymeDB := NewEnzymeDB()
 	for _, enzymeName := range enzymeNames {
-		if cutseq, exists := enzymeDB.enzymes[enzymeName]; exists {
+		if cutseq, exists := enzymeDB.contents[enzymeName]; exists {
 			enzymes = append(enzymes, newEnzyme(enzymeName, cutseq))
 		} else {
 			return enzymes, fmt.Errorf(
@@ -406,7 +373,7 @@ func readFasta(path, contents string) (frags []*Frag, err error) {
 	for i, line := range lines {
 		if strings.HasPrefix(line, ">") {
 			headerIndices = append(headerIndices, i)
-			ids = append(ids, line[1:])
+			ids = append(ids, strings.TrimSpace(line[1:]))
 			if strings.Contains(line, "circular") {
 				fragTypes = append(fragTypes, circular)
 			} else {
@@ -470,12 +437,12 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 			return nil, fmt.Errorf("failed to parse features from %s", path)
 		}
 
-		featureSplitRegex := regexp.MustCompile("\\w+\\s+\\w+")
+		featureSplitRegex := regexp.MustCompile(`\w+\s+\w+`)
 		featureStrings := featureSplitRegex.Split(splitOnFeatures[1], -1)
 
 		features := []*Frag{}
 		for featureIndex, feature := range featureStrings {
-			rangeRegex := regexp.MustCompile("(\\d*)\\.\\.(\\d*)")
+			rangeRegex := regexp.MustCompile(`(\d*)\.\.(\d*)`)
 			rangeIndexes := rangeRegex.FindStringSubmatch(feature)
 
 			if len(rangeIndexes) < 3 {
@@ -494,7 +461,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 			featureSeq := cleanedSeq[start-1 : end] // make 0-indexed
 			featureSeq = strings.ToUpper(featureSeq)
 
-			labelRegex := regexp.MustCompile("\\/label=(.*)")
+			labelRegex := regexp.MustCompile(`\/label=(.*)`)
 			labelMatch := labelRegex.FindStringSubmatch(feature)
 			label := ""
 			if len(labelMatch) > 1 {
@@ -513,7 +480,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 	}
 
 	// parse just the file's sequence
-	idRegex := regexp.MustCompile("LOCUS[ \\t]*([^ \\t]*)")
+	idRegex := regexp.MustCompile(`LOCUS[ \t]*([^ \t]*)`)
 	id := idRegex.FindString(genbankSplit[0])
 
 	if id == "" {
@@ -521,22 +488,9 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 	}
 
 	return []*Frag{
-		&Frag{
+		{
 			ID:  id,
 			Seq: cleanedSeq,
 		},
 	}, nil
-}
-
-// igemBackbone returns a backbone, as it was in the database,
-// if it corresponds to an iGEM backbone. They are not digested.
-// see: http://parts.igem.org/Help:Prefix-Suffix
-func igemBackbone(backbone string) bool {
-	for _, bb := range []string{"pSB1A3", "pSB1T3", "pSB1K3", "pSB1C3"} {
-		if bb == backbone {
-			return true
-		}
-	}
-
-	return false
 }

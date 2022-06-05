@@ -1,11 +1,17 @@
 package repp
 
 import (
-	"path/filepath"
+	"io/ioutil"
 	"testing"
 )
 
 func Test_writeGenbank(t *testing.T) {
+	dir := t.TempDir()
+	output, err := ioutil.TempFile(dir, "*.gb")
+	if err != nil {
+		t.Error(err)
+	}
+
 	type args struct {
 		filename string
 		name     string
@@ -18,20 +24,20 @@ func Test_writeGenbank(t *testing.T) {
 		args args
 	}{
 		{
-			"include forward and reverse fields",
-			args{
-				filepath.Join("..", "..", "test", "output", "writeGenbank.gb"),
+			name: "include forward and reverse fields",
+			args: args{
+				output.Name(),
 				"mock part",
 				"aattgtgagcggataacaattgacattgtgagcggataacaagatactgagcacatactagagaaagaggagaaatactagatggtgagcaagggcgaggagctgttcaccggggtggtgcccatcctggtcgagctggacggcgacgtaaacggccacaagttcagcgtgtccggcgagggcgagggcgatgccacctacggcaagctgaccctgaagttcatctgcaccaccggcaagctgcccgtgccctggcccaccctcgtgaccaccttcggctacggcctgcaatgcttcgcccgctaccccgaccacatgaagctgcacgacttcttcaagtccgccatgcccgaaggctacgtccaggagcgcaccatcttcttcaaggacgacggcaactacaagacccgcgccgaggtgaagttcgagggcgacaccctggtgaaccgcatcgagctgaagggcatcgacttcaaggaggacggcaacatcctggggcacaagctggagtacaactacaacagccacaacgtctatatcatggccgacaagcagaagaacggcatcaaggtgaacttcaagatccgccacaacatcgaggacggcagcgtgcagctcgccgaccactaccagcagaacacccccatcggcgacggccccgtgctgctgcccgacaaccactacctgagctaccagtccgccctgagcaaagaccccaacgagaagcgcgatcacatggtcctgctggagttcgtgaccgccgccgggatcactctcggcatggacgagctgtacaagaggcctgctgcaaacgacgaaaactacgctttagtagcttaataatactagagtcacactggctcaccttcgggtgggcctttctgcgtttatatactagagagagaatataaaaagccagattattaatccggcttttttattattt",
 				[]*Frag{},
 				[]match{
-					match{
+					{
 						entry:      "feature 1",
 						queryStart: 0,
 						queryEnd:   10,
 						forward:    true,
 					},
-					match{
+					{
 						entry:      "feature 2",
 						queryStart: 15,
 						queryEnd:   20,

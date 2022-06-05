@@ -4,17 +4,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 func Test_assembly_add(t *testing.T) {
 	c := config.New()
 
 	c.FragmentsMaxCount = 5
-	c.PCRMaxEmbedLength = 0
-	c.PCRMinLength = 0
+	c.PcrPrimerMaxEmbedLength = 0
+	c.PcrMinLength = 0
 	c.SyntheticMaxLength = 100
-	c.CostSyntheticFragment = map[int]config.SynthCost{
+	c.SyntheticFragmentCost = map[int]config.SynthCost{
 		100000: {
 			Fixed: true,
 			Cost:  0.0,
@@ -50,10 +50,9 @@ func Test_assembly_add(t *testing.T) {
 
 	// create the frags for testing
 	type fields struct {
-		frags    []*Frag
-		cost     float64
-		synths   int
-		maxCount int
+		frags  []*Frag
+		cost   float64
+		synths int
 	}
 	type args struct {
 		n *Frag
@@ -196,10 +195,9 @@ func Test_assembly_len(t *testing.T) {
 	}
 
 	type fields struct {
-		frags    []*Frag
-		cost     float64
-		synths   int
-		maxCount int
+		frags  []*Frag
+		cost   float64
+		synths int
 	}
 	tests := []struct {
 		name   string
@@ -303,9 +301,9 @@ func Test_countMaps(t *testing.T) {
 				assemblies: []assembly{a1, a2, a3, a4, a5},
 			},
 			map[int][]assembly{
-				2: []assembly{a1},
-				3: []assembly{a3, a2},
-				4: []assembly{a4, a5},
+				2: {a1},
+				3: {a3, a2},
+				4: {a4, a5},
 			},
 		},
 	}
@@ -341,16 +339,16 @@ func Test_assembly_duplicates(t *testing.T) {
 			fields{},
 			args{
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq: "ATACCTACTATGGATGACGTAGCAAC",
 					},
-					&Frag{
+					{
 						Seq: "AGCAACTCGTTGATATCCACGTA",
 					},
-					&Frag{
+					{
 						Seq: "CCACGTAGGTGCATGATGAGATGA",
 					},
-					&Frag{
+					{
 						Seq: "TGAGATGATCTACTGTATACCTACT",
 					},
 				},
@@ -365,16 +363,16 @@ func Test_assembly_duplicates(t *testing.T) {
 			fields{},
 			args{
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq: "CAGATGACGATGGCAACTGAGATGAGACCAGATGACGATG", // <- Frag (if much larger) has the chance to circularize
 					},
-					&Frag{
+					{
 						Seq: "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
 					},
-					&Frag{
+					{
 						Seq: "TGGAGAGCACAGATGGATGACGTAATGATGATGACCGCAAC",
 					},
-					&Frag{
+					{
 						Seq: "ACCGCAACTCGTTGATATACCTACTCAGATGACGAT",
 					},
 				},
@@ -389,19 +387,19 @@ func Test_assembly_duplicates(t *testing.T) {
 			fields{},
 			args{
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq:   "ATGATGCCACGTGCAACTGAGATGAGACCAGATGACGATG", // <- same junction
 						start: 0,
 					},
-					&Frag{
+					{
 						Seq:   "CAGATGACGATGTCGTTGATATACCTACTGGAGAGCACAG",
 						start: 0,
 					},
-					&Frag{
+					{
 						Seq:   "TGGAGAGCACAGATGGATGACGTAATGACAGATGACGATG", // <- same junction
 						start: 0,
 					},
-					&Frag{
+					{
 						Seq:   "CAGATGACGATGACCGCAACTCGTTGATGATGCCAC",
 						start: 0,
 					},
@@ -417,13 +415,13 @@ func Test_assembly_duplicates(t *testing.T) {
 			fields{},
 			args{
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG", // this shouldn't be flagged as anything
 					},
-					&Frag{
+					{
 						Seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 					},
-					&Frag{
+					{
 						Seq: "TCGACTAGCTAGAACTGATGCTAGACGTGCTAGCTACA",
 					},
 				},

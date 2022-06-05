@@ -4,28 +4,30 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
 )
 
-// FragmentFindCmd logs the building fragment with the name passed.
-func FragmentFindCmd(cmd *cobra.Command, args []string) {
+// FragmentListCmd logs the building fragment with the name passed.
+func FragmentListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
-		stderr.Fatalln("\nno fragment name passed.")
+		if helperr := cmd.Help(); helperr != nil {
+			rlog.Fatal(helperr)
+		}
+		rlog.Fatal("\nno fragment name passed.")
 	}
 	name := args[0]
 
 	flags, _ := parseCmdFlags(cmd, args, false)
 	frag, err := queryDatabases(name, flags.dbs)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 	if frag.fragType == circular {
 		frag.Seq = frag.Seq[:len(frag.Seq)/2]
 	}
 
-	fmt.Printf("%s\t%s\n%s\n", name, frag.db, frag.Seq)
+	fmt.Printf("%s\t%s\n%s\n", name, frag.db.Name, frag.Seq)
 }
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
@@ -35,7 +37,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	// read in the constituent fragments
 	frags, err := read(flags.in, false)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	// add in the backbone if it was provided
@@ -51,7 +53,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 	target, solution := fragments(frags, conf)
 
 	// write the single list of fragments as a possible solution to the output file
-	writeJSON(
+	if _, err := writeJSON(
 		flags.out,
 		flags.in,
 		target.Seq,
@@ -60,7 +62,9 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 		0,
 		flags.backboneMeta,
 		conf,
-	)
+	); err != nil {
+		rlog.Fatal(err)
+	}
 }
 
 // fragments pieces together a list of fragments into a single plasmid
@@ -68,7 +72,7 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Frag) {
 	// piece together the adjacent fragments
 	if len(frags) < 1 {
-		stderr.Fatalln("failed: no fragments to assemble")
+		rlog.Fatal("failed: no fragments to assemble")
 	}
 
 	// anneal the fragments together, shift their junctions and create the plasmid sequence
@@ -84,7 +88,7 @@ func fragments(frags []*Frag, conf *config.Config) (target *Frag, solution []*Fr
 	a := assembly{frags: frags}
 	solution, err := a.fill(target.Seq, conf)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	return target, solution
@@ -147,14 +151,7 @@ func validateJunctions(frags []*Frag, conf *config.Config) error {
 			}
 
 			left := f.ID
-			if left == "" {
-				left = f.URL
-			}
 			right := next.ID
-			if right == "" {
-				right = next.URL
-			}
-
 			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", left, right, s1, s2)
 		}
 	}

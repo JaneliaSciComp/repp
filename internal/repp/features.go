@@ -1,7 +1,6 @@
 package repp
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,14 +10,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
 )
-
-// FeatureDB is a struct for accessing repps features db
-type FeatureDB struct {
-	features map[string]string // features is a map between a features name and its sequence
-}
 
 type featureMatch struct {
 	featureIndex int
@@ -49,7 +43,7 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 		for _, feat := range insertFeats {
 			featNames = append(featNames, feat[0])
 		}
-		stderr.Fatalf("failed to find fragments with the specified features: %s", strings.Join(featNames, ", "))
+		rlog.Fatal("failed to find fragments with specified features", "features", featNames)
 	}
 
 	// build assemblies containing the matched fragments
@@ -61,7 +55,7 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 		insertLength += len(f[1])
 	}
 
-	writeJSON(
+	if _, err := writeJSON(
 		flags.out,
 		flags.in,
 		target,
@@ -70,7 +64,9 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 		time.Since(start).Seconds(),
 		flags.backboneMeta,
 		conf,
-	)
+	); err != nil {
+		rlog.Fatal(err)
+	}
 
 	return solutions
 }
@@ -83,14 +79,14 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		seenFeatures := make(map[string]string) // map feature name to sequence
 		for _, f := range readFeatures {
 			if seq := seenFeatures[f.ID]; seq != f.Seq {
-				stderr.Fatalf("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
+				rlog.Fatal("failed to parse features, %s has two different sequences:\n\t%s\n\t%s\n", f.ID, f.Seq, seq)
 			}
 			insertFeats = append(insertFeats, []string{f.ID, f.Seq})
 		}
 	} else {
 		// if the features weren't in a file, try and find each in the features database
 		// or one of the databases passed as a source of building fragments
-		featureNames := []string{}
+		var featureNames []string
 		if strings.Contains(flags.in, ",") {
 			featureNames = strings.Split(flags.in, ",") // comma separated
 		} else {
@@ -98,7 +94,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		}
 
 		if len(featureNames) < 1 {
-			stderr.Fatal("no features chosen. see 'repp make features --help'")
+			rlog.Fatal("no features chosen. see 'repp make features --help'")
 		}
 
 		featureDB := NewFeatureDB()
@@ -110,7 +106,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 				fwd = !strings.Contains(strings.ToLower(ns[1]), "rev")
 			}
 
-			if seq, contained := featureDB.features[f]; contained {
+			if seq, contained := featureDB.contents[f]; contained {
 				if !fwd {
 					f = f + ":REV"
 					seq = reverseComplement(seq)
@@ -124,12 +120,12 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 				insertFeats = append(insertFeats, []string{f, dbFrag.Seq})
 			} else {
 				sep := "\n\t"
-				stderr.Fatalf(
+				rlog.Fatal(
 					"failed to find '%s' in the features database (%s) or any of:"+
 						"%s\ncheck features database with 'repp features find [feature name]'",
 					f,
 					config.FeatureDB,
-					sep+strings.Join(flags.dbs, sep)+sep,
+					sep+strings.Join(dbNames(flags.dbs), sep)+sep,
 				)
 			}
 		}
@@ -151,7 +147,7 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 		targetFeature := target[1]
 		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity, blastWriter())
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 
 		for _, m := range matches {
@@ -168,7 +164,7 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
 
 			if _, exists := featureMatches[m.entry]; !exists {
-				featureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+				featureMatches[m.entry] = []featureMatch{{featureIndex: i, match: m}}
 			} else {
 				featureMatches[m.entry] = append(featureMatches[m.entry], featureMatch{featureIndex: i, match: m})
 			}
@@ -184,10 +180,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	extendedMatches := extendMatches(feats, featureMatches)
 
 	// filter out matches that are completely contained in others or too short
-	if conf.Verbose {
-		fmt.Printf("%d matched fragments\n", len(featureMatches))
-		fmt.Printf("%d matches before culling\n", len(extendedMatches))
-	}
+	rlog.Debugw("culling fragments", "matched", len(featureMatches), "extended", len(extendedMatches))
 
 	// remove extended matches fully enclosed by others
 	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
@@ -205,9 +198,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	// remove extended matches fully enclosed by others
 	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
 
-	if conf.Verbose {
-		fmt.Printf("%d matches after culling\n", len(extendedMatches))
-	}
+	rlog.Debugw("culled matches", "remaining", len(extendedMatches))
 
 	// get the full plasmid length as if just synthesizing each feature next to one another
 	var targetBuilder strings.Builder
@@ -229,7 +220,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 
 		frag, err := queryDatabases(m.entry, flags.dbs)
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 
 		frag.ID = m.entry
@@ -330,12 +321,12 @@ func extendMatches(feats [][]string, featureMatches map[string][]featureMatch) (
 // create a subject database to query specifically for all
 // features. Needed because the first BLAST may not return
 // all feature matches on each fragment
-func subjectDatabase(extendedMatches []match, dbs []string) (filename string, frags []*Frag) {
+func subjectDatabase(extendedMatches []match, dbs []DB) (filename string, frags []*Frag) {
 	subject := ""
 	for _, m := range extendedMatches {
 		frag, err := queryDatabases(m.entry, dbs)
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 		subject += fmt.Sprintf(">%s\n%s\n", frag.ID, frag.Seq)
 		frags = append(frags, frag)
@@ -343,10 +334,12 @@ func subjectDatabase(extendedMatches []match, dbs []string) (filename string, fr
 
 	in, err := ioutil.TempFile("", "feature-subject-*")
 	if err != nil {
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
-	in.WriteString(subject)
+	if _, err := in.WriteString(subject); err != nil {
+		rlog.Fatal(err)
+	}
 
 	return in.Name(), frags
 }
@@ -358,7 +351,7 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 		targetFeature := target[1]
 		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, flags.identity, blastWriter())
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 
 		for _, m := range matches {
@@ -373,7 +366,7 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 			m.uniqueID = m.entry + strconv.Itoa(m.subjectStart)
 
 			if _, exists := featureMatches[m.entry]; !exists {
-				featureMatches[m.entry] = []featureMatch{featureMatch{featureIndex: i, match: m}}
+				featureMatches[m.entry] = []featureMatch{{featureIndex: i, match: m}}
 			} else {
 				featureMatches[m.entry] = append(featureMatches[m.entry], featureMatch{featureIndex: i, match: m})
 			}
@@ -420,36 +413,20 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 }
 
 // NewFeatureDB returns a new copy of the features db
-func NewFeatureDB() *FeatureDB {
-	features := make(map[string]string)
-
-	featureFile, err := os.Open(config.FeatureDB)
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	scanner := bufio.NewScanner(featureFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		features[columns[0]] = columns[1] // feature name = feature seq
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	return &FeatureDB{features: features}
+func NewFeatureDB() *kv {
+	return newKV(config.FeatureDB)
 }
 
-// ReadCmd returns features that are similar in name to the feature name requested.
+// FeaturesReadCmd returns features that are similar in name to the feature name requested.
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
-func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
+func FeaturesReadCmd(cmd *cobra.Command, args []string) {
+	f := NewFeatureDB()
+
 	if len(args) < 1 {
 		// no feature name passed, log all of them
 		featNames := []string{}
-		for feat := range f.features {
+		for feat := range f.contents {
 			featNames = append(featNames, feat)
 		}
 
@@ -463,7 +440,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 		// print all their names to the console and the first few bp
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, '-', tabwriter.TabIndent)
 		for _, feat := range featNames {
-			seq := f.features[feat]
+			seq := f.contents[feat]
 			if len(seq) > 20 {
 				seq = seq[:20] + "..."
 			}
@@ -487,7 +464,7 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 	containing := []string{}
 	lowDistance := []string{}
 
-	for fName, fSeq := range f.features {
+	for fName, fSeq := range f.contents {
 		if strings.Contains(fName, name) {
 			containing = append(containing, fName+"\t"+fSeq)
 		} else if len(fName) > ldCutoff && ld(name, fName, true) <= ldCutoff {
@@ -497,10 +474,12 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 
 	// check for an exact match
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
-	matchedFeature, exactMatch := f.features[name]
+	matchedFeature, exactMatch := f.contents[name]
 	if exactMatch && len(containing) < 2 {
 		fmt.Fprintf(w, name+"\t"+matchedFeature)
-		w.Write([]byte("\n"))
+		if _, err := w.Write([]byte("\n")); err != nil {
+			rlog.Fatal(err)
+		}
 		w.Flush()
 		return
 	}
@@ -511,22 +490,20 @@ func (f *FeatureDB) ReadCmd(cmd *cobra.Command, args []string) {
 		containing = []string{} // clear
 	}
 	if len(containing) > 0 {
-		fmt.Fprintf(w, strings.Join(containing, "\n"))
+		fmt.Fprint(w, strings.Join(containing, "\n"))
 	} else if len(lowDistance) > 0 {
-		fmt.Fprintf(w, strings.Join(lowDistance, "\n"))
+		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Fprintf(w, fmt.Sprintf("failed to find any features for %s", name))
+		if _, err := fmt.Fprintf(w, "failed to find any features for %s", name); err != nil {
+			rlog.Fatal(err)
+		}
 	}
-	w.Write([]byte("\n"))
 	w.Flush()
 }
 
-// SetCmd the feature's seq in the database (or create if it isn't in the feature db)
-func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 2 {
-		cmd.Help()
-		stderr.Fatalln("\nexpecting two args: a features name and sequence.")
-	}
+// FeaturesAddCmd the feature's seq in the database (or create if it isn't in the feature db)
+func FeaturesAddCmd(cmd *cobra.Command, args []string) {
+	f := NewFeatureDB()
 
 	name := args[0]
 	seq := args[1]
@@ -536,51 +513,21 @@ func (f *FeatureDB) SetCmd(cmd *cobra.Command, args []string) {
 		seq = args[len(args)-1]
 	}
 
-	featureFile, err := os.Open(config.FeatureDB)
-	if err != nil {
-		stderr.Fatal(err)
+	f.contents[name] = seq
+	if err := f.save(); err != nil {
+		rlog.Fatal(err)
 	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	var output strings.Builder
-	updated := false
-	scanner := bufio.NewScanner(featureFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		if columns[0] == name {
-			output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
-			updated = true
-		} else {
-			output.WriteString(scanner.Text())
-		}
-	}
-
-	// create from nothing
-	if !updated {
-		output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(config.FeatureDB, []byte(output.String()), 0644); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if updated {
-		fmt.Printf("updated %s in the features database\n", name)
-	}
-
-	// update in memory
-	f.features[name] = seq
 }
 
-// DeleteCmd the feature from the database
-func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
+// FeaturesDeleteCmd the feature from the database
+func FeaturesDeleteCmd(cmd *cobra.Command, args []string) {
+	f := NewFeatureDB()
+
 	if len(args) < 1 {
-		cmd.Help()
-		stderr.Fatalln("\nno features name passed.")
+		if helperr := cmd.Help(); helperr != nil {
+			rlog.Fatal(helperr)
+		}
+		rlog.Fatal("\nno features name passed.")
 	}
 
 	name := args[0]
@@ -588,43 +535,13 @@ func (f *FeatureDB) DeleteCmd(cmd *cobra.Command, args []string) {
 		name = strings.Join(args, " ")
 	}
 
-	if _, contained := f.features[name]; !contained {
+	if _, contained := f.contents[name]; !contained {
 		fmt.Printf("failed to find %s in the features database\n", name)
 	}
 
-	featureFile, err := os.Open(config.FeatureDB)
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	var output strings.Builder
-	deleted := false
-	scanner := bufio.NewScanner(featureFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		if columns[0] != name {
-			output.WriteString(scanner.Text())
-		} else {
-			deleted = true
-		}
-	}
-
-	if err := featureFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(config.FeatureDB, []byte(output.String()), 0644); err != nil {
-		stderr.Fatal(err)
-	}
-
-	// delete from memory
-	delete(f.features, name)
-
-	if deleted {
-		fmt.Printf("deleted %s from the features database\n", name)
-	} else {
-		fmt.Printf("failed to find %s in the features database\n", name)
+	delete(f.contents, name)
+	if err := f.save(); err != nil {
+		rlog.Fatal(err)
 	}
 }
 

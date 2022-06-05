@@ -36,13 +36,15 @@ func Annotate(cmd *cobra.Command, args []string) {
 	} else {
 		in, err := cmd.Flags().GetString("in")
 		if in == "" || err != nil {
-			cmd.Help()
-			stderr.Fatalln("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
+			if helperr := cmd.Help(); helperr != nil {
+				rlog.Fatal(helperr)
+			}
+			rlog.Fatal("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
 		}
 
 		frags, err := read(in, false)
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 		name = frags[0].ID
 		query = frags[0].Seq
@@ -51,43 +53,31 @@ func Annotate(cmd *cobra.Command, args []string) {
 	toCull, _ := cmd.Flags().GetBool("cull")
 	namesOnly, _ := cmd.Flags().GetBool("names")
 
-	addgene, err := cmd.Flags().GetBool("addgene") // use addgene db?
+	dbflag, err := cmd.Flags().GetString("dbs")
 	if err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse addgene flag: %v", err)
+		if helperr := cmd.Help(); helperr != nil {
+			rlog.Fatal(helperr)
+		}
+		rlog.Fatal("failed to parse building fragments: %v", err)
 	}
 
-	igem, err := cmd.Flags().GetBool("igem") // use igem db?
+	m, err := newManifest()
 	if err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse igem flag: %v", err)
+		rlog.Fatal("failed to get DB manifest: %v", err)
 	}
-
-	dnasu, err := cmd.Flags().GetBool("dnasu") // use dnasu db?
+	dbs, err := p.parseDBs(m, dbflag)
 	if err != nil {
-		cmd.Help()
-		stderr.Fatalf("failed to parse dnasu flag: %v", err)
-	}
-
-	dbString, err := cmd.Flags().GetString("dbs")
-	if err != nil && !addgene {
-		cmd.Help()
-		stderr.Fatalf("failed to parse building fragments: %v", err)
-	}
-
-	dbs, err := p.parseDBs(dbString, addgene, igem, dnasu)
-	if err != nil {
-		stderr.Fatalf("failed to find any fragment databases: %v", err)
+		rlog.Fatal("failed to find any fragment databases: %v", err)
 	}
 
 	annotate(name, query, output, identity, dbs, excludeFilters, toCull, namesOnly)
 }
 
 // annotate is for executing blast against the query sequence.
-func annotate(name, seq, output string, identity int, dbs, filters []string, toCull, namesOnly bool) {
+func annotate(name, seq, output string, identity int, dbs []DB, filters []string, toCull, namesOnly bool) {
 	handleErr := func(err error) {
 		if err != nil {
-			stderr.Fatalln(err)
+			rlog.Fatal(err)
 		}
 	}
 
@@ -100,11 +90,11 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 	defer os.Remove(out.Name())
 
 	// create a subject file with all the blast features
-	fDB := NewFeatureDB()
+	featureKV := NewFeatureDB()
 	featIndex := 0
 	var featureSubjects strings.Builder
 	indexToFeature := make(map[int]string)
-	for feat, featSeq := range fDB.features {
+	for feat, featSeq := range featureKV.contents {
 		indexToFeature[featIndex] = feat
 		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq))
 		featIndex++
@@ -126,7 +116,7 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 		circular: true,
 	}
 
-	features := []match{}
+	var features []match
 	if len(dbs) < 1 {
 		// if the user selected another db, don't use the internal one
 		handleErr(b.input())
@@ -144,7 +134,7 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 
 			featureIndex, _ := strconv.Atoi(f.entry)
 			f.entry = indexToFeature[featureIndex]
-			if len(f.seq) < len(fDB.features[f.entry]) {
+			if len(f.seq) < len(featureKV.contents[f.entry]) {
 				continue
 			}
 
@@ -162,7 +152,7 @@ func annotate(name, seq, output string, identity int, dbs, filters []string, toC
 	}
 
 	if len(features) < 1 {
-		stderr.Fatal("no features found")
+		rlog.Fatal("no features found")
 	}
 
 	sortMatches(features)

@@ -9,15 +9,17 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
 )
 
-// SequenceFindCmd is for BLAST'ing a sequence against the dbs and finding matches
-func SequenceFindCmd(cmd *cobra.Command, args []string) {
+// SequenceListCmd is for BLAST'ing a sequence against the dbs and finding matches
+func SequenceListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
-		stderr.Fatalln("\nno sequence passed.")
+		if helperr := cmd.Help(); helperr != nil {
+			rlog.Fatal(helperr)
+		}
+		rlog.Fatal("\nno sequence passed.")
 	}
 	seq := args[0]
 
@@ -25,11 +27,11 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 	tw := blastWriter()
 	matches, err := blast("find_cmd", seq, true, flags.dbs, flags.filters, flags.identity, tw)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	if len(matches) == 0 {
-		stderr.Fatalln("no matches found")
+		rlog.Fatal("no matches found")
 	}
 
 	// sort so the largest matches are first
@@ -44,7 +46,7 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 
 	seenIds := make(map[string]bool)
 	writer := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
-	fmt.Fprintf(writer, "entry\tqstart\tqend\tsstart\tsend\tdatabase\tURL\t\n")
+	fmt.Fprintf(writer, "entry\tqstart\tqend\tsstart\tsend\tdatabase\t\n")
 	for _, m := range matches {
 		if _, seen := seenIds[key(m)]; seen {
 			continue
@@ -54,7 +56,7 @@ func SequenceFindCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db, parseURL(m.entry, m.db))
+		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db.Name)
 		seenIds[key(m)] = true
 	}
 	writer.Flush()
@@ -71,7 +73,7 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 
 	insert, target, solutions, err := sequence(flags, conf) // build up the assemblies that make the sequence
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	// write the results to a file
@@ -87,12 +89,10 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 		conf,
 	)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
-	if conf.Verbose {
-		fmt.Printf("%s\n\n", elapsed)
-	}
+	rlog.Debugw("execution time", "execution", elapsed)
 
 	return solutions
 }
@@ -137,9 +137,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	target = fragments[0]
-	if conf.Verbose {
-		fmt.Printf("Building %s\n", target.ID)
-	}
+	rlog.Debugw("building plasmid", "targetID", target.ID)
 
 	// if a backbone was specified, add it to the sequence of the target frag
 	insert = target.copy() // store a copy for logging later
@@ -150,19 +148,15 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	// get all the matches against the target plasmid
 	tw := blastWriter()
 	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity, tw)
-	if conf.Verbose {
-		tw.Flush()
-	}
+	// TODO: write blastWriter results to logger here
 	if err != nil {
-		dbMessage := strings.Join(input.dbs, ", ")
+		dbMessage := strings.Join(dbNames(input.dbs), ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(target.Seq), conf.PCRMinLength, 1)
-	if conf.Verbose {
-		fmt.Printf("%d matches after culling\n", len(matches)/2)
-	}
+	matches = cull(matches, len(target.Seq), conf.PcrMinLength, 1)
+	rlog.Debugw("culled matches", "remaining", len(matches)/2)
 
 	// map fragment Matches to nodes
 	frags := newFrags(matches, conf)

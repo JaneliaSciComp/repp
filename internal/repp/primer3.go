@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // primer3 is a utility struct for executing primer3 to create primers on a fragment
@@ -89,7 +89,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength, pcrBuffer)
 	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength, pcrBuffer)
 
-	if length-leftBuffer-rightBuffer < p.f.conf.PCRMinLength {
+	if length-leftBuffer-rightBuffer < p.f.conf.PcrMinLength {
 		leftBuffer = 0
 		rightBuffer = 0
 	}
@@ -389,14 +389,14 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 	ntthalOut, err := ntthalCmd.CombinedOutput()
 	if err != nil {
 		stderr.Printf("failed to execute ntthal: -s1 %s -path %s", seq, config.Primer3Config)
-		stderr.Fatal(err)
+		rlog.Fatal(err)
 	}
 
 	ntthalOutString := string(ntthalOut)
 	temp, err := strconv.ParseFloat(strings.TrimSpace(ntthalOutString), 64)
 	if err != nil {
 		stderr.Printf("failed to parse ntthal: -s1 %s -path %s", seq, config.Primer3Config)
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 
 	return temp

@@ -1,28 +1,20 @@
 package repp
 
 import (
-	"path"
-	"path/filepath"
 	"reflect"
 	"testing"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // test the ability to find test fragments in a mock database
-// see test/blast/README.md for a description of where the subfragments
-// in this test fragment's sequence came from (pieces from the 5 fragments)
-// that make up the mock BLAST db
 func Test_BLAST(t *testing.T) {
-	// make path to test db
-	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
-
 	// create mock test fragment
 	id := "test_target"
 	seq := "GGCCGCAATAAAATATCTTTATTTTCATTACATCTGTGTGTTGGTTTTTTGTGTGAATCGATAGTACTAACATGACCACCTTGATCTTCATGGTCTGGGTGCCCTCGTAGGGCTTGCCTTCGCCCTCGGATGTGCACTTGAAGTGGTGGTTGTTCACGGTGCCCTCCATGTACAGCTTCATGTGCATGTTCTCCTTGATCAGCTCGCTCATAGGTCCAGGGTTCTCCTCCACGTCTCCAGCCTGCTTCAGCAGGCTGAAGTTAGTAGCTCCGCTTCCGGATCCCCCGGGGAGCATGTCAAGGTCAAAATCGTCAAGAGCGTCAGCAGGCAGCATATCAAGGTCAAAGTCGTCAAGGGCATCGGCTGGGAgCATGTCTAAgTCAAAATCGTCAAGGGCGTCGGCCGGCCCGCCGCTTTcgcacGCCCTGGCAATCGAGATGCTGGACAGGCATCATACCCACTTCTGCCCCCTGGAAGGCGAGTCATGGCAAGACTTTCTGCGGAACAACGCCAAGTCATTCCGCTGTGCTCTCCTCTCACATCGCGACGGGGCTAAAGTGCATCTCGGCACCCGCCCAACAGAGAAACAGTACGAAACCCTGGAAAATCAGCTCGCGTTCCTGTGTCAGCAAGGCTTCTCCCTGGAGAACGCACTGTACGCTCTGTCCGCCGTGGGCCACTTTACACTGGGCTGCGTATTGGAGGATCAGGAGCATCAAGTAGCAAAAGAGGAAAGAGAGACACCTACCACCGATTCTATGCCTGACTGTGGCGGGTGAGCTTAGGGGGCCTCCGCTCCAGCTCGACACCGGGCAGCTGCTGAAGATCGCGAAGAGAGGGGGAGTAACAGCGGTAGAGGCAGTGCACGCCTGGCGCAATGCGCTCACCGGGGCCCCCTTGAACCTGACCCCAGACCAGGTAGTCGCAATCGCGAACAATAATGGGGGAAAGCAAGCCCTGGAAACCGTGCAAAGGTTGTTGCCGGTCCTTTGTCAAGACCACGGCCTTACACCGGAGCAAGTCGTGGCCATTGCAAGCAATGGGGGTGGCAAACAGGCTCTTGAGACGGTTCAGAGACTTCTCCCAGTTCTCTGTCAAGCCGTTGGAGTCCACGTTCTTTAATAGTGGACTCTTGTTCCAAACTGGAACAACACTCAACCCTATCTCGGTCTATTCTTTTGATTTATAAGGGATTTTGCCGATTTCGGCCTATTGGTTAAAAAATGAGCTGATTTAACAAAAATTTAACGCGAATTTTAACAAAATATTAACGCTTACAATTTAGGTGGCACTTTTCGGGGAAATGTGCGCGGAACCCCTATTTGTTTATTTTTCTAAATACATTCAAATATGTATCCGCTCATGAGACAATAACCCTGATAAATGCTTCAATAATATTGAAAAAGGAAGAGTATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGGTCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAACTGTCAGACCAAGTTTACTCATATATACTTTAGATTGATTTAAAACTTCATTTTTAATTTAAAAGGATCTAGGTGAAGATCCTTTTTGATAATCTCATGACCAAAATCCCTTAACGTGAGTTTTCGTTCCACTGAGCGTCAGACCCCGTAGAA"
 
 	// run blast
-	matches, err := blast(id, seq, true, []string{testDB}, []string{}, 10, blastWriter()) // any match over 10 bp
+	matches, err := blast(id, seq, true, []DB{testDB}, []string{}, 10, blastWriter()) // any match over 10 bp
 
 	// check if it fails
 	if err != nil {
@@ -59,25 +51,25 @@ func Test_cull(t *testing.T) {
 	// test fragment with 3 matches that should be removed
 	matches := []match{
 		// shouldn't be removed
-		match{
+		{
 			entry:      "m1",
 			queryStart: 15,
 			queryEnd:   19,
 		},
 		// should be removed because it fits within m3
-		match{
+		{
 			entry:      "m2",
 			queryStart: 29,
 			queryEnd:   34,
 		},
 		// shouldn't be removed
-		match{
+		{
 			entry:      "m3",
 			queryStart: 29,
 			queryEnd:   35,
 		},
 		// shouldn't be removed
-		match{
+		{
 			entry:      "m4",
 			queryStart: 31,
 			queryEnd:   72,
@@ -104,7 +96,7 @@ func Test_cull(t *testing.T) {
 
 func Test_isMismatch(t *testing.T) {
 	c := config.New()
-	c.PCRMaxOfftargetTm = 40.0
+	c.PcrPrimerMaxOfftargetTm = 40.0
 
 	type args struct {
 		sequence string
@@ -116,7 +108,7 @@ func Test_isMismatch(t *testing.T) {
 		want bool
 	}{
 		{
-			"find a mismatching primer",
+			"find mismatch",
 			args{
 				sequence: "gtccgcgtcgtcgtcat",
 				match: match{
@@ -126,12 +118,13 @@ func Test_isMismatch(t *testing.T) {
 			},
 			true,
 		},
+		// this is only ~15deg
 		{
-			"no false positive mistmatch",
+			"no false positive mismatch",
 			args{
 				sequence: "gtccgcgtcgtcgtcat",
 				match: match{
-					seq:     "atgacgacgacgac",
+					seq:     "acgacgacgac",
 					forward: false,
 				},
 			},
@@ -148,10 +141,8 @@ func Test_isMismatch(t *testing.T) {
 }
 
 func Test_parentMismatch(t *testing.T) {
-	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
-
 	conf := config.New()
-	conf.PCRMaxOfftargetTm = 35.0
+	conf.PcrPrimerMaxOfftargetTm = 35.0
 
 	type args struct {
 		primer string
@@ -196,7 +187,7 @@ func Test_parentMismatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mismatchResult := parentMismatch([]Primer{Primer{Seq: tt.args.primer}}, tt.args.parent, testDB, conf)
+			mismatchResult := parentMismatch([]Primer{{Seq: tt.args.primer}}, tt.args.parent, testDB, conf)
 			gotMismatch := mismatchResult.wasMismatch
 			gotMatch := mismatchResult.m
 			err := mismatchResult.err
@@ -226,7 +217,7 @@ func Test_parentMismatch(t *testing.T) {
 func Test_queryDatabases(t *testing.T) {
 	type args struct {
 		entry string
-		dbs   []string
+		dbs   []DB
 	}
 	tests := []struct {
 		name    string
@@ -235,25 +226,25 @@ func Test_queryDatabases(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"query pSB1A3",
-			args{
-				entry: "pSB1A3",
-				dbs:   []string{config.IGEMDB, config.AddgeneDB},
+			name: "query 85039.2",
+			args: args{
+				entry: "addgene:85039.2",
+				dbs:   []DB{testDB},
 			},
-			Frag{
-				ID: "pSB1A3",
-				db: config.IGEMDB,
+			wantF: Frag{
+				ID: "addgene:85039.2",
+				db: testDB,
 			},
-			false,
+			wantErr: false,
 		},
 		{
-			"fail at nonsense frag",
-			args{
+			name: "fail at nonsense frag",
+			args: args{
 				entry: "jahf9a8f9",
-				dbs:   []string{config.IGEMDB, config.AddgeneDB},
+				dbs:   []DB{testDB},
 			},
-			Frag{},
-			true,
+			wantF:   Frag{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -263,19 +254,20 @@ func Test_queryDatabases(t *testing.T) {
 				t.Errorf("queryDatabases() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if gotF.ID != tt.wantF.ID || gotF.db != tt.wantF.db {
-				t.Errorf("queryDatabases() = %v, want %v", gotF, tt.wantF)
+			if gotF.ID != tt.wantF.ID {
+				t.Errorf("queryDatabases().ID = %v, want %v", gotF.ID, tt.wantF.ID)
+			}
+			if gotF.db != tt.wantF.db {
+				t.Errorf("queryDatabases().DB = %v, want %v", gotF.db, tt.wantF.db)
 			}
 		})
 	}
 }
 
 func Test_blastdbcmd(t *testing.T) {
-	testDB, _ := filepath.Abs(path.Join("..", "..", "test", "db", "db"))
-
 	type args struct {
 		entry string
-		db    string
+		db    DB
 	}
 	tests := []struct {
 		name    string
@@ -283,12 +275,12 @@ func Test_blastdbcmd(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"find 107006",
-			args{
+			name: "find 107006",
+			args: args{
 				entry: "gnl|addgene|107006",
 				db:    testDB,
 			},
-			false,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

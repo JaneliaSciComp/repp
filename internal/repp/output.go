@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 )
 
 // Solution is a single solution to build up the target plasmid.
@@ -37,12 +37,6 @@ type Output struct {
 
 	// Execution is the number of seconds it took to execute the command
 	Execution float64 `json:"execution"`
-
-	// PlasmidSynthesisCost is the cost of a full gene synthesis within a plasmid
-	// PlasmidSynthesisCost float64 `json:"plasmidSynthesisCost"`
-
-	// InsertSynthesisCost is the cost of just synthesizing the insert with homology for a linearized backbone
-	// InsertSynthesisCost float64 `json:"insertSynthesisCost"`
 
 	// Solutions builds
 	Solutions []Solution `json:"solutions"`
@@ -91,14 +85,6 @@ func writeJSON(
 
 			f.Type = f.fragType.String() // freeze fragment type
 
-			if f.URL == "" && f.fragType != synthetic {
-				f.URL = parseURL(f.ID, f.db)
-			}
-
-			if f.URL != "" {
-				f.ID = "" // just log one or the other
-			}
-
 			// round to two decimal places
 			if f.Cost, err = roundCost(f.cost(true)); err != nil {
 				return nil, err
@@ -118,11 +104,11 @@ func writeJSON(
 		}
 
 		if gibson {
-			assemblyCost += conf.CostGibson + conf.CostTimeGibson
+			assemblyCost += conf.GibsonAssemblyCost + conf.GibsonAssemblyTimeCost
 		}
 
 		if hasPCR {
-			assemblyCost += conf.CostTimePCR
+			assemblyCost += conf.PcrTimeCost
 		}
 
 		solutionCost, err := roundCost(assemblyCost)
@@ -142,20 +128,6 @@ func writeJSON(
 		return solutions[i].Count < solutions[j].Count
 	})
 
-	// get the cost of full synthesis (comes in plasmid)
-	// fullSynthCost, err := roundCost(conf.SynthPlasmidCost(insertSeqLength))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// estimate the cost of making the insert, with overhang for the backbone,
-	// from the synthesis provider and then the Gibson assembly cost
-	insertSynthCost, err := roundCost(conf.SynthFragmentCost(insertSeqLength + conf.FragmentsMinHomology*2))
-	if err != nil {
-		return nil, err
-	}
-	insertSynthCost += conf.CostGibson
-
 	if backbone.Seq == "" {
 		backbone = nil
 	}
@@ -167,8 +139,6 @@ func writeJSON(
 		Execution: seconds,
 		Solutions: solutions,
 		Backbone:  backbone,
-		// PlasmidSynthesisCost: fullSynthCost,
-		// InsertSynthesisCost: insertSynthCost,
 	}
 
 	output, err = json.MarshalIndent(out, "", "  ")
@@ -239,6 +209,6 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "")
 	err := ioutil.WriteFile(filename, []byte(gb), 0644)
 	if err != nil {
-		stderr.Fatalln(err)
+		rlog.Fatal(err)
 	}
 }

@@ -1,16 +1,14 @@
 package repp
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/jjtimmons/repp/config"
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -125,7 +123,6 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 				db:       frag.db,
 			},
 			&Backbone{
-				URL:      parseURL(frag.ID, frag.db),
 				Seq:      frag.Seq,
 				Enzymes:  []string{cut.enzyme.name},
 				Cutsites: []int{cut.index},
@@ -171,7 +168,6 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 			db:       frag.db,
 		},
 		&Backbone{
-			URL:      parseURL(frag.ID, frag.db),
 			Seq:      frag.Seq,
 			Enzymes:  []string{cut1.enzyme.name, cut2.enzyme.name},
 			Cutsites: []int{cut1Index, cut2Index},
@@ -251,52 +247,31 @@ func recogRegex(recog string) (decoded string) {
 	return regexDecoder.String()
 }
 
-// EnzymeDB is a struct for accessing repps enzymes db.
-type EnzymeDB struct {
-	// enzymes is a map between a enzymes name and its sequence
-	enzymes map[string]string
-}
-
 // NewEnzymeDB returns a new copy of the enzymes db.
-func NewEnzymeDB() *EnzymeDB {
-	enzymeFile, err := os.Open(config.EnzymeDB)
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	scanner := bufio.NewScanner(enzymeFile)
-	enzymes := make(map[string]string)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		enzymes[columns[0]] = columns[1] // enzyme name = enzyme seq
-	}
-
-	if err := enzymeFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	return &EnzymeDB{enzymes: enzymes}
+func NewEnzymeDB() *kv {
+	return newKV(config.EnzymeDB)
 }
 
-// ReadCmd returns enzymes that are similar in name to the enzyme name requested.
+// EnzymesReadCmd writes enzymes that are similar in queried name to stdout.
 // if multiple enzyme names include the enzyme name, they are all returned.
 // otherwise a list of enzyme names are returned (those beneath a levenshtein distance cutoff).
-func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
+func EnzymesReadCmd(cmd *cobra.Command, args []string) {
+	f := NewEnzymeDB()
+
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 
 	if len(args) < 1 {
-		enzymeNames := make([]string, len(f.enzymes), len(f.enzymes))
+		enzymeNames := make([]string, len(f.contents))
 		i := 0
-		for name := range f.enzymes {
+		for name := range f.contents {
 			enzymeNames[i] = name
 			i++
 		}
 		sort.Strings(enzymeNames)
 
 		for _, name := range enzymeNames {
-			fmt.Fprintf(w, "%s\t%s\n", name, f.enzymes[name])
+			fmt.Fprintf(w, "%s\t%s\n", name, f.contents[name])
 		}
 		w.Flush()
 		return
@@ -305,7 +280,7 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 	name := args[0]
 
 	// if there's an exact match, just log that one
-	if seq, exists := f.enzymes[name]; exists {
+	if seq, exists := f.contents[name]; exists {
 		fmt.Printf("%s	%s\n", name, seq)
 		return
 	}
@@ -314,7 +289,7 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 	containing := []string{}
 	lowDistance := []string{}
 
-	for fName, fSeq := range f.enzymes {
+	for fName, fSeq := range f.contents {
 		if strings.Contains(fName, name) {
 			containing = append(containing, fName+"\t"+fSeq)
 		} else if len(fName) > ldCutoff && ld(name, fName, true) <= ldCutoff {
@@ -327,22 +302,21 @@ func (f *EnzymeDB) ReadCmd(cmd *cobra.Command, args []string) {
 		containing = []string{} // clear
 	}
 	if len(containing) > 0 {
-		fmt.Fprintf(w, strings.Join(containing, "\n"))
+		fmt.Fprint(w, strings.Join(containing, "\n"))
 	} else if len(lowDistance) > 0 {
-		fmt.Fprintf(w, strings.Join(lowDistance, "\n"))
+		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Fprintf(w, fmt.Sprintf("failed to find any enzymes for %s", name))
+		fmt.Fprintf(w, "failed to find any enzymes for %s", name)
 	}
-	w.Write([]byte("\n"))
+	if _, err := w.Write([]byte("\n")); err != nil {
+		rlog.Fatal(err)
+	}
 	w.Flush()
 }
 
-// SetCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
-func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 2 {
-		cmd.Help()
-		stderr.Fatalln("expecting two args: a name and recognition sequence.")
-	}
+// EnzymesAddCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
+func EnzymesAddCmd(cmd *cobra.Command, args []string) {
+	f := NewEnzymeDB()
 
 	name := args[0]
 	seq := args[1]
@@ -352,58 +326,28 @@ func (f *EnzymeDB) SetCmd(cmd *cobra.Command, args []string) {
 	}
 	seq = strings.ToUpper(seq)
 
-	invalidChars := regexp.MustCompile("[^ATGCMRWYSKHDVBNX_\\^]")
+	invalidChars := regexp.MustCompile(`[^ATGCMRWYSKHDVBNX_\^]`)
 	seq = invalidChars.ReplaceAllString(seq, "")
 
 	if strings.Count(seq, "^") != 1 || strings.Count(seq, "_") != 1 {
-		stderr.Fatalf("%s is not a valid enzyme recognition sequence. see 'repp find enzyme --help'\n", seq)
+		rlog.Fatal("%s is not a valid enzyme recognition sequence. see 'repp find enzyme --help'\n", seq)
 	}
 
-	enzymeFile, err := os.Open(config.EnzymeDB)
-	if err != nil {
-		stderr.Fatal(err)
+	f.contents[name] = seq
+	if err := f.save(); err != nil {
+		rlog.Fatal(err)
 	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	var output strings.Builder
-	updated := false
-	scanner := bufio.NewScanner(enzymeFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		if columns[0] == name {
-			output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
-			updated = true
-		} else {
-			output.WriteString(scanner.Text())
-		}
-	}
-
-	// create from nothing
-	if !updated {
-		output.WriteString(fmt.Sprintf("%s	%s\n", name, seq))
-	}
-
-	if err := enzymeFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(config.EnzymeDB, []byte(output.String()), 0644); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if updated {
-		fmt.Printf("updated %s in the enzymes database\n", name)
-	}
-
-	// update in memory
-	f.enzymes[name] = seq
 }
 
-// DeleteCmd the enzyme from the database
-func (f *EnzymeDB) DeleteCmd(cmd *cobra.Command, args []string) {
+// EnzymesDeleteCmd deletes an enzyme from the database
+func EnzymesDeleteCmd(cmd *cobra.Command, args []string) {
+	f := NewEnzymeDB()
+
 	if len(args) < 1 {
-		cmd.Help()
-		stderr.Fatalf("\nexpecting an enzymes name.")
+		if helperr := cmd.Help(); helperr != nil {
+			rlog.Fatal(helperr)
+		}
+		rlog.Fatal("\nexpected an enzyme name")
 	}
 
 	name := args[0]
@@ -411,42 +355,12 @@ func (f *EnzymeDB) DeleteCmd(cmd *cobra.Command, args []string) {
 		name = strings.Join(args, " ")
 	}
 
-	if _, contained := f.enzymes[name]; !contained {
+	if _, contained := f.contents[name]; !contained {
 		fmt.Printf("failed to find %s in the enzymes database\n", name)
 	}
 
-	enzymeFile, err := os.Open(config.EnzymeDB)
-	if err != nil {
-		stderr.Fatal(err)
-	}
-
-	// https://golang.org/pkg/bufio/#example_Scanner_lines
-	var output strings.Builder
-	deleted := false
-	scanner := bufio.NewScanner(enzymeFile)
-	for scanner.Scan() {
-		columns := strings.Split(scanner.Text(), "	")
-		if columns[0] != name {
-			output.WriteString(scanner.Text())
-		} else {
-			deleted = true
-		}
-	}
-
-	if err := enzymeFile.Close(); err != nil {
-		stderr.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile(config.EnzymeDB, []byte(output.String()), 0644); err != nil {
-		stderr.Fatal(err)
-	}
-
-	// delete from memory
-	delete(f.enzymes, name)
-
-	if deleted {
-		fmt.Printf("deleted %s from the enzymes database\n", name)
-	} else {
-		fmt.Printf("failed to find %s in the enzymes database\n", name)
+	delete(f.contents, name)
+	if err := f.save(); err != nil {
+		rlog.Fatal(err)
 	}
 }

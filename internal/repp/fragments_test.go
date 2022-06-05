@@ -22,20 +22,20 @@ func Test_annealFragments(t *testing.T) {
 				min: 5,
 				max: 10,
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq: "GGCTAATATAGCGAATTGCCGAGAACCCGGCCCCACGCAATGGAACGTCTTTAGCTCCGGCAGGCAATTAAGGACAACGTAAGTATAGCGCATATAAACA",
 					},
-					&Frag{
+					{
 						Seq: "GAGAAATGGGCGAATGAACCTATTCGTACCGTATCGAAGAATAGCCTCGCGGAGGCATGTGCCATGCTAGCGTGCGGGGCACTCTAGTTATGCATATGGT",
 					},
 				},
 			},
 			[]*Frag{
-				&Frag{
+				{
 					start: 0,
 					end:   99,
 				},
-				&Frag{
+				{
 					start: 100,
 					end:   199,
 				},
@@ -48,20 +48,20 @@ func Test_annealFragments(t *testing.T) {
 				min: 5,
 				max: 10,
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq: "TGCATATGGTGCGAATTGCCGAGAACCCGGCCCCACGCAATGGAACGTCTTTAGCTCCGGCAGGCAATTAAGGACAACGTAAGTATAGCGCATATAAACA",
 					},
-					&Frag{
+					{
 						Seq: "CATATAAACACGAATGAACCTATTCGTACCGTATCGAAGAATAGCCTCGCGGAGGCATGTGCCATGCTAGCGTGCGGGGCACTCTAGTTATGCATATGGT",
 					},
 				},
 			},
 			[]*Frag{
-				&Frag{
+				{
 					start: 0,
 					end:   99,
 				},
-				&Frag{
+				{
 					start: 90,
 					end:   189,
 				},
@@ -74,27 +74,27 @@ func Test_annealFragments(t *testing.T) {
 				min: 5,
 				max: 15,
 				frags: []*Frag{
-					&Frag{
+					{
 						Seq: "ACGTGCTAGCTACATCGATCGTAGCTAGCTAGCATCG",
 					},
-					&Frag{
+					{
 						Seq: "AGCTAGCATCGACTGATCACTAGCATCGACTAGCTAG",
 					},
-					&Frag{
+					{
 						Seq: "TCGACTAGCTAGAACTGATCTAGACGTGCTAGCTACA",
 					},
 				},
 			},
 			[]*Frag{
-				&Frag{
+				{
 					start: 0,
 					end:   36,
 				},
-				&Frag{
+				{
 					start: 26,
 					end:   62,
 				},
-				&Frag{
+				{
 					start: 51,
 					end:   87,
 				},
