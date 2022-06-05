@@ -10,7 +10,10 @@ install:
 
 .PHONY: image
 image:
-	docker build -t repp:latest . 
+	docker build -t jjtimmons/repp:latest .
+
+image/push: image
+	docker push jjtimmons/repp:latest
 
 .PHONY: test
 test:

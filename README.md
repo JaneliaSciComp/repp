@@ -29,7 +29,8 @@ See [the docs](https://lattice-automation.github.io/repp/) or `--help` for any c
 Run `repp` via Docker:
 
 ```sh
-alias repp="docker run -i --rm -v repp:/root/.repp jjtimmons/repp:latest"
+mkdir -p $HOME/.repp
+alias repp="docker run -i --rm --mount type=bind,src=$HOME/.repp,dst=/root/.repp jjtimmons/repp:latest"
 repp --help
 ```
 
