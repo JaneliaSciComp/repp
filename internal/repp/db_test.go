@@ -32,10 +32,12 @@ func Test_dbNames(t *testing.T) {
 			args: args{
 				dbs: []DB{
 					{
+						Name: "fake_db",
 						Path: "/tmp/fake_db.fa",
 						Cost: 10,
 					},
 					{
+						Name: "really_fake_db",
 						Path: "/tmp/really_fake_db.fa",
 						Cost: 15,
 					},

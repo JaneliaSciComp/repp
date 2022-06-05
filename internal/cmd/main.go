@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,4 +13,10 @@ var RootCmd = &cobra.Command{
 Repository-based plasmid design. Specify and build plasmids using
 their sequence, features, or fragments`,
 	Version: "1.0.0",
+}
+
+func must(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }

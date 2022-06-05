@@ -45,6 +45,7 @@ var featuresCmd = &cobra.Command{
 	Run:                        repp.FeaturesCmd,
 	SuggestionsMinimumDistance: 3,
 	Example:                    `repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --dbs igem`,
+	Args:                       cobra.MinimumNArgs(1),
 }
 
 // sequenceCmd is for assembling a plasmid (single circular sequence) from its target sequence
@@ -69,6 +70,8 @@ func init() {
 	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases by name")
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	fragmentsCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
+	must(fragmentsCmd.MarkFlagRequired("in"))
+	must(fragmentsCmd.MarkFlagRequired("out"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	featuresCmd.Flags().StringP("out", "o", "", "output file name")
@@ -77,6 +80,7 @@ func init() {
 	featuresCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	featuresCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
+	must(featuresCmd.MarkFlagRequired("out"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	sequenceCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
@@ -86,6 +90,8 @@ func init() {
 	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
+	must(sequenceCmd.MarkFlagRequired("in"))
+	must(sequenceCmd.MarkFlagRequired("out"))
 
 	makeCmd.AddCommand(fragmentsCmd)
 	makeCmd.AddCommand(featuresCmd)

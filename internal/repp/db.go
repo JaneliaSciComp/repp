@@ -1,14 +1,13 @@
 package repp
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
@@ -30,7 +29,7 @@ type manifest struct {
 // GetNames returns the list of known DB names.
 func (m *manifest) GetNames() (names []string) {
 	for _, db := range m.DBs {
-		names = append(names, db.GetName())
+		names = append(names, db.Name)
 	}
 	return names
 }
@@ -38,6 +37,9 @@ func (m *manifest) GetNames() (names []string) {
 // DB is a single sequence database. It holds the names, sequences, and
 // cost of a single sequence source.
 type DB struct {
+	// Name of the db
+	Name string `json:"name"`
+
 	// Path to the local database in FASTA format.
 	Path string `json:"path"`
 
@@ -46,22 +48,18 @@ type DB struct {
 	Cost float64 `json:"cost"`
 }
 
-// GetName returns the name of the database. Just base without an extension right now.
-func (d *DB) GetName() string {
-	return strings.Replace(path.Base(d.Path), path.Ext(d.Path), "", 1)
-}
-
 // AddCmd imports a new sequence database to the REPP directory.
 func AddCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 2 {
+	_, err := os.Stdin.Stat()
+	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
-			log.Fatal(helperr)
+			stderr.Fatal(helperr)
 		}
-		log.Fatal("expecting two args: a sequence database and the cost per sequence procurement")
+		stderr.Fatal("no stdin passed to 'repp add database'. See example.")
 	}
 
-	src := args[0]
-	cost := args[1]
+	name := cmd.Flag("name").Value.String()
+	cost := cmd.Flag("cost").Value.String()
 	costFloat, err := strconv.ParseFloat(cost, 64)
 	if err != nil {
 		log.Fatal(err)
@@ -72,20 +70,13 @@ func AddCmd(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	if err = m.add(src, costFloat); err != nil {
+	if err = m.add(name, costFloat); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // ListCmd lists the sequence databases and their costs.
 func ListCmd(cmd *cobra.Command, args []string) {
-	if len(args) > 0 {
-		if helperr := cmd.Help(); helperr != nil {
-			log.Fatal(helperr)
-		}
-		log.Fatal("not expecting any arguments")
-	}
-
 	m, err := newManifest()
 	if err != nil {
 		log.Fatal(err)
@@ -106,13 +97,6 @@ func ListCmd(cmd *cobra.Command, args []string) {
 
 // DeleteCmd deletes an existing sequence database from the REPP directory.
 func DeleteCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 1 {
-		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
-		}
-		log.Fatal("expecting one arg: a sequence database name")
-	}
-
 	db := args[0]
 	m, err := newManifest()
 	if err != nil {
@@ -144,15 +128,10 @@ func newManifest() (*manifest, error) {
 }
 
 // add imports a FASTA sequence database into REPP, storing it in the manifest.
-func (m *manifest) add(from string, cost float64) error {
-	src, err := os.Open(from)
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
+func (m *manifest) add(name string, cost float64) error {
 	db := DB{
-		Path: path.Join(config.SeqDatabaseDir, path.Base(from)),
+		Name: name,
+		Path: path.Join(config.SeqDatabaseDir, name),
 		Cost: cost,
 	}
 
@@ -162,16 +141,21 @@ func (m *manifest) add(from string, cost float64) error {
 	}
 	defer dst.Close()
 
-	_, err = io.Copy(dst, src)
-	if err != nil {
-		return err
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		if _, err := dst.Write(scanner.Bytes()); err != nil {
+			stderr.Fatal(err)
+		}
+		if _, err := dst.WriteString("\n"); err != nil {
+			stderr.Fatal(err)
+		}
 	}
 
 	if err = makeblastdb(db.Path); err != nil {
 		return err
 	}
 
-	m.DBs[db.GetName()] = db
+	m.DBs[db.Name] = db
 	return m.save()
 }
 
@@ -199,7 +183,7 @@ func (m *manifest) save() error {
 
 func dbNames(dbs []DB) (names []string) {
 	for _, d := range dbs {
-		names = append(names, d.GetName())
+		names = append(names, d.Name)
 	}
 	return
 }

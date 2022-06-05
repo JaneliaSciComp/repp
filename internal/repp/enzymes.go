@@ -318,13 +318,6 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 func EnzymesAddCmd(cmd *cobra.Command, args []string) {
 	f := NewEnzymeDB()
 
-	if len(args) < 2 {
-		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
-		}
-		stderr.Fatalln("expecting two args: a name and recognition sequence.")
-	}
-
 	name := args[0]
 	seq := args[1]
 	if len(args) > 2 {

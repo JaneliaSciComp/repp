@@ -160,7 +160,7 @@ func blast(
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
 		}
 
-		fmt.Fprintf(tw, "%s\t%d\t%s\n", name, len(dbMatches), db.GetName())
+		fmt.Fprintf(tw, "%s\t%d\t%s\n", name, len(dbMatches), db.Name)
 
 		// add these matches against the growing list of matches
 		matches = append(matches, dbMatches...)
@@ -309,7 +309,7 @@ func (b *blastExec) run() (err error) {
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db.GetName(), err, string(output))
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db.Name, err, string(output))
 	}
 
 	return
@@ -661,7 +661,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 
 	// execute
 	if _, err := queryCmd.CombinedOutput(); err != nil {
-		return nil, "", fmt.Errorf("warning: failed to query %s from %s db\n\t%s", entry, db.GetName(), err.Error())
+		return nil, "", fmt.Errorf("warning: failed to query %s from %s db\n\t%s", entry, db.Name, err.Error())
 	}
 
 	// read in the results as fragments. set their sequence to the full one returned from blastdbcmd
@@ -673,7 +673,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 		}
 	}
 
-	return nil, "", fmt.Errorf("warning: failed to query %s from %s db", entry, db.GetName())
+	return nil, "", fmt.Errorf("warning: failed to query %s from %s db", entry, db.Name)
 }
 
 // mismatch finds mismatching sequences between the query sequence and

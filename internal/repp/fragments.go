@@ -27,7 +27,7 @@ func FragmentListCmd(cmd *cobra.Command, args []string) {
 		frag.Seq = frag.Seq[:len(frag.Seq)/2]
 	}
 
-	fmt.Printf("%s\t%s\n%s\n", name, frag.db.GetName(), frag.Seq)
+	fmt.Printf("%s\t%s\n%s\n", name, frag.db.Name, frag.Seq)
 }
 
 // FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order

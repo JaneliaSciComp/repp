@@ -22,6 +22,7 @@ var databaseDeleteCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp delete database \"igem\"",
 	Aliases:                    []string{"db"},
+	Args:                       cobra.ExactArgs(1),
 }
 
 // featuresDeleteCmd is for deleting features from the feature db
@@ -33,6 +34,7 @@ var featuresDeleteCmd = &cobra.Command{
 	Example:                    "  repp delete feature \"T7 terminator\"",
 	Long: `Delete a feature from the features database by its name.
 If no such feature name exists in the database, an error is logged to stderr.`,
+	Args: cobra.ExactArgs(1),
 }
 
 // set flags

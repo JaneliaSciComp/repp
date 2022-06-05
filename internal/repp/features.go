@@ -510,13 +510,6 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 func FeaturesAddCmd(cmd *cobra.Command, args []string) {
 	f := NewFeatureDB()
 
-	if len(args) < 2 {
-		if helperr := cmd.Help(); helperr != nil {
-			stderr.Fatal(helperr)
-		}
-		stderr.Fatalln("\nexpecting two args: a features name and sequence.")
-	}
-
 	name := args[0]
 	seq := args[1]
 

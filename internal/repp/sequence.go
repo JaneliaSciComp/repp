@@ -56,7 +56,7 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db.GetName())
+		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db.Name)
 		seenIds[key(m)] = true
 	}
 	writer.Flush()

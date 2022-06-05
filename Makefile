@@ -8,6 +8,10 @@ build: fmt lint
 install:
 	go install ./cmd/repp
 
+.PHONY: image
+image:
+	docker build -t repp:latest . 
+
 .PHONY: test
 test:
 	go test -timeout 200s ./internal/...

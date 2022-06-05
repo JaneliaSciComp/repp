@@ -19,7 +19,7 @@ be passed to the --enzyme flag`,
 
 // databaseAddCmd is for adding a new sequence db
 var databaseAddCmd = &cobra.Command{
-	Use:                        "database [path] [cost-per-seq]",
+	Use:                        "database",
 	Short:                      "Import a FASTA sequence database along with its cost",
 	Run:                        repp.AddCmd,
 	SuggestionsMinimumDistance: 2,
@@ -36,6 +36,7 @@ var featureAddCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Long:                       "\nAdd a feature in the features database so it can be use used in 'repp make features'",
 	Example:                    "  repp add feature \"custom terminator 3\" CTAGCATAACAAGCTTGGGCACCTGTAAACGGGTCTTGAGGGGTTCCATTTTG",
+	Args:                       cobra.ExactArgs(2),
 }
 
 // enzymeAddCmd is for adding a new feature to the features db
@@ -50,9 +51,15 @@ Enzymes are passed to the build command, by name, with the --enzyme flag.
 Valid recognition sequences have both a cut site in the template sequence: "^" and
 a cut site in the complement sequence: "_". Use 'repp ls enzyme' for examples`,
 	Example: "  repp add enzyme BbvCI CC^TCA_GC",
+	Args:    cobra.ExactArgs(2),
 }
 
 func init() {
+	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
+	databaseAddCmd.Flags().StringP("cost", "c", "", "the cost per plasmid procurement (eg order + shipping fee)")
+	must(databaseAddCmd.MarkFlagRequired("name"))
+	must(databaseAddCmd.MarkFlagRequired("cost"))
+
 	addCmd.AddCommand(databaseAddCmd)
 	addCmd.AddCommand(featureAddCmd)
 	addCmd.AddCommand(enzymeAddCmd)
