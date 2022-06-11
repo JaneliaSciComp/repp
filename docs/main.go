@@ -235,7 +235,7 @@ func makeDocs() {
 
 // filePrepender adds YAML headings that are required by the just-the-docs theme
 // https://github.com/spf13/cobra/blob/master/doc/md_docs.md
-// https://pmarsceill.github.io/just-the-docs/docs/navigation-structure/
+// https://pmarsceill.github.io/just-the-docs/docs/navitigation-structure/
 func filePrepender(filename string) string {
 	name := filepath.Base(filename)
 	base := strings.TrimSuffix(name, path.Ext(name))
