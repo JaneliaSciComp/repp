@@ -56,7 +56,7 @@ Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.co
 
 ```sh
 for db in igem addgene dnasu; do
-  aws s3 cp "s3://repp/$db.fa.gz" .
+  curl -o "$db.fa.gz" "https://repp.s3.amazonaws.com/$db.fa.gz"
   gzip -d "$db.fa.gz"
 done
 
