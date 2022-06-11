@@ -87,7 +87,7 @@ func ListCmd(cmd *cobra.Command, args []string) {
 
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintf(w, "db\tcost\n")
+	fmt.Fprintf(w, "name\tcost\n")
 	for _, db := range m.DBs {
 		fmt.Fprintf(w, "%s\t%.2f\n", path.Base(db.Path), db.Cost)
 	}

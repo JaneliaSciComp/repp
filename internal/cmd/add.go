@@ -56,7 +56,7 @@ a cut site in the complement sequence: "_". Use 'repp ls enzyme' for examples`,
 
 func init() {
 	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
-	databaseAddCmd.Flags().StringP("cost", "c", "", "the cost per plasmid procurement (eg order + shipping fee)")
+	databaseAddCmd.Flags().Float64P("cost", "c", 0.0, "the cost per plasmid procurement (eg order + shipping fee)")
 	must(databaseAddCmd.MarkFlagRequired("name"))
 	must(databaseAddCmd.MarkFlagRequired("cost"))
 

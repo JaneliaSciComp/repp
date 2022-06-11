@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"os/exec"
 
 	"github.com/Lattice-Automation/repp/internal/cmd"
@@ -13,7 +14,7 @@ func main() {
 	config.Setup()
 
 	if err := cmd.RootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 }
 

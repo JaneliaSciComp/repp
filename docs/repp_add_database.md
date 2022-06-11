@@ -27,7 +27,7 @@ repp add database [flags]
 ### Options
 
 ```
-  -c, --cost string   the cost per plasmid procurement (eg order + shipping fee)
+  -c, --cost float    the cost per plasmid procurement (eg order + shipping fee)
   -h, --help          help for database
   -n, --name string   database name
 ```
