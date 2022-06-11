@@ -119,13 +119,11 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 				}
 				insertFeats = append(insertFeats, []string{f, dbFrag.Seq})
 			} else {
-				sep := "\n\t"
-				rlog.Fatal(
-					"failed to find '%s' in the features database (%s) or any of:"+
-						"%s\ncheck features database with 'repp features find [feature name]'",
+				rlog.Fatalf(
+					"failed to find '%s' among the features in (%s) or any db: %s",
 					f,
 					config.FeatureDB,
-					sep+strings.Join(dbNames(flags.dbs), sep)+sep,
+					strings.Join(dbNames(flags.dbs), ","),
 				)
 			}
 		}

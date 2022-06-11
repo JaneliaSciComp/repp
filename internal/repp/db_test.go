@@ -13,6 +13,7 @@ var (
 	// that make up the mock BLAST db
 	testDbPath, _ = filepath.Abs(path.Join("..", "..", "test", "db", "db"))
 	testDB        = DB{
+		Name: "test-db",
 		Path: testDbPath,
 		Cost: 10,
 	}
