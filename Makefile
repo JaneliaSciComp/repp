@@ -1,7 +1,7 @@
 VERSION=v1.0.0
 
 .PHONY: build
-build: fmt lint
+build: fmt lint docs
 	go mod tidy
 	go mod vendor
 	go build -o ./bin/repp ./cmd/repp
@@ -27,7 +27,7 @@ test:
 
 .PHONY: docs
 docs:
-	cd docs && make
+	cd docs && rm *.md && make
 
 docs/serve: docs
 	cd docs && make serve

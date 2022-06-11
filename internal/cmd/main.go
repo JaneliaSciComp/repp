@@ -10,10 +10,8 @@ import (
 
 // RootCmd represents the base command when called without any subcommands.
 var RootCmd = &cobra.Command{
-	Use: "repp",
-	Short: `
-Repository-based plasmid design. Specify and build plasmids using
-their sequence, features, or fragments`,
+	Use:   "repp",
+	Short: `repository-based plasmid design. Build cost-efficient plasmids`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("verbose").Value.String() == "true" {
 			repp.LogLevel.SetLevel(zap.DebugLevel)

@@ -320,8 +320,8 @@ func (b *blastExec) runAgainst() (err error) {
 
 func (b *blastExec) close() error {
 	var result error
-	multierr.Append(result, os.Remove(b.in.Name()))
-	multierr.Append(result, os.Remove(b.out.Name()))
+	result = multierr.Append(result, os.Remove(b.in.Name()))
+	result = multierr.Append(result, os.Remove(b.out.Name()))
 	return result
 
 }

@@ -8,7 +8,7 @@ import (
 // addCmd is for piecing together a list of input fragments into a plasmid
 // and preparing the fragments to make into that plasmid
 var addCmd = &cobra.Command{
-	Use:                        "add [database,feature,enzyme]",
+	Use:                        "add",
 	Short:                      "Add a sequence database, feature, or enzyme",
 	SuggestionsMinimumDistance: 1,
 	Long: `Create/update a feature or enzyme with its name and sequence/recognition-site.

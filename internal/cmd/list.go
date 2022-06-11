@@ -9,7 +9,7 @@ import (
 // listCmd is for finding features or enzymes by their name.
 var listCmd = &cobra.Command{
 	Use:                        "list",
-	Short:                      "List features or enzymes",
+	Short:                      "List any of the things that repp uses to build plasmids",
 	SuggestionsMinimumDistance: 2,
 	Long: `List features or enzymes by name.
 If there is no exact match, similar entries are returned`,

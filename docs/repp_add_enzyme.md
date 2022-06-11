@@ -12,7 +12,7 @@ Add an enzyme to the enzymes database
 ### Synopsis
 
 Add an enzyme in the enzymes database so it can be used to linearize backbones.
-Enzymes are passed to the build command, by name, with the --enzyme flag.
+See: 'repp make sequence --help' for usage of enzymes.
 
 Valid recognition sequences have both a cut site in the template sequence: "^" and
 a cut site in the complement sequence: "_". Use 'repp ls enzyme' for examples

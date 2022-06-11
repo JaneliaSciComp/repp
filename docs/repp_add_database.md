@@ -21,7 +21,7 @@ repp add database [flags]
 ### Examples
 
 ```
-  repp add database ./addgene.fa 65.0
+  repp add database --name addgene --cost 65.0 ./addgene.fa
 ```
 
 ### Options

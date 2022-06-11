@@ -29,9 +29,7 @@ against a list of consituent fragment, feature, or a target sequence.
 
 ### SEE ALSO
 
-* [repp](repp)	 - 
-Repository-based plasmid design. Specify and build plasmids using
-their sequence, features, or fragments
+* [repp](repp)	 - repository-based plasmid design. Build cost-efficient plasmids
 * [repp make features](repp_make_features)	 - Find or build a plasmid from its constituent features
 * [repp make fragments](repp_make_fragments)	 - Build a plasmid from its constituent fragments
 * [repp make sequence](repp_make_sequence)	 - Find or build a plasmid from its target sequence

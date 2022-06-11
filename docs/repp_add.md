@@ -29,9 +29,7 @@ be passed to the --enzyme flag
 
 ### SEE ALSO
 
-* [repp](repp)	 - 
-Repository-based plasmid design. Specify and build plasmids using
-their sequence, features, or fragments
+* [repp](repp)	 - repository-based plasmid design. Build cost-efficient plasmids
 * [repp add database](repp_add_database)	 - Import a FASTA sequence database along with its cost
 * [repp add enzyme](repp_add_enzyme)	 - Add an enzyme to the enzymes database
 * [repp add feature](repp_add_feature)	 - Add a feature to the features database

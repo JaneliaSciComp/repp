@@ -27,9 +27,7 @@ Delete a feature, by name, from the embedded feature database.
 
 ### SEE ALSO
 
-* [repp](repp)	 - 
-Repository-based plasmid design. Specify and build plasmids using
-their sequence, features, or fragments
+* [repp](repp)	 - repository-based plasmid design. Build cost-efficient plasmids
 * [repp delete database](repp_delete_database)	 - Delete a sequence database
 * [repp delete feature](repp_delete_feature)	 - Delete a feature from the features database
 
