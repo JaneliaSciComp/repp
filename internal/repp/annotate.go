@@ -83,11 +83,9 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 
 	in, err := ioutil.TempFile("", "annotate-in-*")
 	handleErr(err)
-	defer os.Remove(in.Name())
 
 	out, err := ioutil.TempFile("", "annotate-out-*")
 	handleErr(err)
-	defer os.Remove(out.Name())
 
 	// create a subject file with all the blast features
 	featureKV := NewFeatureDB()
@@ -115,6 +113,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		identity: identity,
 		circular: true,
 	}
+	defer b.close()
 
 	var features []match
 	if len(dbs) < 1 {
@@ -147,7 +146,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		}
 		features = cleanedFeatures
 	} else {
-		features, err = blast(name, seq, false, dbs, filters, identity, blastWriter())
+		features, err = blast(name, seq, false, dbs, filters, identity)
 		handleErr(err)
 	}
 
@@ -158,9 +157,6 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 	sortMatches(features)
 	if toCull {
 		features = cull(features, len(seq), 5, 1)
-		// for _, f := range features {
-		// 	f.log()
-		// }
 	}
 
 	if namesOnly {

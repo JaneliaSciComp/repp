@@ -143,7 +143,7 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity, blastWriter())
+		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity)
 		if err != nil {
 			rlog.Fatal(err)
 		}
@@ -347,7 +347,7 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, flags.identity, blastWriter())
+		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, flags.identity)
 		if err != nil {
 			rlog.Fatal(err)
 		}

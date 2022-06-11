@@ -8,7 +8,6 @@ import (
 )
 
 var (
-
 	// LogLevel is a configurable log level
 	LogLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 

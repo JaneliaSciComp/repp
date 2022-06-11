@@ -24,7 +24,7 @@ var databaseListCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp list database",
 	Long:                       "List all sequence databases and their costs",
-	Aliases:                    []string{"db", "dbs", "databases"},
+	Aliases:                    []string{"db", "dbs", "database", "databases"},
 }
 
 // featureListCmd is for reading features (close to the one requested) from the db.
@@ -58,22 +58,23 @@ var enzymeListCmd = &cobra.Command{
 // fragmentListCmd is for finding a fragment by its name
 var fragmentListCmd = &cobra.Command{
 	Use:                        "fragment [name]",
-	Short:                      "List a fragment in the databases",
+	Short:                      "List fragments in the databases",
 	Example:                    "  repp list fragment pSB1C3 --dbs igem",
 	Run:                        repp.FragmentListCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `List fragments with a passed name in the specified databases`,
+	Aliases:                    []string{"fragments"},
 }
 
 // sequenceListCmd is for finding a sequence in the dbs
 var sequenceListCmd = &cobra.Command{
 	Use:                        "sequence [seq]",
-	Short:                      "List a sequence in the databases",
+	Short:                      "List sequences in the databases",
 	Run:                        repp.SequenceListCmd,
 	Example:                    "  repp list sequence GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --dbs igem",
 	SuggestionsMinimumDistance: 2,
 	Long:                       `List a sequence's BLAST matches among databases.`,
-	Aliases:                    []string{"seq"},
+	Aliases:                    []string{"seq", "sequences"},
 }
 
 // set flags

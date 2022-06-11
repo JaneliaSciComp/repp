@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
+	"go.uber.org/multierr"
 )
 
 // match is a blast "hit" in the blastdb.
@@ -56,6 +56,25 @@ type match struct {
 	forward bool
 }
 
+// length returns the length of the match on the queried fragment.
+func (m *match) length() int {
+	queryLength := m.queryEnd - m.queryStart + 1
+	subjectLength := m.subjectEnd - m.subjectStart + 1
+
+	if queryLength > subjectLength {
+		return queryLength
+	}
+
+	return subjectLength
+}
+
+// mismatchResults are the results of a seqMismatch check. saved between runs for perf
+type mismatchResult struct {
+	wasMismatch bool
+	m           match
+	err         error
+}
+
 // blastExec is a small utility object for executing BLAST.
 type blastExec struct {
 	// the name of the query
@@ -84,149 +103,6 @@ type blastExec struct {
 
 	// the expect value of a BLAST query (defaults to 10)
 	evalue int
-}
-
-// mismatchResults are the results of a seqMismatch check. saved
-// between runs to speed up checking.
-type mismatchResult struct {
-	wasMismatch bool
-	m           match
-	err         error
-}
-
-// length returns the length of the match on the queried fragment.
-func (m *match) length() int {
-	queryLength := m.queryEnd - m.queryStart + 1
-	subjectLength := m.subjectEnd - m.subjectStart + 1
-
-	if queryLength > subjectLength {
-		return queryLength
-	}
-
-	return subjectLength
-}
-
-// blast the seq against all dbs and acculate matches.
-func blast(
-	name, seq string,
-	circular bool,
-	dbs []DB,
-	filters []string,
-	identity int,
-	tw *tabwriter.Writer,
-) ([]match, error) {
-	in, err := ioutil.TempFile("", "blast-in-*")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(in.Name())
-
-	out, err := ioutil.TempFile("", "blast-out-*")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(out.Name())
-
-	matches := []match{}
-	for _, db := range dbs {
-		b := &blastExec{
-			name:     name,
-			seq:      seq,
-			circular: circular,
-			db:       db,
-			in:       in,
-			out:      out,
-			identity: identity,
-		}
-
-		// make sure the db exists
-		if _, err := os.Stat(db.Path); os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to find a BLAST database at %s", db.Path)
-		}
-
-		// create the input file
-		if err := b.input(); err != nil {
-			return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
-		}
-
-		// execute BLAST
-		if err := b.run(); err != nil {
-			return nil, fmt.Errorf("failed executing BLAST: %v", err)
-		}
-
-		// parse the output file to Matches against the Frag
-		dbMatches, err := b.parse(filters)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
-		}
-
-		fmt.Fprintf(tw, "%s\t%d\t%s\n", name, len(dbMatches), db.Name)
-
-		// add these matches against the growing list of matches
-		matches = append(matches, dbMatches...)
-	}
-
-	return matches, nil
-}
-
-// blast an entry against a pre-made subject database
-func blastAgainst(
-	name, seq, subject string,
-	circular bool,
-	identity int,
-	tw *tabwriter.Writer,
-) (matches []match, err error) {
-	in, err := ioutil.TempFile("", "blast-in-*")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(in.Name())
-
-	out, err := ioutil.TempFile("", "blast-out-*")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(out.Name())
-
-	b := &blastExec{
-		name:     name,
-		seq:      seq,
-		circular: circular,
-		subject:  subject,
-		in:       in,
-		out:      out,
-		identity: identity,
-	}
-
-	// make sure the subject file exists
-	if _, err := os.Stat(subject); os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to find a BLAST subject at %s", subject)
-	}
-
-	// create the input file
-	if err := b.input(); err != nil {
-		return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
-	}
-
-	// execute BLAST
-	if err := b.runAgainst(); err != nil {
-		return nil, fmt.Errorf("failed executing BLAST: %v", err)
-	}
-
-	// parse the output file to Matches against the Frag
-	if matches, err = b.parse([]string{}); err != nil {
-		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
-	}
-
-	return matches, nil
-}
-
-// blastWriter returns a new tabwriter specifically for blast database calls.
-func blastWriter() *tabwriter.Writer {
-	tw := tabwriter.NewWriter(os.Stdout, 0, 4, 3, ' ', 0)
-	fmt.Fprintf(tw, "entry\tmatches\tdatabase\t\n")
-
-	return tw
 }
 
 // input creates an input query file (FASTA) for blastn.
@@ -420,6 +296,143 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	}
 
 	return ms, nil
+}
+
+// runs blast on the query file against another subject file (rather than blastdb)
+func (b *blastExec) runAgainst() (err error) {
+	// create the blast command
+	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
+	blastCmd := exec.Command(
+		"blastn",
+		"-task", "blastn",
+		"-query", b.in.Name(),
+		"-subject", b.subject,
+		"-out", b.out.Name(),
+		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
+	)
+
+	// execute BLAST and wait on it to finish
+	if output, err := blastCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
+	}
+	return
+}
+
+func (b *blastExec) close() error {
+	var result error
+	multierr.Append(result, os.Remove(b.in.Name()))
+	multierr.Append(result, os.Remove(b.out.Name()))
+	return result
+
+}
+
+// blast the seq against all dbs and acculate matches.
+func blast(
+	name, seq string,
+	circular bool,
+	dbs []DB,
+	filters []string,
+	identity int,
+) ([]match, error) {
+	matches := []match{}
+	for _, db := range dbs {
+		in, err := ioutil.TempFile("", "blast-in-*")
+		if err != nil {
+			return nil, err
+		}
+
+		out, err := ioutil.TempFile("", "blast-out-*")
+		if err != nil {
+			return nil, err
+		}
+
+		b := &blastExec{
+			name:     name,
+			seq:      seq,
+			circular: circular,
+			db:       db,
+			in:       in,
+			out:      out,
+			identity: identity,
+		}
+		defer b.close()
+
+		// make sure the db exists
+		if _, err := os.Stat(db.Path); os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to find a BLAST database at %s", db.Path)
+		}
+
+		// create the input file
+		if err := b.input(); err != nil {
+			return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
+		}
+
+		// execute BLAST
+		if err := b.run(); err != nil {
+			return nil, fmt.Errorf("failed executing BLAST: %v", err)
+		}
+
+		// parse the output file to Matches against the Frag
+		dbMatches, err := b.parse(filters)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+		}
+
+		// add these matches against the growing list of matches
+		matches = append(matches, dbMatches...)
+	}
+
+	return matches, nil
+}
+
+// blastAgainst runs against a pre-made subject database
+func blastAgainst(
+	name, seq, subject string,
+	circular bool,
+	identity int,
+) (matches []match, err error) {
+	in, err := ioutil.TempFile("", "blast-in-*")
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := ioutil.TempFile("", "blast-out-*")
+	if err != nil {
+		return nil, err
+	}
+
+	b := &blastExec{
+		name:     name,
+		seq:      seq,
+		circular: circular,
+		subject:  subject,
+		in:       in,
+		out:      out,
+		identity: identity,
+	}
+	defer b.close()
+
+	// make sure the subject file exists
+	if _, err := os.Stat(subject); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to find a BLAST subject at %s", subject)
+	}
+
+	// create the input file
+	if err := b.input(); err != nil {
+		return nil, fmt.Errorf("failed to write a BLAST input file at %s: %v", b.in.Name(), err)
+	}
+
+	// execute BLAST
+	if err := b.runAgainst(); err != nil {
+		return nil, fmt.Errorf("failed executing BLAST: %v", err)
+	}
+
+	// parse the output file to Matches against the Frag
+	if matches, err = b.parse([]string{}); err != nil {
+		return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
+	}
+
+	return matches, nil
 }
 
 // cull removes matches that are engulfed in others
@@ -686,14 +699,12 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	if err != nil {
 		return false, match{}, err
 	}
-	defer os.Remove(in.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
 	out, err := ioutil.TempFile("", "primer3-out-*")
 	if err != nil {
 		return false, match{}, err
 	}
-	defer os.Remove(out.Name())
 
 	// create input file
 	inContent := fmt.Sprintf(">primer\n%s\n", primer)
@@ -702,7 +713,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	// BLAST the query sequence against the parentFile sequence
-	b := blastExec{
+	b := &blastExec{
 		in:       in,
 		out:      out,
 		subject:  parentFile.Name(),
@@ -710,6 +721,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 		identity: 65,    // see Primer-BLAST https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3412702/
 		evalue:   30000, // see Primer-BLAST
 	}
+	defer b.close()
 
 	// execute BLAST
 	if err = b.runAgainst(); err != nil {
@@ -746,27 +758,6 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 	}
 
 	return false, match{}, nil
-}
-
-// runs blast on the query file against another subject file (rather than blastdb)
-func (b *blastExec) runAgainst() (err error) {
-	// create the blast command
-	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
-	blastCmd := exec.Command(
-		"blastn",
-		"-task", "blastn",
-		"-query", b.in.Name(),
-		"-subject", b.subject,
-		"-out", b.out.Name(),
-		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
-	)
-
-	// execute BLAST and wait on it to finish
-	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
-	}
-
-	return
 }
 
 // isMismatch returns whether the match constitutes a mismatch

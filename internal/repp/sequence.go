@@ -24,8 +24,7 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 	seq := args[0]
 
 	flags, _ := parseCmdFlags(cmd, args, false)
-	tw := blastWriter()
-	matches, err := blast("find_cmd", seq, true, flags.dbs, flags.filters, flags.identity, tw)
+	matches, err := blast("find_cmd", seq, true, flags.dbs, flags.filters, flags.identity)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -146,9 +145,7 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	}
 
 	// get all the matches against the target plasmid
-	tw := blastWriter()
-	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity, tw)
-	// TODO: write blastWriter results to logger here
+	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity)
 	if err != nil {
 		dbMessage := strings.Join(dbNames(input.dbs), ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
