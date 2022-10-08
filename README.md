@@ -8,7 +8,7 @@ Biologists profit when they can re-use DNA during plasmid design: it enables che
 
 ## Publication
 
-We published a paper about `repp` in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0223935) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
+We published a paper about `repp` in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6952187/pdf/pone.0223935.pdf) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
 
 ## Examples
 
