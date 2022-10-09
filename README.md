@@ -52,7 +52,7 @@ make install
 
 `repp` uses sequence databases for plasmid assembly. These are added as FASTA files along with the name and cost per plasmid from that source.
 
-Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and installing each via the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
+Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and adding each to `repp`:
 
 ```sh
 for db in igem addgene dnasu; do
