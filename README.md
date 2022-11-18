@@ -110,7 +110,7 @@ repp make fragments --in "./fragments.fa" --out "plasmid.json"
 
 ### Configuration
 
-The default settings file used by `repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs. For more details, see [configuration](https://lattice-automation.github.io/repp/configuration).
+The [default settings file](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml) used by `repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs.
 
 To overwrite some `repp` settings on a per-design basis, create another YAML file:
 
