@@ -15,7 +15,7 @@ Biologists profit when they can re-use DNA during plasmid design: it enables che
 - **primer selection**: `repp` chooses primers via Primer3 that have:
   - minimal [off-target binding](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L47)
   - minimal [Primer3 penalty scores](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L40) (secondary structure, uneven Tms, etc)
-- **Gibson Assembly optimizations**: when choosing fragments, `repp` filters for assemblies with desirable Gibson Assembly characteristics:
+- **design efficacy filters**: when choosing assemblies, `repp` filters for those with desirable Gibson Assembly characteristics:
   - limits on [hairpin structures in fragment junctions/overlaps](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L15)
   - minimum and maximum [fragment junction/overlap lengths](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L8-L12)
   - a limit on the [total number of fragments](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L6)
