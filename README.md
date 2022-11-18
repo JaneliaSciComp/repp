@@ -207,4 +207,4 @@ The largest linearized fragment post-digestion with all enzymes is used as the b
 
 ## Contact Us
 
-Do you have feature requests? Do you wish there were better documentation, examples, or a web-server to run `repp` against? Please [create a new issue](https://github.com/Lattice-Automation/repp/issues/new) in this repo, and we will reach out.
+Do you have a feature request? Do you wish there were better documentation, examples, or a web-server to run `repp` against? Please [create a new issue](https://github.com/Lattice-Automation/repp/issues/new) in this repo, and will we improving the tool.
