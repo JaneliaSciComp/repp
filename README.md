@@ -6,6 +6,21 @@ Biologists profit when they can re-use DNA during plasmid design: it enables che
 
 `repp` does such plasmid design. It turns specifications into assembly plans that use the least expensive combination of existing (PCR) and newly synthesized DNA fragments. Target plasmids are specifiable using their target sequence, features, or sub-fragments.
 
+## Features
+
+- **fragment selection**: given a plasmid, `repp` finds the least expensive combination of fragments to assemble it:
+  - PCR fragments: you [provide the databases](https://github.com/Lattice-Automation/repp#sequence-databases) of sequences that you have access to for PCR
+  - synthetic fragments: the cost of fragment synthesis is configurable for both [fixed and variable length pricing](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L64)
+  - synthetic plasmids: `repp` recommends [synthesizing the entire plasmid](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L116) if it is the cheapest option
+- **primer selection**: `repp` chooses primers via Primer3 that have:
+  - minimal [off-target binding](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L47)
+  - minimal [Primer3 penalty scores](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L40) (secondary structure, uneven Tms, etc)
+- **Gibson Assembly optimizations**: when choosing fragments, `repp` filters for assemblies with desirable Gibson Assembly characteristics:
+  - limits on [hairpin structures in fragment junctions/overlaps](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L15)
+  - minimum and maximum [fragment junction/overlap lengths](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L8-L12)
+  - a limit on the [total number of fragments](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L6)
+- **configurability**: every setting mentioned above is [configurable](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml)
+
 ## Publication
 
 We published a paper about `repp` in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6952187/pdf/pone.0223935.pdf) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
@@ -189,3 +204,7 @@ The largest linearized fragment post-digestion with all enzymes is used as the b
   ]
 }
 ```
+
+## Contact Us
+
+Do you have feature requests? Do you wish there were better documentation, examples, or a web-server to run `repp` against? Please [create a new issue](https://github.com/Lattice-Automation/repp/issues/new) in this repo, and we will reach out.
