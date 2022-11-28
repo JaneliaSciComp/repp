@@ -8,7 +8,7 @@ Biologists profit when they can re-use DNA during plasmid design: it enables che
 
 ## Features
 
-- **fragment selection**: given a plasmid, `repp` finds the least expensive combination of fragments to assemble it:
+- **fragment selection**: given a plasmid, `repp` finds the least expensive assembly of fragments including:
   - PCR fragments: you [provide the databases](https://github.com/Lattice-Automation/repp#sequence-databases) of sequences that you have access to for PCR
   - synthetic fragments: the cost of fragment synthesis is configurable for both [fixed and variable length pricing](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L64)
   - synthetic plasmids: `repp` recommends [synthesizing the entire plasmid](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L116) if it is the cheapest option
