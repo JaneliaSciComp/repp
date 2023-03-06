@@ -1,14 +1,29 @@
 <img src="https://user-images.githubusercontent.com/13923102/72353248-b90d7680-36b1-11ea-8714-3249a887b156.png" width="650" margin="0 auto 10px auto" />
 
-`repp` is a tool for DNA assembly. It takes a target plasmid and finds the least expensive combination of fragments from user and public repositories to create it via Gibson Assembly.
+`repp` is a tool for DNA assembly. It takes a target plasmid and finds the least expensive combination of fragments from DNA repositories to create it via Gibson Assembly.
 
 Biologists profit when they can re-use DNA during plasmid design: it enables cheaper designs and faster builds. But parsing through all re-usable DNA is completely infeasible. For example, there are over 75,000 plasmids in Addgene -- the likelihood of knowing the best combination and ordering of sub-sequences from Addgene for a given plasmid design is low.
 
 `repp` does such plasmid design. It turns specifications into assembly plans that use the least expensive combination of existing (PCR) and newly synthesized DNA fragments. Target plasmids are specifiable using their target sequence, features, or sub-fragments.
 
+## Features
+
+- **fragment selection**: given a plasmid, `repp` finds the least expensive assembly of fragments including:
+  - PCR fragments: you [provide the databases](https://github.com/Lattice-Automation/repp#sequence-databases) of sequences that you have access to for PCR
+  - synthetic fragments: the cost of fragment synthesis is configurable for both [fixed and variable length pricing](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L64)
+  - synthetic plasmids: `repp` recommends [synthesizing the entire plasmid](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L116) if it is the cheapest option
+- **primer selection**: `repp` chooses primers via Primer3 that have:
+  - minimal [off-target binding](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L47)
+  - minimal [Primer3 penalty scores](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L40) (secondary structure, uneven Tms, etc)
+- **assembly efficacy filters**: when choosing assemblies, `repp` filters for those with desirable Gibson Assembly characteristics:
+  - limits [hairpin structures in fragment junctions/overlaps](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L15)
+  - minimum and maximum [fragment junction/overlap lengths](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L8-L12)
+  - limits the [total number of fragments](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml#L6)
+- **configurability**: every setting above is [configurable](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml)
+
 ## Publication
 
-We published a paper about `repp` in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0223935) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
+We published a paper about `repp` in PLOS One: [Timmons, J.J. & Densmore D. Repository-based plasmid design. PLOS One.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6952187/pdf/pone.0223935.pdf) We used it to build thousands of plasmids from iGEM and Addgene and showed that it reduced the cost of plasmid design as compared to synthesis.
 
 ## Examples
 
@@ -52,7 +67,7 @@ make install
 
 `repp` uses sequence databases for plasmid assembly. These are added as FASTA files along with the name and cost per plasmid from that source.
 
-Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and installing each via the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
+Some existing FASTA files are maintained in our S3 bucket [`repp`](https://s3.console.aws.amazon.com/s3/buckets/repp?region=us-east-1&tab=objects). Below is a snippet for downloading and adding each to `repp`:
 
 ```sh
 for db in igem addgene dnasu; do
@@ -110,7 +125,7 @@ repp make fragments --in "./fragments.fa" --out "plasmid.json"
 
 ### Configuration
 
-The default settings file used by `repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs. For more details, see [configuration](https://lattice-automation.github.io/repp/configuration).
+The [default settings file](https://github.com/Lattice-Automation/repp/blob/master/internal/config/config.yaml) used by `repp` is in `~/.repp/config.yaml`. The maximum number of fragments in an assembly, the minimum overlap between adjacent fragments, and cost curves for synthesis are all defined there. Editing this file directly will change the default values used during plasmid designs.
 
 To overwrite some `repp` settings on a per-design basis, create another YAML file:
 
@@ -189,3 +204,7 @@ The largest linearized fragment post-digestion with all enzymes is used as the b
   ]
 }
 ```
+
+## Contact Us
+
+Do you have a feature request? Do you wish there were better documentation, examples, or a web-server to run `repp` against? Please [create a new issue](https://github.com/Lattice-Automation/repp/issues/new) in this repo, and we will improve the tool.
