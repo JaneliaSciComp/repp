@@ -2,7 +2,6 @@ package repp
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -127,6 +126,9 @@ func (b *blastExec) run() (err error) {
 		threads = 1
 	}
 
+	rlog.Infof("Query %s against %s -> %s\n", b.in.Name(),
+		b.db.Path, b.out.Name())
+
 	flags := []string{
 		"-task", "blastn",
 		"-db", b.db.Path,
@@ -194,7 +196,7 @@ func (b *blastExec) run() (err error) {
 // parse reads the output of blastn into matches.
 func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	// read in the results
-	file, err := ioutil.ReadFile(b.out.Name())
+	file, err := os.ReadFile(b.out.Name())
 	if err != nil {
 		return
 	}
@@ -336,12 +338,12 @@ func blast(
 ) ([]match, error) {
 	matches := []match{}
 	for _, db := range dbs {
-		in, err := ioutil.TempFile("", "blast-in-*")
+		in, err := os.CreateTemp("", "blast-in-*")
 		if err != nil {
 			return nil, err
 		}
 
-		out, err := ioutil.TempFile("", "blast-out-*")
+		out, err := os.CreateTemp("", "blast-out-*")
 		if err != nil {
 			return nil, err
 		}
@@ -373,6 +375,7 @@ func blast(
 		}
 
 		// parse the output file to Matches against the Frag
+		rlog.Infof("Parse filters %+q", filters)
 		dbMatches, err := b.parse(filters)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BLAST output: %v", err)
@@ -391,12 +394,12 @@ func blastAgainst(
 	circular bool,
 	identity int,
 ) (matches []match, err error) {
-	in, err := ioutil.TempFile("", "blast-in-*")
+	in, err := os.CreateTemp("", "blast-in-*")
 	if err != nil {
 		return nil, err
 	}
 
-	out, err := ioutil.TempFile("", "blast-out-*")
+	out, err := os.CreateTemp("", "blast-out-*")
 	if err != nil {
 		return nil, err
 	}
@@ -567,7 +570,7 @@ func queryDatabases(entry string, dbs []DB) (f *Frag, err error) {
 // unlike parentMismatch, it doesn't first find the parent fragment from the db it came from
 // the sequence is passed directly as parentSeq
 func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Config) mismatchResult {
-	parentFile, err := ioutil.TempFile("", "parent-*")
+	parentFile, err := os.CreateTemp("", "parent-*")
 	if err != nil {
 		return mismatchResult{false, match{}, err}
 	}
@@ -642,14 +645,14 @@ func parentMismatch(primers []Primer, parent string, db DB, conf *config.Config)
 // entry here is the ID that's associated with the fragment in its source DB (db)
 func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err error) {
 	// path to the entry batch file to hold the entry accession
-	entryFile, err := ioutil.TempFile("", "blastcmd-in-*")
+	entryFile, err := os.CreateTemp("", "blastcmd-in-*")
 	if err != nil {
 		return nil, "", err
 	}
 	defer os.Remove(entryFile.Name())
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	output, err = ioutil.TempFile("", "blastcmd-out-*")
+	output, err = os.CreateTemp("", "blastcmd-out-*")
 	if err != nil {
 		return nil, "", err
 	}
@@ -695,13 +698,13 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 // The fragment to query against is stored in parentFile
 func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch bool, m match, err error) {
 	// path to the entry batch file to hold the entry accession
-	in, err := ioutil.TempFile("", "primer3-in-*")
+	in, err := os.CreateTemp("", "primer3-in-*")
 	if err != nil {
 		return false, match{}, err
 	}
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
-	out, err := ioutil.TempFile("", "primer3-out-*")
+	out, err := os.CreateTemp("", "primer3-out-*")
 	if err != nil {
 		return false, match{}, err
 	}
@@ -736,7 +739,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 
 	// parse the results and check whether any are cause for concern (by Tm)
 	primerCount := 1 // number of times we expect to see the primer itself
-	parentFileContents, err := ioutil.ReadFile(parentFile.Name())
+	parentFileContents, err := os.ReadFile(parentFile.Name())
 	if err != nil {
 		return false, match{}, err
 	}

@@ -139,7 +139,7 @@ func newFrag(m match, conf *config.Config) *Frag {
 	}
 }
 
-// newFlags is the plural of newFlag
+// newFrags is the plural of newFrag
 func newFrags(matches []match, conf *config.Config) []*Frag {
 	min := conf.FragmentsMinHomology
 	max := conf.FragmentsMaxHomology
@@ -415,8 +415,8 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 }
 
 // setPrimers creates primers against a Frag and returns an error if:
-//	1. the primers have an unacceptably high primer3 penalty score
-//	2. the primers have off-targets in their source plasmid/fragment
+//  1. the primers have an unacceptably high primer3 penalty score
+//  2. the primers have off-targets in their source plasmid/fragment
 func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
 	pHash := primerHash(last, f, next)
 	if oldPrimers, contained := madePrimers[pHash]; contained {

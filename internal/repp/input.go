@@ -3,7 +3,6 @@ package repp
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -91,7 +90,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 			fs.in = p.parseFeatureInput(args)
 		} else if cmdName == "sequence" && len(args) > 0 {
 			fs.in = "input.fa"
-			if err = ioutil.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
+			if err = os.WriteFile(fs.in, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
 				rlog.Fatal(err)
 			}
 		} else if fs.in, err = p.guessInput(); strict && err != nil {
@@ -164,7 +163,7 @@ func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *con
 // if the user hasn't specified an input file.
 func (p *inputParser) guessInput() (in string, err error) {
 	dir, _ := filepath.Abs(".")
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return
 	}
@@ -339,7 +338,7 @@ func read(path string, feature bool) (fragments []*Frag, err error) {
 		}
 	}
 
-	dat, err := ioutil.ReadFile(path)
+	dat, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

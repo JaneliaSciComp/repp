@@ -245,9 +245,10 @@ func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, s
 // It is created by traversing a DAG in forward order:
 //
 // foreach fragment (sorted in increasing start index order):
-//   foreach otherFragment that fragment overlaps with + reachSynthCount more:
-//	   foreach assembly on fragment:
-//       add otherFragment to the assembly to create a new assembly, store on otherFragment
+//
+//	  foreach otherFragment that fragment overlaps with + reachSynthCount more:
+//		   foreach assembly on fragment:
+//	      add otherFragment to the assembly to create a new assembly, store on otherFragment
 func createAssemblies(frags []*Frag, target string, targetLength int, features bool, conf *config.Config) (assemblies []assembly) {
 	// number of additional frags try synthesizing to, in addition to those that
 	// already have enough homology for overlap without any modifications for each Frag
