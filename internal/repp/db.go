@@ -68,7 +68,6 @@ func AddCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		rlog.Fatal(err)
 	}
-
 	if err = m.add(name, costFloat); err != nil {
 		rlog.Fatal(err)
 	}

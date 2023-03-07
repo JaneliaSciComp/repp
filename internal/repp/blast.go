@@ -798,6 +798,7 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 
 // makeblastdb runs makeblastdb against a FASTA file.
 func makeblastdb(db string) error {
+	rlog.Infof("Make BlastDB %s\n", db)
 	cmd := exec.Command(
 		"makeblastdb",
 		"-dbtype", "nucl",
