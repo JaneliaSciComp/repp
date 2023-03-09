@@ -42,8 +42,8 @@ type primer3 struct {
 
 // newPrimer3 creates a primer3 struct from a fragment
 func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3 {
-	in, _ := ioutil.TempFile("", "primer3-in-*")
-	out, _ := ioutil.TempFile("", "primer3-out-*")
+	in, _ := os.CreateTemp("", "primer3-in-*")
+	out, _ := os.CreateTemp("", "primer3-out-*")
 
 	return primer3{
 		f:              this,
