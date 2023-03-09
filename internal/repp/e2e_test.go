@@ -42,7 +42,7 @@ func Test_sequence_e2e(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		sols := Sequence(NewFlags(tt.in, tt.out, tt.backbone, tt.filters, tt.enzymes, tt.dbs))
+		sols := Sequence(createFlagsForTesting(tt.in, tt.out, tt.backbone, tt.filters, tt.enzymes, tt.dbs))
 
 		if len(sols) < 1 {
 			t.Errorf("no solutions for %s", tt.in)
@@ -61,7 +61,7 @@ func Test_sequence_e2e(t *testing.T) {
 func Test_features(t *testing.T) {
 	dir := t.TempDir()
 
-	test1, conf := NewFlags(
+	test1, conf := createFlagsForTesting(
 		"p10 promoter, mEGFP, T7 terminator",
 		path.Join(dir, "features.json"),
 		"pSB1A3",
@@ -190,7 +190,7 @@ func Test_fragments(t *testing.T) {
 func Test_plasmid_single_plasmid(t *testing.T) {
 	dir := t.TempDir()
 
-	fs, c := NewFlags(
+	fs, c := createFlagsForTesting(
 		path.Join("..", "..", "test", "input", "109049.addgene.fa"),
 		path.Join(dir, "single-plasmid.json"),
 		"",
@@ -204,4 +204,32 @@ func Test_plasmid_single_plasmid(t *testing.T) {
 	if !strings.Contains(assemblies[0][0].ID, "109049") {
 		t.Fatal("failed to use 109049 to build the plasmid")
 	}
+}
+
+func createFlagsForTesting(
+	in, out, backbone, filter string,
+	enzymes []string,
+	dbs []DB,
+) (*Flags, *config.Config) {
+	c := config.New()
+
+	p := inputParser{}
+	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
+	if err != nil {
+		rlog.Fatal(err)
+	}
+
+	if strings.Contains(in, ",") {
+		in = p.parseFeatureInput(strings.Fields(in))
+	}
+
+	return &Flags{
+		in:           in,
+		out:          out,
+		dbs:          dbs,
+		backbone:     parsedBB,
+		backboneMeta: bbMeta,
+		filters:      p.getFilters(filter),
+		identity:     98,
+	}, c
 }

@@ -46,35 +46,6 @@ type Flags struct {
 // inputParser contains methods for parsing flags from the input &cobra.Command.
 type inputParser struct{}
 
-// NewFlags makes a new flags object manually. for testing.
-func NewFlags(
-	in, out, backbone, filter string,
-	enzymes []string,
-	dbs []DB,
-) (*Flags, *config.Config) {
-	c := config.New()
-
-	p := inputParser{}
-	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
-	if err != nil {
-		rlog.Fatal(err)
-	}
-
-	if strings.Contains(in, ",") {
-		in = p.parseFeatureInput(strings.Fields(in))
-	}
-
-	return &Flags{
-		in:           in,
-		out:          out,
-		dbs:          dbs,
-		backbone:     parsedBB,
-		backboneMeta: bbMeta,
-		filters:      p.getFilters(filter),
-		identity:     98,
-	}, c
-}
-
 // parseCmdFlags gathers the in path, out path, etc from a cobra cmd object
 // returns Flags and a Config struct for repp.Plasmid or repp.Fragments.
 func parseCmdFlags(cmd *cobra.Command, args []string, strict bool) (*Flags, *config.Config) {
