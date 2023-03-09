@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strconv"
 	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
@@ -47,36 +46,54 @@ type DB struct {
 	Cost float64 `json:"cost"`
 }
 
-// AddCmd imports a new sequence database to the REPP directory.
-func AddCmd(cmd *cobra.Command, args []string) {
-	_, err := os.Stdin.Stat()
-	if err != nil {
-		if helperr := cmd.Help(); helperr != nil {
-			rlog.Fatal(helperr)
-		}
-		rlog.Fatal("no stdin passed to 'repp add database'. See example.")
-	}
+// AddDatabase imports one or more sequence files into a BLAST database to the REPP directory.
+func AddDatabase(dbName string, seqFiles []string, cost float64) (err error) {
+	dbSequenceFilepath := path.Join(config.SeqDatabaseDir, dbName)
 
-	name := cmd.Flag("name").Value.String()
-	cost := cmd.Flag("cost").Value.String()
-	costFloat, err := strconv.ParseFloat(cost, 64)
+	dbSeqFile, err := os.Create(dbSequenceFilepath)
 	if err != nil {
-		rlog.Fatal(err)
+		rlog.Errorf("Error creating database sequence file %f\n", dbSequenceFilepath)
+		return err
 	}
-	var seqFname string
-	if len(args) > 0 {
-		seqFname = args[0]
+	defer dbSeqFile.Close()
+
+	if len(seqFiles) == 0 {
+		// try to read from stdin
+		_, err := os.Stdin.Stat()
+		if err != nil {
+			rlog.Warnf("Error reading sequence from the standard input")
+			return err
+		}
+		dbSeqInput := os.Stdin
+		dbSeqReader := bufio.NewReader(dbSeqInput)
+
+		if _, err = dbSeqReader.WriteTo(dbSeqFile); err != nil {
+			rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
+			return err
+		}
 	} else {
-		seqFname = ""
+		dbSeqs, err := multiFileRead(seqFiles)
+		if err != nil {
+			rlog.Errorf("Error reading one or more sequence files into the database")
+			return err
+		}
+		err = writeFastaToFile(dbSeqs, dbSeqFile)
+		if err != nil {
+			rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
+			return err
+		}
 	}
 
 	m, err := newManifest()
 	if err != nil {
 		rlog.Fatal(err)
 	}
-	if err = m.add(name, seqFname, costFloat); err != nil {
+
+	if err = m.add(dbName, dbSequenceFilepath, cost); err != nil {
 		rlog.Fatal(err)
 	}
+
+	return
 }
 
 // ListCmd lists the sequence databases and their costs.
@@ -132,50 +149,21 @@ func newManifest() (*manifest, error) {
 }
 
 // add imports a FASTA sequence database into REPP, storing it in the manifest.
-func (m *manifest) add(dbName string, seqFname string, cost float64) error {
+func (m *manifest) add(dbName string, seqFilepath string, cost float64) error {
 	db := DB{
 		Name: dbName,
-		Path: path.Join(config.SeqDatabaseDir, dbName),
+		Path: seqFilepath,
 		Cost: cost,
 	}
-
 	l := rlog.With("path", db.Path, "name", dbName, "cost", cost)
-	dst, err := os.Create(db.Path)
-	if err != nil {
-		l.Error("failed to create db")
-		return err
-	}
-	l.Debug("created db")
-	defer dst.Close()
-
-	var seqFile *os.File
-	if seqFname == "" {
-		seqFile = os.Stdin
-	} else {
-		seqFile, err = os.Open(seqFname)
-		if err != nil {
-			return err
-		}
-		defer seqFile.Close()
-	}
-	reader := bufio.NewReader(seqFile)
-	n, err := reader.WriteTo(dst)
-	if err != nil {
-		l.Errorw("failed copying stdin", "err", err)
-		return err
-	}
-	l.Debugw("copied stdin", "bytes", n)
-	if n == 0 {
-		l.Fatal("no stdin to create db")
-	}
-
-	if err = makeblastdb(db.Path); err != nil {
+	if err := makeblastdb(db.Path); err != nil {
 		l.Error("failed to makeblastdb")
 		return err
 	}
 	l.Debug("ran makeblastdb")
 
 	m.DBs[db.Name] = db
+
 	return m.save()
 }
 

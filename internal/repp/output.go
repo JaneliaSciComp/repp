@@ -154,7 +154,7 @@ func writeJSON(
 	return output, nil
 }
 
-// writeFasta writes an array of fragments to a FASTA file
+// writeFasta writes a slice of fragments to a FASTA file
 // if appendMode is true - it appends to an existing file
 func writeFasta(filename string, frags []*Frag, appendMode bool) (err error) {
 	var openFlags int
@@ -170,15 +170,21 @@ func writeFasta(filename string, frags []*Frag, appendMode bool) (err error) {
 	}
 	defer fastaFile.Close()
 
-	var writeErr error
+	err = writeFastaToFile(frags, fastaFile)
+
+	return
+}
+
+// writeFastaToFile writes an array of fragments to a FASTA file
+func writeFastaToFile(frags []*Frag, fastaFile *os.File) (err error) {
 	for _, f := range frags {
-		if _, err = fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", f.ID, f.Seq)); err != nil {
+		if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", f.ID, f.Seq)); ferr != nil {
 			rlog.Errorf("Error writing fragment %s\n", f.ID)
-			writeErr = multierr.Append(writeErr, err)
+			err = multierr.Append(err, ferr)
 		}
 	}
 
-	return writeErr
+	return
 }
 
 // writeGenbank writes a slice of fragments/features to a genbank output file.

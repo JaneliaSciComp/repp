@@ -12,6 +12,7 @@ import (
 
 	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 )
 
 var (
@@ -300,7 +301,22 @@ func (p *inputParser) getFilters(filterFlag string) []string {
 	return strings.FieldsFunc(strings.ToUpper(filterFlag), splitFunc)
 }
 
-// read a FASTA file (by its path on local FS) to a slice of Fragments.
+// read a dir of FASTA or Genbank files to a slice of fragments
+func multiFileRead(fs []string) (fragments []*Frag, err error) {
+	for _, f := range fs {
+		fFrags, ferr := read(f, false)
+		if ferr != nil {
+			rlog.Warnf("Error reading sequence from %s\n", f)
+			err = multierr.Append(err, ferr)
+		} else {
+			fragments = append(fragments, fFrags...)
+		}
+	}
+
+	return
+}
+
+// read a FASTA or Genbank file (by its path on local FS) to a slice of Fragments.
 func read(path string, feature bool) (fragments []*Frag, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
@@ -451,10 +467,17 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 
 	// parse just the file's sequence
 	idRegex := regexp.MustCompile(`LOCUS[ \t]*([^ \t]*)`)
-	id := idRegex.FindString(genbankSplit[0])
+	idMatches := idRegex.FindStringSubmatch(genbankSplit[0])
 
-	if id == "" {
+	var id string
+	if len(idMatches) == 0 {
 		return nil, fmt.Errorf("failed to parse locus from %s", path)
+	} else if len(idMatches) > 1 {
+		id = idMatches[1]
+	} else {
+		// use filename otherwise if the ID is just LOCUS
+		// and if other files have that there will be bad ids
+		id = filepath.Base(path)
 	}
 
 	return []*Frag{
