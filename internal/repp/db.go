@@ -63,12 +63,18 @@ func AddCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		rlog.Fatal(err)
 	}
+	var seqFname string
+	if len(args) > 0 {
+		seqFname = args[0]
+	} else {
+		seqFname = ""
+	}
 
 	m, err := newManifest()
 	if err != nil {
 		rlog.Fatal(err)
 	}
-	if err = m.add(name, costFloat); err != nil {
+	if err = m.add(name, seqFname, costFloat); err != nil {
 		rlog.Fatal(err)
 	}
 }
@@ -126,14 +132,14 @@ func newManifest() (*manifest, error) {
 }
 
 // add imports a FASTA sequence database into REPP, storing it in the manifest.
-func (m *manifest) add(name string, cost float64) error {
+func (m *manifest) add(dbName string, seqFname string, cost float64) error {
 	db := DB{
-		Name: name,
-		Path: path.Join(config.SeqDatabaseDir, name),
+		Name: dbName,
+		Path: path.Join(config.SeqDatabaseDir, dbName),
 		Cost: cost,
 	}
 
-	l := rlog.With("path", db.Path, "name", name, "cost", cost)
+	l := rlog.With("path", db.Path, "name", dbName, "cost", cost)
 	dst, err := os.Create(db.Path)
 	if err != nil {
 		l.Error("failed to create db")
@@ -142,7 +148,17 @@ func (m *manifest) add(name string, cost float64) error {
 	l.Debug("created db")
 	defer dst.Close()
 
-	reader := bufio.NewReader(os.Stdin)
+	var seqFile *os.File
+	if seqFname == "" {
+		seqFile = os.Stdin
+	} else {
+		seqFile, err = os.Open(seqFname)
+		if err != nil {
+			return err
+		}
+		defer seqFile.Close()
+	}
+	reader := bufio.NewReader(seqFile)
 	n, err := reader.WriteTo(dst)
 	if err != nil {
 		l.Errorw("failed copying stdin", "err", err)

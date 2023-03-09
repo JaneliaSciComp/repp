@@ -17,29 +17,27 @@ import (
 )
 
 var (
-	home, _ = homedir.Dir()
-
 	// reppDir is the root directory where repp settings and database files live
-	reppDir = filepath.Join(home, ".repp")
+	reppDir string
 
 	// configPath is the path to a local/default config file
-	configPath = filepath.Join(reppDir, "config.yaml")
+	configPath string
 
 	// Primer3Config is the path to a primer3 config directory
 	// primer3 is (overly) particular about the trailing slash
-	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
+	Primer3Config string
 
 	// FeatureDB is the path to the features file
-	FeatureDB = filepath.Join(reppDir, "features.json")
+	FeatureDB string
 
 	// EnzymeDB is the path to the enzymes file
-	EnzymeDB = filepath.Join(reppDir, "enzymes.json")
+	EnzymeDB string
 
 	// SeqDatabaseDir is the path to a directory of sequence databases.
-	SeqDatabaseDir = filepath.Join(reppDir, "dbs")
+	SeqDatabaseDir string
 
 	// SeqDatabaseManifest is the path to the manifest file for the sequence databases.
-	SeqDatabaseManifest = filepath.Join(SeqDatabaseDir, "manifest.json")
+	SeqDatabaseManifest string
 )
 
 var (
@@ -135,11 +133,39 @@ type Config struct {
 	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 }
 
+func initDataPaths() (err error) {
+	reppDir = os.Getenv("REPP_DATA_DIR")
+	if reppDir == "" {
+		// use $HOMEDIR/.repp
+		var home string
+		home, err = homedir.Dir()
+		if err != nil {
+			return
+		}
+		reppDir = filepath.Join(home, ".repp")
+	}
+
+	configPath = filepath.Join(reppDir, "config.yaml")
+	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
+	FeatureDB = filepath.Join(reppDir, "features.json")
+	EnzymeDB = filepath.Join(reppDir, "enzymes.json")
+	SeqDatabaseDir = filepath.Join(reppDir, "dbs")
+	SeqDatabaseManifest = filepath.Join(SeqDatabaseDir, "manifest.json")
+
+	return
+}
+
 // Setup checks that the REPP data directory exists.
 // It creates one and writes default config files to it otherwise.
 func Setup() {
+
+	err := initDataPaths()
+	if err != nil {
+		log.Fatal("Error creating repp data paths", err)
+	}
+
 	// create the REPP directory if it doesn't exist
-	_, err := os.Stat(reppDir)
+	_, err = os.Stat(reppDir)
 	if os.IsNotExist(err) {
 		if err = os.Mkdir(reppDir, 0755); err != nil {
 			log.Fatal(err)
