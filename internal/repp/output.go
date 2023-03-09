@@ -3,13 +3,14 @@ package repp
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Lattice-Automation/repp/internal/config"
+	"go.uber.org/multierr"
 )
 
 // Solution is a single solution to build up the target plasmid.
@@ -146,11 +147,38 @@ func writeJSON(
 		return output, fmt.Errorf("failed to serialize output: %v", err)
 	}
 
-	if err = ioutil.WriteFile(filename, output, 0666); err != nil {
+	if err = os.WriteFile(filename, output, 0666); err != nil {
 		return output, fmt.Errorf("failed to write the output: %v", err)
 	}
 
 	return output, nil
+}
+
+// writeFasta writes an array of fragments to a FASTA file
+// if appendMode is true - it appends to an existing file
+func writeFasta(filename string, frags []*Frag, appendMode bool) (err error) {
+	var openFlags int
+	if appendMode {
+		openFlags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
+	} else {
+		openFlags = os.O_WRONLY | os.O_CREATE
+	}
+	fastaFile, err := os.OpenFile(filename, openFlags, 0644)
+	if err != nil {
+		// error opening the file
+		return err
+	}
+	defer fastaFile.Close()
+
+	var writeErr error
+	for _, f := range frags {
+		if _, err = fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", f.ID, f.Seq)); err != nil {
+			rlog.Errorf("Error writing fragment %s\n", f.ID)
+			writeErr = multierr.Append(writeErr, err)
+		}
+	}
+
+	return writeErr
 }
 
 // writeGenbank writes a slice of fragments/features to a genbank output file.
@@ -207,7 +235,7 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 	ori.WriteString("//\n")
 
 	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "")
-	err := ioutil.WriteFile(filename, []byte(gb), 0644)
+	err := os.WriteFile(filename, []byte(gb), 0644)
 	if err != nil {
 		rlog.Fatal(err)
 	}
