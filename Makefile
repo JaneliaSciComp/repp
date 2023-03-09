@@ -1,3 +1,4 @@
+DOCKER_IMAGE=jjtimmons/repp
 VERSION=v1.0.0
 
 .PHONY: build
@@ -12,11 +13,13 @@ install:
 
 .PHONY: image
 image:
-	docker build -t jjtimmons/repp:$(VERSION) -t jjtimmons/repp:latest .
+	docker build \
+		-t ${DOCKER_IMAGE}:$(VERSION) \
+		-t ${DOCKER_IMAGE}:latest .
 
 image/push: image
-	docker push jjtimmons/repp:$(VERSION)
-	docker push jjtimmons/repp:latest
+	docker push ${DOCKER_IMAGE}:$(VERSION)
+	docker push ${DOCKER_IMAGE}:latest
 
 release: image/push
 	gh release create $(VERSION) -t $(VERSION) --generate-notes -d

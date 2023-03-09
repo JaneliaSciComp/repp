@@ -5,7 +5,11 @@ RUN apt-get update && \
         ncbi-blast+ \
         primer3
 
+VOLUME /data/repp
+ENV REPP_DATA_DIR=/data/repp
+
 WORKDIR $HOME/src
+
 ADD . .
 RUN go install ./cmd/repp
 ENTRYPOINT ["repp"]
