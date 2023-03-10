@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
@@ -63,6 +62,8 @@ func init() {
 	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
 	databaseAddCmd.Flags().Float64P("cost", "c", 0.0, "the cost per plasmid procurement (eg order + shipping fee)")
 	databaseAddCmd.Flags().StringP("dir", "d", "", "directory containing FASTA or Genbank file(s) to be used for creating the BLAST database")
+	databaseAddCmd.Flags().BoolP("append", "a", false, "if true append to the database if it exists")
+
 	must(databaseAddCmd.MarkFlagRequired("name"))
 	must(databaseAddCmd.MarkFlagRequired("cost"))
 
@@ -74,18 +75,36 @@ func init() {
 }
 
 func addDatabase(cmd *cobra.Command, args []string) {
-	dbName := cmd.Flag("name").Value.String()
-	costFlag := cmd.Flag("cost").Value.String()
-	cost, err := strconv.ParseFloat(costFlag, 64)
+	dbName, err := cmd.Flags().GetString("name")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("Database name must be a string", err)
+	}
+	cost, err := cmd.Flags().GetFloat64("cost")
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
 			log.Fatal(helperr)
 		}
 		log.Fatal("Cost must be a number", err)
 	}
-	var seqFiles []string
+	seqDir, err := cmd.Flags().GetString("dir")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("Database name must be a string", err)
+	}
+	dbAppendFlag, err := cmd.Flags().GetBool("append")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("Append flag must be a boolean", err)
+	}
 
-	seqDir := cmd.Flag("dir").Value.String()
+	var seqFiles []string
 	if seqDir != "" {
 		// collect files from sequence dir
 		seqDirContent, err := os.ReadDir(seqDir)
@@ -101,7 +120,7 @@ func addDatabase(cmd *cobra.Command, args []string) {
 	// append the rest of files specified as positional args
 	seqFiles = append(seqFiles, args...)
 
-	if err = repp.AddDatabase(dbName, seqFiles, cost); err != nil {
+	if err = repp.AddDatabase(dbName, seqFiles, cost, dbAppendFlag); err != nil {
 		log.Fatal("Error creating database", dbName, err)
 	}
 }

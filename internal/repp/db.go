@@ -46,10 +46,16 @@ type DB struct {
 }
 
 // AddDatabase imports one or more sequence files into a BLAST database to the REPP directory.
-func AddDatabase(dbName string, seqFiles []string, cost float64) (err error) {
+func AddDatabase(dbName string, seqFiles []string, cost float64, appendMode bool) (err error) {
 	dbSequenceFilepath := path.Join(config.SeqDatabaseDir, dbName)
 
-	dbSeqFile, err := os.Create(dbSequenceFilepath)
+	var openFlags int
+	if appendMode {
+		openFlags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
+	} else {
+		openFlags = os.O_WRONLY | os.O_CREATE
+	}
+	dbSeqFile, err := os.OpenFile(dbSequenceFilepath, openFlags, 0644)
 	if err != nil {
 		rlog.Errorf("Error creating database sequence file %f\n", dbSequenceFilepath)
 		return err
@@ -76,7 +82,7 @@ func AddDatabase(dbName string, seqFiles []string, cost float64) (err error) {
 			rlog.Errorf("Error reading one or more sequence files into the database")
 			return err
 		}
-		err = writeFastaToFile(dbSeqs, dbSeqFile)
+		err = writeFragsToFastaFile(dbSeqs, dbSeqFile)
 		if err != nil {
 			rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
 			return err

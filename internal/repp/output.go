@@ -154,29 +154,8 @@ func writeJSON(
 	return output, nil
 }
 
-// writeFasta writes a slice of fragments to a FASTA file
-// if appendMode is true - it appends to an existing file
-func writeFasta(filename string, frags []*Frag, appendMode bool) (err error) {
-	var openFlags int
-	if appendMode {
-		openFlags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
-	} else {
-		openFlags = os.O_WRONLY | os.O_CREATE
-	}
-	fastaFile, err := os.OpenFile(filename, openFlags, 0644)
-	if err != nil {
-		// error opening the file
-		return err
-	}
-	defer fastaFile.Close()
-
-	err = writeFastaToFile(frags, fastaFile)
-
-	return
-}
-
-// writeFastaToFile writes an array of fragments to a FASTA file
-func writeFastaToFile(frags []*Frag, fastaFile *os.File) (err error) {
+// writeFragsToFastaFile writes a slice of fragments to a FASTA file
+func writeFragsToFastaFile(frags []*Frag, fastaFile *os.File) (err error) {
 	for _, f := range frags {
 		if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", f.ID, f.Seq)); ferr != nil {
 			rlog.Errorf("Error writing fragment %s\n", f.ID)
