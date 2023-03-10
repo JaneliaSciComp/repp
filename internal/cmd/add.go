@@ -25,7 +25,7 @@ be passed to the --enzyme flag`,
 var databaseAddCmd = &cobra.Command{
 	Use:                        "database",
 	Short:                      "Import a FASTA sequence database along with its cost",
-	Run:                        addDatabase,
+	Run:                        runDatabaseAddCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       "\nImport a new sequence database so its sequences are available to 'repp make'",
 	Example:                    "  repp add database --name addgene --cost 65.0 ./addgene.fa",
@@ -74,7 +74,7 @@ func init() {
 	RootCmd.AddCommand(addCmd)
 }
 
-func addDatabase(cmd *cobra.Command, args []string) {
+func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 	dbName, err := cmd.Flags().GetString("name")
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
