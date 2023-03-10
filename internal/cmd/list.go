@@ -20,7 +20,7 @@ If there is no exact match, similar entries are returned`,
 var databaseListCmd = &cobra.Command{
 	Use:                        "database [name]",
 	Short:                      "List sequence databases",
-	Run:                        repp.ListCmd,
+	Run:                        listDatabases,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp list database",
 	Long:                       "List all sequence databases and their costs",
@@ -92,4 +92,9 @@ func init() {
 	listCmd.AddCommand(sequenceListCmd)
 
 	RootCmd.AddCommand(listCmd)
+}
+
+// list databases
+func listDatabases(cmd *cobra.Command, args []string) {
+	repp.ListDatabases()
 }

@@ -18,7 +18,7 @@ var deleteCmd = &cobra.Command{
 var databaseDeleteCmd = &cobra.Command{
 	Use:                        "database [name]",
 	Short:                      "Delete a sequence database",
-	Run:                        repp.DeleteCmd,
+	Run:                        deleteDatabase,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp delete database \"igem\"",
 	Aliases:                    []string{"db"},
@@ -43,4 +43,9 @@ func init() {
 	deleteCmd.AddCommand(featuresDeleteCmd)
 
 	RootCmd.AddCommand(deleteCmd)
+}
+
+func deleteDatabase(cmd *cobra.Command, args []string) {
+	db := args[0]
+	repp.DeleteDatabase(db)
 }

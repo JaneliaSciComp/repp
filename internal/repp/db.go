@@ -9,7 +9,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
-	"github.com/spf13/cobra"
 )
 
 // manifest is a serializable list of sequence databases.
@@ -97,7 +96,7 @@ func AddDatabase(dbName string, seqFiles []string, cost float64) (err error) {
 }
 
 // ListCmd lists the sequence databases and their costs.
-func ListCmd(cmd *cobra.Command, args []string) {
+func ListDatabases() {
 	m, err := newManifest()
 	if err != nil {
 		rlog.Fatal(err)
@@ -117,8 +116,7 @@ func ListCmd(cmd *cobra.Command, args []string) {
 }
 
 // DeleteCmd deletes an existing sequence database from the REPP directory.
-func DeleteCmd(cmd *cobra.Command, args []string) {
-	db := args[0]
+func DeleteDatabase(db string) {
 	m, err := newManifest()
 	if err != nil {
 		rlog.Fatal(err)
