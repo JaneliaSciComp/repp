@@ -107,11 +107,14 @@ type blastExec struct {
 // input creates an input query file (FASTA) for blastn.
 func (b *blastExec) input() error {
 	// create the query sequence file.
-	// if circular, add the sequence to itself because it's circular
-	// and we want to find matches across the zero-index
-	querySeq := b.seq
+	var querySeq string
+
 	if b.circular {
-		querySeq = querySeq + b.seq
+		// if circular, add the sequence to itself because it's circular
+		// and we want to find matches across the zero-index
+		querySeq = b.seq + b.seq
+	} else {
+		querySeq = b.seq
 	}
 
 	_, err := b.in.WriteString(fmt.Sprintf(">%s\n%s\n", b.name, querySeq))
