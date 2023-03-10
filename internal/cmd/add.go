@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
@@ -36,7 +37,7 @@ var databaseAddCmd = &cobra.Command{
 var featureAddCmd = &cobra.Command{
 	Use:                        "feature [name] [sequence]",
 	Short:                      "Add a feature to the features database",
-	Run:                        repp.FeaturesAddCmd,
+	Run:                        runFeaturesAddCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       "\nAdd a feature in the features database so it can be use used in 'repp make features'",
 	Example:                    "  repp add feature \"custom terminator 3\" CTAGCATAACAAGCTTGGGCACCTGTAAACGGGTCTTGAGGGGTTCCATTTTG",
@@ -123,4 +124,25 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 	if err = repp.AddDatabase(dbName, seqFiles, cost, dbAppendFlag); err != nil {
 		log.Fatal("Error creating database", dbName, err)
 	}
+}
+
+func runFeaturesAddCmd(cmd *cobra.Command, args []string) {
+	var name, seq string
+
+	if len(args) < 2 {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("Add features must have exactly 2 arguments")
+		return
+	} else if len(args) == 2 {
+		name = args[0]
+		seq = args[1]
+	} else {
+		name = strings.Join(args[:len(args)-1], " ")
+		seq = args[len(args)-1]
+
+	}
+
+	repp.AddFeatures(name, seq)
 }

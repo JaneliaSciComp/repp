@@ -499,17 +499,9 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// FeaturesAddCmd the feature's seq in the database (or create if it isn't in the feature db)
-func FeaturesAddCmd(cmd *cobra.Command, args []string) {
+// AddFeatures - add the feature's seq in the database (or create if it isn't in the feature db)
+func AddFeatures(name, seq string) {
 	f := NewFeatureDB()
-
-	name := args[0]
-	seq := args[1]
-
-	if len(args) > 2 {
-		name = strings.Join(args[:len(args)-1], " ")
-		seq = args[len(args)-1]
-	}
 
 	f.contents[name] = seq
 	if err := f.save(); err != nil {
@@ -517,21 +509,9 @@ func FeaturesAddCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-// FeaturesDeleteCmd the feature from the database
-func FeaturesDeleteCmd(cmd *cobra.Command, args []string) {
+// DeleteFeature - delete the feature from the database
+func DeleteFeature(name string) {
 	f := NewFeatureDB()
-
-	if len(args) < 1 {
-		if helperr := cmd.Help(); helperr != nil {
-			rlog.Fatal(helperr)
-		}
-		rlog.Fatal("\nno features name passed.")
-	}
-
-	name := args[0]
-	if len(args) > 1 {
-		name = strings.Join(args, " ")
-	}
 
 	if _, contained := f.contents[name]; !contained {
 		fmt.Printf("failed to find %s in the features database\n", name)

@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"log"
+	"strings"
+
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +32,7 @@ var databaseDeleteCmd = &cobra.Command{
 var featuresDeleteCmd = &cobra.Command{
 	Use:                        "feature [name]",
 	Short:                      "Delete a feature from the features database",
-	Run:                        repp.FeaturesDeleteCmd,
+	Run:                        runFeaturesDeleteCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp delete feature \"T7 terminator\"",
 	Long: `Delete a feature from the features database by its name.
@@ -46,6 +49,30 @@ func init() {
 }
 
 func runDatabaseDeleteCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 1 {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("No database was specified")
+	}
 	db := args[0]
+
 	repp.DeleteDatabase(db)
+}
+
+func runFeaturesDeleteCmd(cmd *cobra.Command, args []string) {
+	var name string
+
+	if len(args) < 1 {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("\nno features name passed.")
+	} else if len(args) == 1 {
+		name = args[0]
+	} else {
+		name = strings.Join(args, " ")
+	}
+
+	repp.DeleteFeature(name)
 }
