@@ -7,70 +7,40 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
-
-	"github.com/spf13/cobra"
 )
 
 // Annotate is for annotating a plasmid sequence given the features in the feature database.
 // If an output path is provided, the annotated plasmid is writen to that file. Otherwise,
 // the feature matches are written to stdout.
-func Annotate(cmd *cobra.Command, args []string) {
-	output, _ := cmd.Flags().GetString("out")
+func Annotate(inputName, inputQuery string,
+	identity int,
+	namesOnly, toCull bool,
+	dbNames, filters []string,
+	output string) {
+	var name, query string
 
-	identity, err := cmd.Flags().GetInt("identity")
-	if err != nil {
-		identity = 96 // might be something other than `repp plasmid`
-	}
-
-	p := inputParser{}
-	filters, err := cmd.Flags().GetString("exclude")
-	excludeFilters := []string{}
-	if err == nil {
-		excludeFilters = p.getFilters(filters)
-	}
-
-	name := ""
-	query := "" // the plasmid sequence that we're querying
-	if len(args) > 0 {
-		query = args[0]
-	} else {
-		in, err := cmd.Flags().GetString("in")
-		if in == "" || err != nil {
-			if helperr := cmd.Help(); helperr != nil {
-				rlog.Fatal(helperr)
-			}
+	if inputQuery == "" {
+		if inputName == "" {
 			rlog.Fatal("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
+		} else {
+			frags, err := read(inputName, false)
+			if err != nil {
+				rlog.Fatal(err)
+			}
+			name = frags[0].ID
+			query = frags[0].Seq
 		}
-
-		frags, err := read(in, false)
-		if err != nil {
-			rlog.Fatal(err)
-		}
-		name = frags[0].ID
-		query = frags[0].Seq
+	} else {
+		name = inputName
+		query = inputQuery
 	}
 
-	toCull, _ := cmd.Flags().GetBool("cull")
-	namesOnly, _ := cmd.Flags().GetBool("names")
-
-	dbflag, err := cmd.Flags().GetString("dbs")
-	if err != nil {
-		if helperr := cmd.Help(); helperr != nil {
-			rlog.Fatal(helperr)
-		}
-		rlog.Fatal("failed to parse building fragments: %v", err)
-	}
-
-	m, err := newManifest()
-	if err != nil {
-		rlog.Fatal("failed to get DB manifest: %v", err)
-	}
-	dbs, err := p.parseDBs(m, dbflag)
+	dbs, err := getRegisteredDBs(dbNames)
 	if err != nil {
 		rlog.Fatal("failed to find any fragment databases: %v", err)
 	}
 
-	annotate(name, query, output, identity, dbs, excludeFilters, toCull, namesOnly)
+	annotate(name, query, output, identity, dbs, filters, toCull, namesOnly)
 }
 
 // annotate is for executing blast against the query sequence.

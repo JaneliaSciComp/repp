@@ -55,7 +55,7 @@ func Test_queryFeatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := queryFeatures(tt.args.flags); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := queryFeatures(tt.args.flags.in, tt.args.flags.backbone, tt.args.flags.dbs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("queryFeatures() = %v, want %v", got, tt.want)
 			}
 		})
@@ -87,7 +87,12 @@ func Test_blastFeatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := blastFeatures(tt.args.flags, tt.args.targetFeatures, config.New())
+			got := blastFeatures(
+				tt.args.flags.filters,
+				tt.args.flags.identity,
+				tt.args.flags.dbs,
+				tt.args.targetFeatures,
+				config.New())
 
 			matches := []match{}
 			for _, ms := range got {

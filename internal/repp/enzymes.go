@@ -9,7 +9,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/Lattice-Automation/repp/internal/config"
-	"github.com/spf13/cobra"
 )
 
 // enzyme is a single enzyme that can be used to linearize a backbone before
@@ -252,16 +251,16 @@ func NewEnzymeDB() *kv {
 	return newKV(config.EnzymeDB)
 }
 
-// EnzymesReadCmd writes enzymes that are similar in queried name to stdout.
+// PrintEnzymes writes enzymes that are similar in queried name to stdout.
 // if multiple enzyme names include the enzyme name, they are all returned.
 // otherwise a list of enzyme names are returned (those beneath a levenshtein distance cutoff).
-func EnzymesReadCmd(cmd *cobra.Command, args []string) {
+func PrintEnzymes(enzyme string) {
 	f := NewEnzymeDB()
 
 	// from https://golang.org/pkg/text/tabwriter/
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 
-	if len(args) < 1 {
+	if enzyme == "" {
 		enzymeNames := make([]string, len(f.contents))
 		i := 0
 		for name := range f.contents {
@@ -277,11 +276,9 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	name := args[0]
-
 	// if there's an exact match, just log that one
-	if seq, exists := f.contents[name]; exists {
-		fmt.Printf("%s	%s\n", name, seq)
+	if seq, exists := f.contents[enzyme]; exists {
+		fmt.Printf("%s	%s\n", enzyme, seq)
 		return
 	}
 
@@ -290,9 +287,9 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 	lowDistance := []string{}
 
 	for fName, fSeq := range f.contents {
-		if strings.Contains(fName, name) {
+		if strings.Contains(fName, enzyme) {
 			containing = append(containing, fName+"\t"+fSeq)
-		} else if len(fName) > ldCutoff && ld(name, fName, true) <= ldCutoff {
+		} else if len(fName) > ldCutoff && ld(enzyme, fName, true) <= ldCutoff {
 			lowDistance = append(lowDistance, fName+"\t"+fSeq)
 		}
 	}
@@ -306,7 +303,7 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 	} else if len(lowDistance) > 0 {
 		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		fmt.Fprintf(w, "failed to find any enzymes for %s", name)
+		fmt.Fprintf(w, "failed to find any enzymes for %s", enzyme)
 	}
 	if _, err := w.Write([]byte("\n")); err != nil {
 		rlog.Fatal(err)
@@ -314,20 +311,12 @@ func EnzymesReadCmd(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-// EnzymesAddCmd the enzyme's seq in the database (or create if it isn't in the enzyme db).
-func EnzymesAddCmd(cmd *cobra.Command, args []string) {
+// AddEnzymes the enzyme's seq in the database (or create if it isn't in the enzyme db).
+func AddEnzymes(name, inputSeq string) {
 	f := NewEnzymeDB()
 
-	name := args[0]
-	seq := args[1]
-	if len(args) > 2 {
-		name = strings.Join(args[:len(args)-1], " ")
-		seq = args[len(args)-1]
-	}
-	seq = strings.ToUpper(seq)
-
 	invalidChars := regexp.MustCompile(`[^ATGCMRWYSKHDVBNX_\^]`)
-	seq = invalidChars.ReplaceAllString(seq, "")
+	seq := invalidChars.ReplaceAllString(strings.ToUpper(inputSeq), "")
 
 	if strings.Count(seq, "^") != 1 || strings.Count(seq, "_") != 1 {
 		rlog.Fatal("%s is not a valid enzyme recognition sequence. see 'repp find enzyme --help'\n", seq)
@@ -339,28 +328,35 @@ func EnzymesAddCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-// EnzymesDeleteCmd deletes an enzyme from the database
-func EnzymesDeleteCmd(cmd *cobra.Command, args []string) {
+// DeleteEnzyme deletes one or more enzymes from the database
+func DeleteEnzyme(enzyme string) (bresult bool, err error) {
 	f := NewEnzymeDB()
 
-	if len(args) < 1 {
-		if helperr := cmd.Help(); helperr != nil {
-			rlog.Fatal(helperr)
-		}
-		rlog.Fatal("\nexpected an enzyme name")
+	if _, contained := f.contents[enzyme]; !contained {
+		return false, fmt.Errorf("failed to find %s in the enzymes database\n", enzyme)
 	}
 
-	name := args[0]
-	if len(args) > 1 {
-		name = strings.Join(args, " ")
-	}
-
-	if _, contained := f.contents[name]; !contained {
-		fmt.Printf("failed to find %s in the enzymes database\n", name)
-	}
-
-	delete(f.contents, name)
+	delete(f.contents, enzyme)
 	if err := f.save(); err != nil {
-		rlog.Fatal(err)
+		return false, err
 	}
+	bresult = true
+
+	return
+}
+
+func getValidEnzymes(enzymeNames []string) (enzymes []enzyme, err error) {
+	enzymeDB := NewEnzymeDB()
+	for _, enzymeName := range enzymeNames {
+		if cutseq, exists := enzymeDB.contents[enzymeName]; exists {
+			enzymes = append(enzymes, newEnzyme(enzymeName, cutseq))
+		} else {
+			return enzymes, fmt.Errorf(
+				`failed to find enzyme with name %s use "repp enzymes" for a list of recognized enzymes`,
+				enzymeName,
+			)
+		}
+	}
+
+	return
 }

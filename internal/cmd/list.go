@@ -46,7 +46,7 @@ Otherwise, all features with names similar to the feature name are writen to std
 var enzymeListCmd = &cobra.Command{
 	Use:                        "enzyme [name]",
 	Short:                      "List enzymes available for linearizing backbones",
-	Run:                        repp.EnzymesReadCmd,
+	Run:                        runEnzymeListCmd,
 	Example:                    "  repp list enzyme EcoRI",
 	SuggestionsMinimumDistance: 2,
 	Long: `List out all the enzymes with the same or a similar name as the argument.
@@ -97,4 +97,16 @@ func init() {
 // list databases
 func runDatabaseListCmd(cmd *cobra.Command, args []string) {
 	repp.ListDatabases()
+}
+
+func runEnzymeListCmd(cmd *cobra.Command, args []string) {
+
+	if len(args) == 0 {
+		repp.PrintEnzymes("")
+	} else {
+		for _, n := range args {
+			repp.PrintEnzymes(n)
+		}
+	}
+
 }

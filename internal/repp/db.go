@@ -193,6 +193,38 @@ func (m *manifest) save() error {
 	return os.WriteFile(config.SeqDatabaseManifest, contents, 0644)
 }
 
+func getRegisteredDBs(dbNames []string) (dbs []DB, err error) {
+	m, err := newManifest()
+	if err != nil {
+		rlog.Fatalf("failed to get DB manifest: %v", err)
+	}
+
+	if len(dbNames) == 0 {
+		// if no database was specified - get them all from the manifest
+		for _, db := range m.DBs {
+			dbs = append(dbs, db)
+		}
+		return
+	}
+
+	// filter for matching databases,
+	// but only warn the user if a db is not found
+	for _, dbName := range dbNames {
+		db, ok := m.DBs[dbName]
+		if ok {
+			dbs = append(dbs, db)
+		} else {
+			rlog.Warnf("DB %s not registered", dbName)
+		}
+	}
+
+	if len(dbs) == 0 {
+		err = fmt.Errorf("None of the requested databases was found.\n The know DBs are: %v", m.GetNames())
+	}
+
+	return
+}
+
 func dbNames(dbs []DB) (names []string) {
 	for _, d := range dbs {
 		names = append(names, d.Name)

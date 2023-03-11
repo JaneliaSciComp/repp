@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
@@ -8,7 +10,7 @@ import (
 // annotateCmd is for finding features or enzymes by their name.
 var annotateCmd = &cobra.Command{
 	Use:                        "annotate [seq]",
-	Run:                        repp.Annotate,
+	Run:                        runAnnotateCmd,
 	Short:                      "Annotate a plasmid using features",
 	SuggestionsMinimumDistance: 3,
 	Long: `Accepts a sequence file as input and runs alignment against the
@@ -32,4 +34,53 @@ func init() {
 	annotateCmd.Flags().BoolP("names", "n", false, "log feature names to the console")
 
 	RootCmd.AddCommand(annotateCmd)
+}
+
+func runAnnotateCmd(cmd *cobra.Command, args []string) {
+	var name string
+	var query string
+
+	name, _ = cmd.Flags().GetString("in")
+
+	output, _ := cmd.Flags().GetString("out")
+
+	identity, err := cmd.Flags().GetInt("identity")
+	if err != nil {
+		identity = 96 // might be something other than `repp plasmid`
+	}
+
+	filters := extractExcludedValues(cmd)
+
+	if len(args) > 0 {
+		query = args[0]
+	}
+
+	if name == "" && query == "" {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
+	}
+
+	namesOnly, _ := cmd.Flags().GetBool("names")
+	toCull, _ := cmd.Flags().GetBool("cull")
+
+	dbNamesValue, err := cmd.Flags().GetString("dbs")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatalf("failed to parse dbs arg: %v", err)
+	}
+	dbNames := splitStringOnSpaceOrComma(dbNamesValue)
+
+	repp.Annotate(
+		name,
+		query,
+		identity,
+		namesOnly,
+		toCull,
+		dbNames,
+		filters,
+		output)
 }

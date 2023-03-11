@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"os"
 
+	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,7 +45,7 @@ assembly with PCR.`,
 var featuresCmd = &cobra.Command{
 	Use:                        "features \"[feature],...[featureN]\"",
 	Short:                      "Find or build a plasmid from its constituent features",
-	Run:                        repp.FeaturesCmd,
+	Run:                        runFeaturesCmd,
 	SuggestionsMinimumDistance: 3,
 	Example:                    `repp make features "BBa_R0062,BBa_B0034,BBa_C0040,BBa_B0010,BBa_B0012" --backbone pSB1C3 --enzymes "EcoRI,PstI" --dbs igem`,
 	Args:                       cobra.MinimumNArgs(1),
@@ -52,7 +55,7 @@ var featuresCmd = &cobra.Command{
 var sequenceCmd = &cobra.Command{
 	Use:                        "sequence",
 	Short:                      "Find or build a plasmid from its target sequence",
-	Run:                        repp.SequenceCmd,
+	Run:                        runSequenceCmd,
 	SuggestionsMinimumDistance: 2,
 	Long: `Build up a plasmid from its target sequence using a combination of existing and
 synthesized fragments.
@@ -104,4 +107,28 @@ func init() {
 	}
 
 	RootCmd.AddCommand(makeCmd)
+}
+
+func runSequenceCmd(cmd *cobra.Command, args []string) {
+
+	assemblyInputParams := ParseSequenceAssemblyParams(cmd, args, true)
+
+	if assemblyInputParams.In == "" && len(args) > 0 {
+		assemblyInputParams.In = "input.fa"
+		if err := os.WriteFile(assemblyInputParams.In, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
+			log.Fatal("Error trying to write target sequence to input.fa", err)
+		}
+	}
+
+	repp.Sequence(assemblyInputParams, config.New())
+}
+
+func runFeaturesCmd(cmd *cobra.Command, args []string) {
+	featuresInputParams := ParseFeatureAssemblyParams(cmd, args, true)
+
+	if featuresInputParams.In == "" {
+		featuresInputParams.In = combineAllIntoCSV(args)
+	}
+
+	repp.Features(featuresInputParams, config.New())
 }

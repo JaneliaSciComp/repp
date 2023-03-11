@@ -1,6 +1,7 @@
 package repp
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -17,7 +18,36 @@ var (
 		Path: testDbPath,
 		Cost: 10,
 	}
+	testDBs = map[string]DB{
+		testDB.Name: testDB,
+	}
 )
+
+func getRegisteredTestDBs(dbNames []string) (dbs []DB, err error) {
+	if len(dbNames) == 0 {
+		// if no database was specified - get them all from the manifest
+		for _, db := range testDBs {
+			dbs = append(dbs, db)
+		}
+	}
+
+	// filter for matching databases,
+	// but only warn the user if a db is not found
+	for _, dbName := range dbNames {
+		db, ok := testDBs[dbName]
+		if ok {
+			dbs = append(dbs, db)
+		} else {
+			rlog.Warnf("DB %s not registered", dbName)
+		}
+	}
+
+	if len(dbs) == 0 {
+		err = fmt.Errorf("None of the requested databases was found.\n The know DBs are: %v", testDBs)
+	}
+
+	return
+}
 
 func Test_dbNames(t *testing.T) {
 	type args struct {

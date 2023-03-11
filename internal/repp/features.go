@@ -19,25 +19,49 @@ type featureMatch struct {
 	match        match
 }
 
-// FeaturesCmd accepts a cobra commands and assembles a plasmid containing all the features
-func FeaturesCmd(cmd *cobra.Command, args []string) {
-	Features(parseCmdFlags(cmd, args, true))
-}
-
 // Features assembles a plasmid with all the Features requested with the 'repp Features [feature ...]' command
 // repp assemble Features p10 promoter, mEGFP, T7 terminator
-func Features(flags *Flags, conf *config.Config) [][]*Frag {
+func Features(assemblyParams SequenceAssemblyParams, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
+	// get registered blast databases
+	dbs, err := assemblyParams.getDBs()
+	if err != nil {
+		// error getting the DBs
+		rlog.Fatal(err)
+	}
+	// get registered enzymes
+	enzymes, err := assemblyParams.getEnzymes()
+	if err != nil {
+		// error getting the enzymes
+		rlog.Fatal(err)
+	}
+	// prepare backbone if needed
+	backboneFrag, backboneMeta, err := prepareBackbone(assemblyParams.GetBackboneName(), enzymes, dbs)
+	if err != nil {
+		// error getting the backbone
+		rlog.Fatal(err)
+	}
+
 	// turn feature names into sequences
-	insertFeats, bbFeat := queryFeatures(flags)
+	insertFeats, bbFeat := queryFeatures(
+		assemblyParams.GetIn(),
+		backboneFrag,
+		dbs,
+	)
 	feats := insertFeats
 	if len(bbFeat) > 0 {
 		feats = append(feats, bbFeat)
 	}
 
 	// find matches in the databases
-	featureMatches := blastFeatures(flags, feats, conf)
+	featureMatches := blastFeatures(
+		assemblyParams.GetFilters(),
+		assemblyParams.GetIdentity(),
+		dbs,
+		feats,
+		conf,
+	)
 	if len(featureMatches) == 0 {
 		featNames := []string{}
 		for _, feat := range insertFeats {
@@ -47,7 +71,12 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	}
 
 	// build assemblies containing the matched fragments
-	target, solutions := featureSolutions(feats, featureMatches, flags, conf)
+	target, solutions := featureSolutions(
+		feats,
+		featureMatches,
+		assemblyParams.GetIdentity(),
+		dbs,
+		conf)
 
 	// write the output file
 	insertLength := 0
@@ -56,13 +85,13 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 	}
 
 	if _, err := writeJSON(
-		flags.out,
-		flags.in,
+		assemblyParams.GetOut(),
+		assemblyParams.GetIn(),
 		target,
 		solutions,
 		insertLength,
 		time.Since(start).Seconds(),
-		flags.backboneMeta,
+		backboneMeta,
 		conf,
 	); err != nil {
 		rlog.Fatal(err)
@@ -72,9 +101,12 @@ func Features(flags *Flags, conf *config.Config) [][]*Frag {
 }
 
 // queryFeatures takes the list of feature names and finds them in the available databases
-func queryFeatures(flags *Flags) ([][]string, []string) {
+func queryFeatures(
+	featuresInput string,
+	backbone *Frag,
+	dbs []DB) ([][]string, []string) {
 	var insertFeats [][]string // slice of tuples [feature name, feature sequence]
-	if readFeatures, err := read(flags.in, true); err == nil {
+	if readFeatures, err := read(featuresInput, true); err == nil {
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
 		seenFeatures := make(map[string]string) // map feature name to sequence
 		for _, f := range readFeatures {
@@ -87,10 +119,10 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 		// if the features weren't in a file, try and find each in the features database
 		// or one of the databases passed as a source of building fragments
 		var featureNames []string
-		if strings.Contains(flags.in, ",") {
-			featureNames = strings.Split(flags.in, ",") // comma separated
+		if strings.Contains(featuresInput, ",") {
+			featureNames = strings.Split(featuresInput, ",") // comma separated
 		} else {
-			featureNames = strings.Fields(flags.in) // spaces
+			featureNames = strings.Fields(featuresInput) // spaces
 		}
 
 		if len(featureNames) < 1 {
@@ -112,7 +144,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 					seq = reverseComplement(seq)
 				}
 				insertFeats = append(insertFeats, []string{f, seq})
-			} else if dbFrag, err := queryDatabases(f, flags.dbs); err == nil {
+			} else if dbFrag, err := queryDatabases(f, dbs); err == nil {
 				f = strings.Replace(f, ":", "|", -1)
 				if !fwd {
 					dbFrag.Seq = reverseComplement(dbFrag.Seq)
@@ -123,7 +155,7 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 					"failed to find '%s' among the features in (%s) or any db: %s",
 					f,
 					config.FeatureDB,
-					strings.Join(dbNames(flags.dbs), ","),
+					strings.Join(dbNames(dbs), ","),
 				)
 			}
 		}
@@ -131,19 +163,30 @@ func queryFeatures(flags *Flags) ([][]string, []string) {
 
 	// add in the backbone as a "feature"
 	bbFeat := []string{}
-	if flags.backbone != nil && flags.backbone.ID != "" {
-		bbFeat = []string{flags.backbone.ID, flags.backbone.Seq}
+	if backbone != nil && backbone.ID != "" {
+		bbFeat = []string{backbone.ID, backbone.Seq}
 	}
 
 	return insertFeats, bbFeat
 }
 
 // blastFeatures returns matches between the target features and entries in the databases with those features
-func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[string][]featureMatch {
+func blastFeatures(
+	filters []string,
+	identity int,
+	dbs []DB,
+	feats [][]string,
+	conf *config.Config) map[string][]featureMatch {
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blast(target[0], targetFeature, false, flags.dbs, flags.filters, flags.identity)
+		matches, err := blast(
+			target[0],
+			targetFeature,
+			false,
+			dbs,
+			filters,
+			identity)
 		if err != nil {
 			rlog.Fatal(err)
 		}
@@ -152,7 +195,7 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 			// needs to be at least identity % as long as the queried feature
 			mLen := float64(m.subjectEnd - m.subjectStart + 1)
 			pIdent := mLen / float64(len(targetFeature))
-			pIdentTarget := float64(flags.identity) / 100.0
+			pIdentTarget := float64(identity) / 100.0
 			if pIdent < pIdentTarget {
 				continue
 			}
@@ -173,7 +216,12 @@ func blastFeatures(flags *Flags, feats [][]string, conf *config.Config) map[stri
 }
 
 // featureSolutions creates and fills the assemblies using the matched fragments
-func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch, flags *Flags, conf *config.Config) (string, [][]*Frag) {
+func featureSolutions(
+	feats [][]string,
+	featureMatches map[string][]featureMatch,
+	identity int,
+	dbs []DB,
+	conf *config.Config) (string, [][]*Frag) {
 	// merge matches into one another if they can combine to cover a range
 	extendedMatches := extendMatches(feats, featureMatches)
 
@@ -184,11 +232,11 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
 
 	// create a subject file from the matches' source fragments
-	subjectDB, frags := subjectDatabase(extendedMatches, flags.dbs)
+	subjectDB, frags := subjectDatabase(extendedMatches, dbs)
 	defer os.Remove(subjectDB)
 
 	// re-BLAST the features against the new subject database
-	featureMatches = reblastFeatures(flags, feats, conf, subjectDB, frags)
+	featureMatches = reblastFeatures(identity, feats, conf, subjectDB, frags)
 
 	// merge matches into one another if they can combine to cover a range
 	extendedMatches = extendMatches(feats, featureMatches)
@@ -216,7 +264,7 @@ func featureSolutions(feats [][]string, featureMatches map[string][]featureMatch
 		}
 		seenMatches[m.uniqueID] = true
 
-		frag, err := queryDatabases(m.entry, flags.dbs)
+		frag, err := queryDatabases(m.entry, dbs)
 		if err != nil {
 			rlog.Fatal(err)
 		}
@@ -343,11 +391,16 @@ func subjectDatabase(extendedMatches []match, dbs []DB) (filename string, frags 
 }
 
 // reblastFeatures returns matches between the target features and entries in the databases with those features
-func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjectDB string, frags []*Frag) map[string][]featureMatch {
+func reblastFeatures(
+	identity int,
+	feats [][]string,
+	conf *config.Config,
+	subjectDB string,
+	frags []*Frag) map[string][]featureMatch {
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, flags.identity)
+		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, identity)
 		if err != nil {
 			rlog.Fatal(err)
 		}
@@ -355,7 +408,7 @@ func reblastFeatures(flags *Flags, feats [][]string, conf *config.Config, subjec
 		for _, m := range matches {
 			// needs to be at least identity % as long as the queried feature
 			mLen := float64(m.subjectEnd - m.subjectStart)
-			if mLen/float64(len(targetFeature)) < float64(flags.identity)/100.0 {
+			if mLen/float64(len(targetFeature)) < float64(identity)/100.0 {
 				continue
 			}
 

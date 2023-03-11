@@ -48,7 +48,7 @@ var featureAddCmd = &cobra.Command{
 var enzymeAddCmd = &cobra.Command{
 	Use:                        "enzyme [name] [sequence]",
 	Short:                      "Add an enzyme to the enzymes database",
-	Run:                        repp.EnzymesAddCmd,
+	Run:                        runEnzymesAddCmd,
 	SuggestionsMinimumDistance: 2,
 	Long: `Add an enzyme in the enzymes database so it can be used to linearize backbones.
 See: 'repp make sequence --help' for usage of enzymes.
@@ -145,4 +145,20 @@ func runFeaturesAddCmd(cmd *cobra.Command, args []string) {
 	}
 
 	repp.AddFeatures(name, seq)
+}
+
+func runEnzymesAddCmd(cmd *cobra.Command, args []string) {
+	var name, seq string
+
+	if len(args) < 2 {
+
+	} else if len(args) == 2 {
+		name = args[0]
+		seq = args[1]
+	} else {
+		name = strings.Join(args[:len(args)-1], " ")
+		seq = args[len(args)-1]
+	}
+
+	repp.AddEnzymes(name, seq)
 }

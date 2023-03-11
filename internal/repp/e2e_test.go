@@ -9,9 +9,17 @@ import (
 	"github.com/Lattice-Automation/repp/internal/config"
 )
 
+type mockAssemblyParams struct {
+	AssemblyParams
+}
+
+func (ap mockAssemblyParams) getDBs() (dbs []DB, err error) {
+	return getRegisteredTestDBs(ap.DbNames)
+}
+
 func Test_sequence_e2e(t *testing.T) {
 	dir := t.TempDir()
-	c := config.New()
+	cfg := config.New()
 
 	type testFlags struct {
 		in       string
@@ -19,7 +27,7 @@ func Test_sequence_e2e(t *testing.T) {
 		backbone string
 		enzymes  []string
 		filters  string
-		dbs      []DB
+		dbNames  []string
 	}
 
 	tests := []testFlags{
@@ -29,7 +37,7 @@ func Test_sequence_e2e(t *testing.T) {
 			"pSB1A3",
 			[]string{"PstI"},
 			"",
-			[]DB{testDB},
+			[]string{testDB.Name},
 		},
 		{
 			path.Join("..", "..", "test", "input", "BBa_K2224001.fa"),
@@ -37,19 +45,29 @@ func Test_sequence_e2e(t *testing.T) {
 			"pSB1A3",
 			[]string{"PstI"},
 			"",
-			[]DB{testDB},
+			[]string{testDB.Name},
 		},
 	}
 
 	for _, tt := range tests {
-		sols := Sequence(createFlagsForTesting(tt.in, tt.out, tt.backbone, tt.filters, tt.enzymes, tt.dbs))
+		testInput := createFlagsForTesting(
+			tt.in,
+			tt.out,
+			tt.filters,
+			tt.enzymes,
+			tt.dbNames)
+		testAssemblyParams := &mockAssemblyParams{
+			*testInput,
+		}
+
+		sols := Sequence(testAssemblyParams, cfg)
 
 		if len(sols) < 1 {
 			t.Errorf("no solutions for %s", tt.in)
 		}
 
 		for _, s := range sols {
-			e := validateJunctions(s, c)
+			e := validateJunctions(s, cfg)
 			if e != nil {
 				t.Logf("failed making %s\n", tt.in)
 				t.Error(e)
@@ -61,17 +79,17 @@ func Test_sequence_e2e(t *testing.T) {
 func Test_features(t *testing.T) {
 	dir := t.TempDir()
 
-	test1, conf := createFlagsForTesting(
+	conf := config.New()
+	test1 := createFlagsForTesting(
 		"p10 promoter, mEGFP, T7 terminator",
 		path.Join(dir, "features.json"),
 		"pSB1A3",
-		"",
 		[]string{"EcoRI"},
-		[]DB{testDB},
+		[]string{testDB.Name},
 	)
 
 	type args struct {
-		flags *Flags
+		flags *AssemblyParams
 		conf  *config.Config
 	}
 	tests := []struct {
@@ -89,7 +107,19 @@ func Test_features(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sols := Features(tt.args.flags, tt.args.conf)
+			testAssemblyParams := &mockAssemblyParams{
+				AssemblyParams{
+					In:           tt.args.flags.In,
+					Out:          tt.args.flags.Out,
+					DbNames:      []string{testDB.Name},
+					BackboneName: tt.args.flags.BackboneName,
+					EnzymeNames:  tt.args.flags.EnzymeNames,
+					Filters:      tt.args.flags.Filters,
+					Identity:     tt.args.flags.Identity,
+				},
+			}
+
+			sols := Features(testAssemblyParams, tt.args.conf)
 
 			if len(sols) < 1 {
 				t.Failed()
@@ -190,16 +220,21 @@ func Test_fragments(t *testing.T) {
 func Test_plasmid_single_plasmid(t *testing.T) {
 	dir := t.TempDir()
 
-	fs, c := createFlagsForTesting(
+	c := config.New()
+
+	fs := createFlagsForTesting(
 		path.Join("..", "..", "test", "input", "109049.addgene.fa"),
 		path.Join(dir, "single-plasmid.json"),
 		"",
-		"",
 		[]string{},
-		[]DB{testDB},
+		[]string{testDB.Name},
 	)
 
-	assemblies := Sequence(fs, c)
+	testAssemblyParams := mockAssemblyParams{
+		*fs,
+	}
+
+	assemblies := Sequence(testAssemblyParams, c)
 
 	if !strings.Contains(assemblies[0][0].ID, "109049") {
 		t.Fatal("failed to use 109049 to build the plasmid")
@@ -207,29 +242,21 @@ func Test_plasmid_single_plasmid(t *testing.T) {
 }
 
 func createFlagsForTesting(
-	in, out, backbone, filter string,
-	enzymes []string,
-	dbs []DB,
-) (*Flags, *config.Config) {
-	c := config.New()
+	in, out, filter string,
+	enzymes, dbNames []string,
+) *AssemblyParams {
 
 	p := inputParser{}
-	parsedBB, bbMeta, err := p.parseBackbone(backbone, enzymes, dbs, c)
-	if err != nil {
-		rlog.Fatal(err)
-	}
-
 	if strings.Contains(in, ",") {
 		in = p.parseFeatureInput(strings.Fields(in))
 	}
 
-	return &Flags{
-		in:           in,
-		out:          out,
-		dbs:          dbs,
-		backbone:     parsedBB,
-		backboneMeta: bbMeta,
-		filters:      p.getFilters(filter),
-		identity:     98,
-	}, c
+	return &AssemblyParams{
+		In:          in,
+		Out:         out,
+		DbNames:     dbNames,
+		Filters:     p.getFilters(filter),
+		EnzymeNames: enzymes,
+		Identity:    98,
+	}
 }

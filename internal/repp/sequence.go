@@ -13,6 +13,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type SequenceAssemblyParams interface {
+	GetIn() string
+	GetOut() string
+	GetFilters() []string
+	GetIdentity() int
+	GetBackboneName() string
+	getDBs() ([]DB, error)
+	getEnzymes() ([]enzyme, error)
+}
+
 // SequenceListCmd is for BLAST'ing a sequence against the dbs and finding matches
 func SequenceListCmd(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
@@ -61,16 +71,35 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 	writer.Flush()
 }
 
-// SequenceCmd takes a cobra command (with its flags) and runs plasmid.
-func SequenceCmd(cmd *cobra.Command, args []string) {
-	Sequence(parseCmdFlags(cmd, args, true))
-}
-
 // Sequence is for running an end to end plasmid design using a target sequence.
-func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
+func Sequence(assemblyParams SequenceAssemblyParams, conf *config.Config) (solutions [][]*Frag) {
 	start := time.Now()
-
-	insert, target, solutions, err := sequence(flags, conf) // build up the assemblies that make the sequence
+	// get registered blast databases
+	dbs, err := assemblyParams.getDBs()
+	if err != nil {
+		// error getting the DBs
+		rlog.Fatal(err)
+	}
+	// get registered enzymes
+	enzymes, err := assemblyParams.getEnzymes()
+	if err != nil {
+		// error getting the enzymes
+		rlog.Fatal(err)
+	}
+	// prepare backbone if needed
+	backboneFrag, backboneMeta, err := prepareBackbone(assemblyParams.GetBackboneName(), enzymes, dbs)
+	if err != nil {
+		// error getting the backbone
+		rlog.Fatal(err)
+	}
+	// build up the assemblies that make the sequence
+	insert, target, solutions, err := sequence(
+		assemblyParams.GetIn(),
+		assemblyParams.GetFilters(),
+		assemblyParams.GetIdentity(),
+		backboneFrag,
+		dbs,
+		conf)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -78,13 +107,13 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 	// write the results to a file
 	elapsed := time.Since(start)
 	_, err = writeJSON(
-		flags.out,
+		assemblyParams.GetOut(),
 		target.ID,
 		target.Seq,
 		solutions,
 		len(insert.Seq),
 		elapsed.Seconds(),
-		flags.backboneMeta,
+		backboneMeta,
 		conf,
 	)
 	if err != nil {
@@ -99,13 +128,14 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 // sequence builds a plasmid cost optimization
 //
 // The goal is to find an "optimal" assembly sequence with:
-// 	1. the fewest fragments
-// 	2. the lowest overall assembly cost ($)
+//  1. the fewest fragments
+//  2. the lowest overall assembly cost ($)
+//
 // and, secondarily:
-//	3. no duplicate end regions between Gibson fragments
-// 	4. no hairpins in the junctions
-// 	5. no off-target binding sites in the parent plasmids
-//	6. low primer3 penalty scores
+//  3. no duplicate end regions between Gibson fragments
+//  4. no hairpins in the junctions
+//  5. no off-target binding sites in the parent plasmids
+//  6. low primer3 penalty scores
 //
 // First build up assemblies, creating all possible assemblies that are
 // beneath the upper-bound limit on the number of fragments fully covering
@@ -119,18 +149,25 @@ func Sequence(flags *Flags, conf *config.Config) [][]*Frag {
 // "fill-in" the nodes. Create primers on the Frag if it's a PCR Frag
 // or create a sequence to be synthesized if it's a synthetic fragment.
 // Error out and repeat the build stage if a Frag fails to be filled
-func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solutions [][]*Frag, err error) {
+func sequence(
+	input string,
+	filters []string,
+	identity int,
+	backboneFrag *Frag,
+	dbs []DB,
+	conf *config.Config) (insert, target *Frag, solutions [][]*Frag, err error) {
+
 	// read the target sequence (the first in the slice is used)
-	fragments, err := read(input.in, false)
+	fragments, err := read(input, false)
 	if err != nil {
-		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to read target sequence from %s: %v", input.in, err)
+		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to read target sequence from %s: %v", input, err)
 	}
 
 	if len(fragments) > 1 {
-		stderr.Printf(
+		rlog.Warnf(
 			"warning: %d fragments were in %s. Only targeting the sequence of the first: %s\n",
 			len(fragments),
-			input.in,
+			input,
 			fragments[0].ID,
 		)
 	}
@@ -140,14 +177,14 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 
 	// if a backbone was specified, add it to the sequence of the target frag
 	insert = target.copy() // store a copy for logging later
-	if input.backbone.ID != "" {
-		target.Seq += input.backbone.Seq
+	if backboneFrag.ID != "" {
+		target.Seq += backboneFrag.Seq
 	}
 
 	// get all the matches against the target plasmid
-	matches, err := blast(target.ID, target.Seq, true, input.dbs, input.filters, input.identity)
+	matches, err := blast(target.ID, target.Seq, true, dbs, filters, identity)
 	if err != nil {
-		dbMessage := strings.Join(dbNames(input.dbs), ", ")
+		dbMessage := strings.Join(dbNames(dbs), ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
 
@@ -158,18 +195,18 @@ func sequence(input *Flags, conf *config.Config) (insert, target *Frag, solution
 	// map fragment Matches to nodes
 	frags := newFrags(matches, conf)
 
-	if input.backbone.ID != "" {
+	if backboneFrag.ID != "" {
 		// add the backbone in as fragment (copy twice across zero index)
-		input.backbone.conf = conf
-		input.backbone.start = len(insert.Seq)
-		input.backbone.end = input.backbone.start + len(input.backbone.Seq) - 1
-		input.backbone.uniqueID = "backbone" + strconv.Itoa(input.backbone.start)
-		frags = append(frags, input.backbone)
+		backboneFrag.conf = conf
+		backboneFrag.start = len(insert.Seq)
+		backboneFrag.end = backboneFrag.start + len(backboneFrag.Seq) - 1
+		backboneFrag.uniqueID = "backbone" + strconv.Itoa(backboneFrag.start)
+		frags = append(frags, backboneFrag)
 
-		copiedBB := input.backbone.copy()
+		copiedBB := backboneFrag.copy()
 		copiedBB.start += len(target.Seq)
 		copiedBB.end += len(target.Seq)
-		copiedBB.uniqueID = input.backbone.uniqueID
+		copiedBB.uniqueID = backboneFrag.uniqueID
 		frags = append(frags, copiedBB)
 
 		sort.Slice(frags, func(i, j int) bool {
