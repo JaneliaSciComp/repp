@@ -72,7 +72,7 @@ func runAnnotateCmd(cmd *cobra.Command, args []string) {
 		}
 		log.Fatalf("failed to parse dbs arg: %v", err)
 	}
-	dbNames := splitStringOnSpaceOrComma(dbNamesValue)
+	dbNames := splitStringOn(dbNamesValue, []rune{' ', ','})
 
 	repp.Annotate(
 		name,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 )
 
 // ParseFeatureAssemblyParams - parse feature specific flags from the command line
@@ -49,7 +50,7 @@ func extractExcludedValues(cmd *cobra.Command) []string {
 		log.Fatalf("failed to parse excluded arg: %v", err)
 	}
 
-	return splitStringOnSpaceOrComma(excluded)
+	return splitStringOn(strings.ToUpper(excluded), []rune{' ', ','})
 }
 
 func extractCommonParams(cmd *cobra.Command, args []string, params *repp.AssemblyParams) {
@@ -86,7 +87,7 @@ func extractCommonParams(cmd *cobra.Command, args []string, params *repp.Assembl
 		}
 		log.Fatalf("failed to parse dbs arg: %v", err)
 	}
-	params.DbNames = splitStringOnSpaceOrComma(dbNames)
+	params.DbNames = splitStringOn(dbNames, []rune{' ', ','})
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
 	backbone, _ := cmd.Flags().GetString("backbone")
@@ -94,16 +95,15 @@ func extractCommonParams(cmd *cobra.Command, args []string, params *repp.Assembl
 
 	// check if they also specified an enzyme
 	enzymes, _ := cmd.Flags().GetString("enzymeList")
-	params.EnzymeNames = splitStringOnSpaceOrComma(enzymes)
-
+	params.EnzymeNames = splitStringOn(enzymes, []rune{' ', ','})
 }
 
-func splitStringOnSpaceOrComma(s string) []string {
+func splitStringOn(s string, separators []rune) []string {
 	splitFunc := func(c rune) bool {
-		return c == ' ' || c == ',' // space or comma separated
+		return slices.Contains(separators, c)
 	}
 
-	return strings.FieldsFunc(strings.ToUpper(s), splitFunc)
+	return strings.FieldsFunc(s, splitFunc)
 }
 
 // combineAllIntoCSV turns the arguments into a
