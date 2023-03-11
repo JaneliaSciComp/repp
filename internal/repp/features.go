@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Lattice-Automation/repp/internal/config"
-	"github.com/spf13/cobra"
 )
 
 type featureMatch struct {
@@ -468,13 +467,13 @@ func NewFeatureDB() *kv {
 	return newKV(config.FeatureDB)
 }
 
-// FeaturesReadCmd returns features that are similar in name to the feature name requested.
+// ListFeatures returns features that are similar in name to the feature name requested.
 // if multiple feature names include the feature name, they are all returned.
 // otherwise a list of feature names are returned (those beneath a levenshtein distance cutoff)
-func FeaturesReadCmd(cmd *cobra.Command, args []string) {
+func ListFeatures(featureName string) {
 	f := NewFeatureDB()
 
-	if len(args) < 1 {
+	if featureName == "" {
 		// no feature name passed, log all of them
 		featNames := []string{}
 		for feat := range f.contents {
@@ -503,12 +502,7 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	name := args[0]
-	if len(args) > 1 {
-		name = strings.Join(args, " ")
-	}
-
-	ldCutoff := len(name) / 3
+	ldCutoff := len(featureName) / 3
 	if 1 > ldCutoff {
 		ldCutoff = 1
 	}
@@ -516,18 +510,18 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	lowDistance := []string{}
 
 	for fName, fSeq := range f.contents {
-		if strings.Contains(fName, name) {
+		if strings.Contains(fName, featureName) {
 			containing = append(containing, fName+"\t"+fSeq)
-		} else if len(fName) > ldCutoff && ld(name, fName, true) <= ldCutoff {
+		} else if len(fName) > ldCutoff && ld(featureName, fName, true) <= ldCutoff {
 			lowDistance = append(lowDistance, fName+"\t"+fSeq)
 		}
 	}
 
 	// check for an exact match
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
-	matchedFeature, exactMatch := f.contents[name]
+	matchedFeature, exactMatch := f.contents[featureName]
 	if exactMatch && len(containing) < 2 {
-		fmt.Fprintf(w, name+"\t"+matchedFeature)
+		fmt.Fprintf(w, featureName+"\t"+matchedFeature)
 		if _, err := w.Write([]byte("\n")); err != nil {
 			rlog.Fatal(err)
 		}
@@ -545,7 +539,7 @@ func FeaturesReadCmd(cmd *cobra.Command, args []string) {
 	} else if len(lowDistance) > 0 {
 		fmt.Fprint(w, strings.Join(lowDistance, "\n"))
 	} else {
-		if _, err := fmt.Fprintf(w, "failed to find any features for %s", name); err != nil {
+		if _, err := fmt.Fprintf(w, "failed to find any features for %s", featureName); err != nil {
 			rlog.Fatal(err)
 		}
 	}

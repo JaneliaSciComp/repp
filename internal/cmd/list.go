@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 
@@ -33,7 +34,7 @@ var databaseListCmd = &cobra.Command{
 var featureListCmd = &cobra.Command{
 	Use:                        "feature [name]",
 	Short:                      "List features in the features database",
-	Run:                        repp.FeaturesReadCmd,
+	Run:                        runFeatureListCmd,
 	SuggestionsMinimumDistance: 2,
 	Example:                    "  repp list feature terminator",
 	Long: `List features in the features database that are similar to [name].
@@ -99,6 +100,19 @@ func init() {
 // list databases
 func runDatabaseListCmd(cmd *cobra.Command, args []string) {
 	repp.ListDatabases()
+}
+
+func runFeatureListCmd(cmd *cobra.Command, args []string) {
+	var featureName string
+	if len(args) < 1 {
+		featureName = ""
+	} else if len(args) == 1 {
+		featureName = args[0]
+	} else {
+		featureName = strings.Join(args, " ")
+	}
+
+	repp.ListFeatures(featureName)
 }
 
 func runEnzymeListCmd(cmd *cobra.Command, args []string) {
