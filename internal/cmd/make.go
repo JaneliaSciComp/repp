@@ -34,7 +34,7 @@ against a list of consituent fragment, feature, or a target sequence.`,
 var fragmentsCmd = &cobra.Command{
 	Use:                        "fragments",
 	Short:                      "Build a plasmid from its constituent fragments",
-	Run:                        repp.FragmentsCmd,
+	Run:                        runFragmentsCmd,
 	SuggestionsMinimumDistance: 3,
 	Long: `Prepare a list of fragments for assembly via Gibson Assembly. Fragments are
 checked for existing homology with their neighbors and are prepared for
@@ -109,6 +109,22 @@ func init() {
 	RootCmd.AddCommand(makeCmd)
 }
 
+func runFragmentsCmd(cmd *cobra.Command, args []string) {
+	fragmentsInputParams := ParseFragmentsAssemblyParams(cmd, args, true)
+
+	repp.AssembleFragments(fragmentsInputParams, config.New())
+}
+
+func runFeaturesCmd(cmd *cobra.Command, args []string) {
+	featuresInputParams := ParseFeatureAssemblyParams(cmd, args, true)
+
+	if featuresInputParams.In == "" {
+		featuresInputParams.In = combineAllIntoCSV(args)
+	}
+
+	repp.Features(featuresInputParams, config.New())
+}
+
 func runSequenceCmd(cmd *cobra.Command, args []string) {
 
 	assemblyInputParams := ParseSequenceAssemblyParams(cmd, args, true)
@@ -121,14 +137,4 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 	}
 
 	repp.Sequence(assemblyInputParams, config.New())
-}
-
-func runFeaturesCmd(cmd *cobra.Command, args []string) {
-	featuresInputParams := ParseFeatureAssemblyParams(cmd, args, true)
-
-	if featuresInputParams.In == "" {
-		featuresInputParams.In = combineAllIntoCSV(args)
-	}
-
-	repp.Features(featuresInputParams, config.New())
 }

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/Lattice-Automation/repp/internal/repp"
 
 	"github.com/spf13/cobra"
@@ -60,7 +62,7 @@ var fragmentListCmd = &cobra.Command{
 	Use:                        "fragment [name]",
 	Short:                      "List fragments in the databases",
 	Example:                    "  repp list fragment pSB1C3 --dbs igem",
-	Run:                        repp.FragmentListCmd,
+	Run:                        runFragmentListCmd,
 	SuggestionsMinimumDistance: 2,
 	Long:                       `List fragments with a passed name in the specified databases`,
 	Aliases:                    []string{"fragments"},
@@ -100,7 +102,6 @@ func runDatabaseListCmd(cmd *cobra.Command, args []string) {
 }
 
 func runEnzymeListCmd(cmd *cobra.Command, args []string) {
-
 	if len(args) == 0 {
 		repp.PrintEnzymes("")
 	} else {
@@ -108,5 +109,24 @@ func runEnzymeListCmd(cmd *cobra.Command, args []string) {
 			repp.PrintEnzymes(n)
 		}
 	}
+}
 
+func runFragmentListCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 1 {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatal("\nno fragment name passed.")
+	}
+	name := args[0]
+	dbNamesValue, err := cmd.Flags().GetString("dbs")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatalf("failed to parse dbs arg: %v", err)
+	}
+	dbNames := splitStringOn(dbNamesValue, []rune{' ', ','})
+
+	repp.PrintFragment(name, dbNames)
 }

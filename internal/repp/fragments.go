@@ -5,44 +5,53 @@ import (
 	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/config"
-	"github.com/spf13/cobra"
 )
 
-// FragmentListCmd logs the building fragment with the name passed.
-func FragmentListCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 1 {
-		if helperr := cmd.Help(); helperr != nil {
-			rlog.Fatal(helperr)
-		}
-		rlog.Fatal("\nno fragment name passed.")
+// PrintFragment logs the building fragment with the name passed.
+func PrintFragment(name string, dbNames []string) {
+	dbs, err := getRegisteredDBs(dbNames)
+	if err != nil {
+		rlog.Fatal(err)
 	}
-	name := args[0]
-
-	flags, _ := parseCmdFlags(cmd, args, false)
-	frag, err := queryDatabases(name, flags.dbs)
+	frag, err := queryDatabases(name, dbs)
 	if err != nil {
 		rlog.Fatal(err)
 	}
 	if frag.fragType == circular {
 		frag.Seq = frag.Seq[:len(frag.Seq)/2]
 	}
-
 	fmt.Printf("%s\t%s\n%s\n", name, frag.db.Name, frag.Seq)
 }
 
-// FragmentsCmd accepts a cobra commands and assembles a list of building fragments in order
-func FragmentsCmd(cmd *cobra.Command, args []string) {
-	flags, conf := parseCmdFlags(cmd, args, true)
+// AssembleFragments assembles a list of building fragments in order
+func AssembleFragments(assemblyParams SequenceAssemblyParams, conf *config.Config) {
 
 	// read in the constituent fragments
-	frags, err := read(flags.in, false)
+	frags, err := read(assemblyParams.GetIn(), false)
 	if err != nil {
 		rlog.Fatal(err)
 	}
-
+	// get registered blast databases
+	dbs, err := assemblyParams.getDBs()
+	if err != nil {
+		// error getting the DBs
+		rlog.Fatal(err)
+	}
+	// get registered enzymes
+	enzymes, err := assemblyParams.getEnzymes()
+	if err != nil {
+		// error getting the enzymes
+		rlog.Fatal(err)
+	}
+	// prepare backbone if needed
+	backboneFrag, backboneMeta, err := prepareBackbone(assemblyParams.GetBackboneName(), enzymes, dbs)
+	if err != nil {
+		// error getting the backbone
+		rlog.Fatal(err)
+	}
 	// add in the backbone if it was provided
-	if flags.backbone.ID != "" {
-		frags = append([]*Frag{flags.backbone}, frags...)
+	if backboneFrag.ID != "" {
+		frags = append([]*Frag{backboneFrag}, frags...)
 	}
 
 	// set the conf property on each frag
@@ -54,13 +63,13 @@ func FragmentsCmd(cmd *cobra.Command, args []string) {
 
 	// write the single list of fragments as a possible solution to the output file
 	if _, err := writeJSON(
-		flags.out,
-		flags.in,
+		assemblyParams.GetOut(),
+		assemblyParams.GetIn(),
 		target.Seq,
 		[][]*Frag{solution},
 		len(target.Seq),
 		0,
-		flags.backboneMeta,
+		backboneMeta,
 		conf,
 	); err != nil {
 		rlog.Fatal(err)
