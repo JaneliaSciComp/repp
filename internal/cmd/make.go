@@ -110,13 +110,13 @@ func init() {
 }
 
 func runFragmentsCmd(cmd *cobra.Command, args []string) {
-	fragmentsInputParams := ParseFragmentsAssemblyParams(cmd, args, true)
+	fragmentsInputParams := parseFragmentsAssemblyParams(cmd, args, true)
 
 	repp.AssembleFragments(fragmentsInputParams, config.New())
 }
 
 func runFeaturesCmd(cmd *cobra.Command, args []string) {
-	featuresInputParams := ParseFeatureAssemblyParams(cmd, args, true)
+	featuresInputParams := parseFeatureAssemblyParams(cmd, args, true)
 
 	if featuresInputParams.GetIn() == "" {
 		featuresInputParams.SetIn(combineAllIntoCSV(args))
@@ -127,7 +127,7 @@ func runFeaturesCmd(cmd *cobra.Command, args []string) {
 
 func runSequenceCmd(cmd *cobra.Command, args []string) {
 
-	assemblyInputParams := ParseSequenceAssemblyParams(cmd, args, true)
+	assemblyInputParams := parseSequenceAssemblyParams(cmd, args, true)
 
 	if assemblyInputParams.GetIn() == "" && len(args) > 0 {
 		assemblyInputParams.SetIn("input.fa")

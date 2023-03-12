@@ -10,8 +10,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// ParseFeatureAssemblyParams - parse feature specific flags from the command line
-func ParseFeatureAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
+// parseFeatureAssemblyParams - parse feature specific flags from the command line
+func parseFeatureAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
 	params := repp.MkAssemblyParams()
 
 	extractCommonParams(cmd, args, params)
@@ -21,8 +21,8 @@ func ParseFeatureAssemblyParams(cmd *cobra.Command, args []string, strict bool) 
 	return params
 }
 
-// ParseSequenceAssemblyParams - parse sequence specific flags from the command line
-func ParseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
+// parseSequenceAssemblyParams - parse sequence specific flags from the command line
+func parseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
 	params := repp.MkAssemblyParams()
 
 	extractCommonParams(cmd, args, params)
@@ -32,8 +32,8 @@ func ParseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool)
 	return params
 }
 
-// ParseFragmentsAssemblyParams - parse sequence specific flags from the command line
-func ParseFragmentsAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
+// parseFragmentsAssemblyParams - parse sequence specific flags from the command line
+func parseFragmentsAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
 	params := repp.MkAssemblyParams()
 
 	extractCommonParams(cmd, args, params)
