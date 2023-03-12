@@ -73,7 +73,7 @@ var fragmentListCmd = &cobra.Command{
 var sequenceListCmd = &cobra.Command{
 	Use:                        "sequence [seq]",
 	Short:                      "List sequences in the databases",
-	Run:                        repp.SequenceListCmd,
+	Run:                        runSequenceListCmd,
 	Example:                    "  repp list sequence GTTGACAATTAATCATCGGCATAGTATATCGGCATAGTATAATACGAC --dbs igem",
 	SuggestionsMinimumDistance: 2,
 	Long:                       `List a sequence's BLAST matches among databases.`,
@@ -133,14 +133,22 @@ func runFragmentListCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("\nno fragment name passed.")
 	}
 	name := args[0]
-	dbNamesValue, err := cmd.Flags().GetString("dbs")
-	if err != nil {
+	dbNames := extractDbNames(cmd)
+
+	repp.PrintFragment(name, dbNames)
+}
+
+func runSequenceListCmd(cmd *cobra.Command, args []string) {
+	if len(args) < 1 {
 		if helperr := cmd.Help(); helperr != nil {
 			log.Fatal(helperr)
 		}
-		log.Fatalf("failed to parse dbs arg: %v", err)
+		log.Fatal("\nno sequence passed.")
 	}
-	dbNames := splitStringOn(dbNamesValue, []rune{' ', ','})
+	seq := args[0]
+	filters := extractExcludedValues(cmd)
+	identity := extractIdentity(cmd, 100)
+	dbNames := extractDbNames(cmd)
 
-	repp.PrintFragment(name, dbNames)
+	repp.SequenceList(seq, filters, identity, dbNames)
 }

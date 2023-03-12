@@ -16,21 +16,15 @@ func TestNewFeatureDB(t *testing.T) {
 }
 
 func Test_queryFeatures(t *testing.T) {
-	type args struct {
-		flags *Flags
-	}
 	tests := []struct {
 		name string
-		args args
+		args AssemblyParams
 		want [][]string
 	}{
 		{
 			"gather SV40 origin, p10 promoter, mEGFP",
-			args{
-				&Flags{
-					in:  "SV40 origin,p10 promoter,mEGFP",
-					dbs: []DB{},
-				},
+			&assemblyParamsImpl{
+				in: "SV40 origin,p10 promoter,mEGFP",
 			},
 			[][]string{
 				{"SV40 origin", "ATCCCGCCCCTAACTCCGCCCAGTTCCGCCCATTCTCCGCCCCATGGCTGACTAATTTTTTTTATTTATGCAGAGGCCGAGGCCGCCTCGGCCTCTGAGCTATTCCAGAAGTAGTGAGGAGGCTTTTTTGGAGGCC"},
@@ -40,11 +34,8 @@ func Test_queryFeatures(t *testing.T) {
 		},
 		{
 			"gather SV40 origin, p10 promoter, mEGFP:rev",
-			args{
-				&Flags{
-					in:  "SV40 origin,p10 promoter,mEGFP:rev",
-					dbs: []DB{},
-				},
+			&assemblyParamsImpl{
+				in: "SV40 origin,p10 promoter,mEGFP:rev",
 			},
 			[][]string{
 				{"SV40 origin", "ATCCCGCCCCTAACTCCGCCCAGTTCCGCCCATTCTCCGCCCCATGGCTGACTAATTTTTTTTATTTATGCAGAGGCCGAGGCCGCCTCGGCCTCTGAGCTATTCCAGAAGTAGTGAGGAGGCTTTTTTGGAGGCC"},
@@ -55,7 +46,23 @@ func Test_queryFeatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := queryFeatures(tt.args.flags.in, tt.args.flags.backbone, tt.args.flags.dbs); !reflect.DeepEqual(got, tt.want) {
+			enzymes, err := tt.args.getEnzymes()
+			if err != nil {
+				t.Fail()
+			}
+			dbs, err := tt.args.getDBs()
+			if err != nil {
+				t.Fail()
+			}
+			backbone, _, err := prepareBackbone(
+				tt.args.GetBackboneName(),
+				enzymes,
+				dbs,
+			)
+			if err != nil {
+				t.Fail()
+			}
+			if got, _ := queryFeatures(tt.args.GetIn(), backbone, dbs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("queryFeatures() = %v, want %v", got, tt.want)
 			}
 		})
@@ -64,7 +71,7 @@ func Test_queryFeatures(t *testing.T) {
 
 func Test_blastFeatures(t *testing.T) {
 	type args struct {
-		flags          *Flags
+		flags          AssemblyParams
 		targetFeatures [][]string
 	}
 	tests := []struct {
@@ -74,9 +81,7 @@ func Test_blastFeatures(t *testing.T) {
 		{
 			"blast a feature against the part databases",
 			args{
-				flags: &Flags{
-					dbs:      []DB{},
-					filters:  []string{},
+				flags: &assemblyParamsImpl{
 					identity: 96.0,
 				},
 				targetFeatures: [][]string{
@@ -87,10 +92,14 @@ func Test_blastFeatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			dbs, err := tt.args.flags.getDBs()
+			if err != nil {
+				t.Fail()
+			}
 			got := blastFeatures(
-				tt.args.flags.filters,
-				tt.args.flags.identity,
-				tt.args.flags.dbs,
+				tt.args.flags.GetFilters(),
+				tt.args.flags.GetIdentity(),
+				dbs,
 				tt.args.targetFeatures,
 				config.New())
 

@@ -118,8 +118,8 @@ func runFragmentsCmd(cmd *cobra.Command, args []string) {
 func runFeaturesCmd(cmd *cobra.Command, args []string) {
 	featuresInputParams := ParseFeatureAssemblyParams(cmd, args, true)
 
-	if featuresInputParams.In == "" {
-		featuresInputParams.In = combineAllIntoCSV(args)
+	if featuresInputParams.GetIn() == "" {
+		featuresInputParams.SetIn(combineAllIntoCSV(args))
 	}
 
 	repp.Features(featuresInputParams, config.New())
@@ -129,11 +129,15 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 
 	assemblyInputParams := ParseSequenceAssemblyParams(cmd, args, true)
 
-	if assemblyInputParams.In == "" && len(args) > 0 {
-		assemblyInputParams.In = "input.fa"
-		if err := os.WriteFile(assemblyInputParams.In, []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
+	if assemblyInputParams.GetIn() == "" && len(args) > 0 {
+		assemblyInputParams.SetIn("input.fa")
+		if err := os.WriteFile(assemblyInputParams.GetIn(), []byte(fmt.Sprintf(">target_sequence\n%s", args[0])), 0644); err != nil {
 			log.Fatal("Error trying to write target sequence to input.fa", err)
 		}
+	}
+
+	if assemblyInputParams.GetOut() == "" {
+		assemblyInputParams.SetOut(guessOutput(assemblyInputParams.GetIn()))
 	}
 
 	repp.Sequence(assemblyInputParams, config.New())

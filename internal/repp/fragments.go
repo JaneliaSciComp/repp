@@ -24,7 +24,7 @@ func PrintFragment(name string, dbNames []string) {
 }
 
 // AssembleFragments assembles a list of building fragments in order
-func AssembleFragments(assemblyParams SequenceAssemblyParams, conf *config.Config) {
+func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 
 	// read in the constituent fragments
 	frags, err := read(assemblyParams.GetIn(), false)

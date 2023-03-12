@@ -17,56 +17,111 @@ var (
 	stderr = log.New(os.Stderr, "", 0)
 )
 
-// AssemblyParams contains assembly input parameters.
-type AssemblyParams struct {
+type AssemblyParams interface {
+	GetIn() string
+	SetIn(in string)
+
+	GetOut() string
+	SetOut(out string)
+
+	GetFilters() []string
+	SetFilters(fs []string)
+
+	GetIdentity() int
+	SetIdentity(i int)
+
+	GetBackboneName() string
+	SetBackboneName(bn string)
+
+	getDBs() ([]DB, error)
+	SetDbNames(dbNames []string)
+
+	getEnzymes() ([]enzyme, error)
+	SetEnzymeNames(enzymeNames []string)
+}
+
+// assemblyParamsImpl contains assembly input parameters.
+type assemblyParamsImpl struct {
 	// the name of the file to read the input from
-	In string
+	in string
 
 	// the name of the file to write the output to
-	Out string
+	out string
 
 	// a list of dbs to run BLAST against (their names' on the filesystem)
-	DbNames []string
+	dbNames []string
 
 	// the backbone (optional) to insert the pieces into
-	BackboneName string
+	backboneName string
 
 	// list of enzimes
-	EnzymeNames []string
+	enzymeNames []string
 
 	// slice of strings to weed out fragments from BLAST matches
-	Filters []string
+	filters []string
 
 	// percentage identity for finding building fragments in BLAST databases
-	Identity int
+	identity int
 }
 
-func (ap AssemblyParams) GetIn() string {
-	return ap.In
+func MkAssemblyParams() AssemblyParams {
+	return &assemblyParamsImpl{}
 }
 
-func (ap AssemblyParams) GetOut() string {
-	return ap.Out
+func (ap assemblyParamsImpl) GetIn() string {
+	return ap.in
 }
 
-func (ap AssemblyParams) GetFilters() []string {
-	return ap.Filters
+func (ap *assemblyParamsImpl) SetIn(in string) {
+	ap.in = in
 }
 
-func (ap AssemblyParams) GetIdentity() int {
-	return ap.Identity
+func (ap assemblyParamsImpl) GetOut() string {
+	return ap.out
 }
 
-func (ap AssemblyParams) GetBackboneName() string {
-	return ap.BackboneName
+func (ap *assemblyParamsImpl) SetOut(out string) {
+	ap.out = out
 }
 
-func (ap AssemblyParams) getDBs() (dbs []DB, err error) {
-	return getRegisteredDBs(ap.DbNames)
+func (ap assemblyParamsImpl) GetFilters() []string {
+	return ap.filters
 }
 
-func (ap AssemblyParams) getEnzymes() (enzymes []enzyme, err error) {
-	return getValidEnzymes(ap.EnzymeNames)
+func (ap *assemblyParamsImpl) SetFilters(filters []string) {
+	ap.filters = filters
+}
+
+func (ap assemblyParamsImpl) GetIdentity() int {
+	return ap.identity
+}
+
+func (ap *assemblyParamsImpl) SetIdentity(identity int) {
+	ap.identity = identity
+}
+
+func (ap assemblyParamsImpl) GetBackboneName() string {
+	return ap.backboneName
+}
+
+func (ap *assemblyParamsImpl) SetBackboneName(backboneName string) {
+	ap.backboneName = backboneName
+}
+
+func (ap assemblyParamsImpl) getDBs() (dbs []DB, err error) {
+	return getRegisteredDBs(ap.dbNames)
+}
+
+func (ap *assemblyParamsImpl) SetDbNames(dbNames []string) {
+	ap.dbNames = dbNames
+}
+
+func (ap assemblyParamsImpl) getEnzymes() (enzymes []enzyme, err error) {
+	return getValidEnzymes(ap.enzymeNames)
+}
+
+func (ap *assemblyParamsImpl) SetEnzymeNames(enzymeNames []string) {
+	ap.enzymeNames = enzymeNames
 }
 
 func prepareBackbone(

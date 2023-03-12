@@ -10,11 +10,11 @@ import (
 )
 
 type mockAssemblyParams struct {
-	AssemblyParams
+	assemblyParamsImpl
 }
 
 func (ap mockAssemblyParams) getDBs() (dbs []DB, err error) {
-	return getRegisteredTestDBs(ap.DbNames)
+	return getRegisteredTestDBs(ap.dbNames)
 }
 
 func Test_sequence_e2e(t *testing.T) {
@@ -26,7 +26,7 @@ func Test_sequence_e2e(t *testing.T) {
 		out      string
 		backbone string
 		enzymes  []string
-		filters  string
+		filters  []string
 		dbNames  []string
 	}
 
@@ -36,7 +36,7 @@ func Test_sequence_e2e(t *testing.T) {
 			path.Join(dir, "backbone.json"),
 			"pSB1A3",
 			[]string{"PstI"},
-			"",
+			[]string{},
 			[]string{testDB.Name},
 		},
 		{
@@ -44,7 +44,7 @@ func Test_sequence_e2e(t *testing.T) {
 			path.Join(dir, "BBa_K2224001.json"),
 			"pSB1A3",
 			[]string{"PstI"},
-			"",
+			[]string{},
 			[]string{testDB.Name},
 		},
 	}
@@ -83,13 +83,13 @@ func Test_features(t *testing.T) {
 	test1 := createFlagsForTesting(
 		"p10 promoter, mEGFP, T7 terminator",
 		path.Join(dir, "features.json"),
-		"pSB1A3",
+		[]string{"pSB1A3"},
 		[]string{"EcoRI"},
 		[]string{testDB.Name},
 	)
 
 	type args struct {
-		flags *AssemblyParams
+		flags *assemblyParamsImpl
 		conf  *config.Config
 	}
 	tests := []struct {
@@ -108,14 +108,14 @@ func Test_features(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testAssemblyParams := &mockAssemblyParams{
-				AssemblyParams{
-					In:           tt.args.flags.In,
-					Out:          tt.args.flags.Out,
-					DbNames:      []string{testDB.Name},
-					BackboneName: tt.args.flags.BackboneName,
-					EnzymeNames:  tt.args.flags.EnzymeNames,
-					Filters:      tt.args.flags.Filters,
-					Identity:     tt.args.flags.Identity,
+				assemblyParamsImpl{
+					in:           tt.args.flags.in,
+					out:          tt.args.flags.out,
+					dbNames:      []string{testDB.Name},
+					backboneName: tt.args.flags.backboneName,
+					enzymeNames:  tt.args.flags.enzymeNames,
+					filters:      tt.args.flags.filters,
+					identity:     tt.args.flags.identity,
 				},
 			}
 
@@ -225,12 +225,12 @@ func Test_plasmid_single_plasmid(t *testing.T) {
 	fs := createFlagsForTesting(
 		path.Join("..", "..", "test", "input", "109049.addgene.fa"),
 		path.Join(dir, "single-plasmid.json"),
-		"",
+		[]string{},
 		[]string{},
 		[]string{testDB.Name},
 	)
 
-	testAssemblyParams := mockAssemblyParams{
+	testAssemblyParams := &mockAssemblyParams{
 		*fs,
 	}
 
@@ -242,21 +242,25 @@ func Test_plasmid_single_plasmid(t *testing.T) {
 }
 
 func createFlagsForTesting(
-	in, out, filter string,
-	enzymes, dbNames []string,
-) *AssemblyParams {
+	in, out string,
+	filters, enzymes, dbNames []string,
+) *assemblyParamsImpl {
 
-	p := inputParser{}
 	if strings.Contains(in, ",") {
-		in = p.parseFeatureInput(strings.Fields(in))
+		inComps := strings.Split(in, ",")
+		trimmedComps := []string{}
+		for _, entry := range inComps {
+			trimmedComps = append(trimmedComps, strings.TrimSpace(entry))
+		}
+		in = strings.Join(trimmedComps, ",")
 	}
 
-	return &AssemblyParams{
-		In:          in,
-		Out:         out,
-		DbNames:     dbNames,
-		Filters:     p.getFilters(filter),
-		EnzymeNames: enzymes,
-		Identity:    98,
+	return &assemblyParamsImpl{
+		in:          in,
+		out:         out,
+		dbNames:     dbNames,
+		filters:     filters,
+		enzymeNames: enzymes,
+		identity:    98,
 	}
 }

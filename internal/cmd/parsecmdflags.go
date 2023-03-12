@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/repp"
@@ -10,30 +11,30 @@ import (
 )
 
 // ParseFeatureAssemblyParams - parse feature specific flags from the command line
-func ParseFeatureAssemblyParams(cmd *cobra.Command, args []string, strict bool) *repp.AssemblyParams {
-	params := &repp.AssemblyParams{}
+func ParseFeatureAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
+	params := repp.MkAssemblyParams()
 
 	extractCommonParams(cmd, args, params)
 	// extract filters
-	params.Filters = extractExcludedValues(cmd)
+	params.SetFilters(extractExcludedValues(cmd))
 
 	return params
 }
 
 // ParseSequenceAssemblyParams - parse sequence specific flags from the command line
-func ParseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool) *repp.AssemblyParams {
-	params := &repp.AssemblyParams{}
+func ParseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
+	params := repp.MkAssemblyParams()
 
 	extractCommonParams(cmd, args, params)
 	// extract filters
-	params.Filters = extractExcludedValues(cmd)
+	params.SetFilters(extractExcludedValues(cmd))
 
 	return params
 }
 
 // ParseFragmentsAssemblyParams - parse sequence specific flags from the command line
-func ParseFragmentsAssemblyParams(cmd *cobra.Command, args []string, strict bool) *repp.AssemblyParams {
-	params := &repp.AssemblyParams{}
+func ParseFragmentsAssemblyParams(cmd *cobra.Command, args []string, strict bool) repp.AssemblyParams {
+	params := repp.MkAssemblyParams()
 
 	extractCommonParams(cmd, args, params)
 
@@ -41,7 +42,6 @@ func ParseFragmentsAssemblyParams(cmd *cobra.Command, args []string, strict bool
 }
 
 func extractExcludedValues(cmd *cobra.Command) []string {
-
 	excluded, err := cmd.Flags().GetString("exclude")
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
@@ -53,7 +53,27 @@ func extractExcludedValues(cmd *cobra.Command) []string {
 	return splitStringOn(strings.ToUpper(excluded), []rune{' ', ','})
 }
 
-func extractCommonParams(cmd *cobra.Command, args []string, params *repp.AssemblyParams) {
+func extractIdentity(cmd *cobra.Command, defaultValue int) int {
+	// get identity for blastn searching
+	identity, err := cmd.Flags().GetInt("identity")
+	if err != nil {
+		identity = defaultValue // might be something other than `repp plasmid`
+	}
+	return identity
+}
+
+func extractDbNames(cmd *cobra.Command) []string {
+	dbNames, err := cmd.Flags().GetString("dbs")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatalf("failed to parse dbs arg: %v", err)
+	}
+	return splitStringOn(dbNames, []rune{' ', ','})
+}
+
+func extractCommonParams(cmd *cobra.Command, args []string, params repp.AssemblyParams) {
 	inputFname, err := cmd.Flags().GetString("in")
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
@@ -61,7 +81,7 @@ func extractCommonParams(cmd *cobra.Command, args []string, params *repp.Assembl
 		}
 		log.Fatalf("failed to parse sequence input arg: %v", err)
 	}
-	params.In = inputFname
+	params.SetIn(inputFname)
 
 	outputFName, err := cmd.Flags().GetString("out")
 
@@ -71,31 +91,28 @@ func extractCommonParams(cmd *cobra.Command, args []string, params *repp.Assembl
 		}
 		log.Fatalf("failed to parse output arg: %v", err)
 	}
-	params.Out = outputFName
+	params.SetOut(outputFName)
 
 	// get identity for blastn searching
-	identity, err := cmd.Flags().GetInt("identity")
-	if err != nil {
-		identity = 100 // might be something other than `repp plasmid`
-	}
-	params.Identity = identity
+	params.SetIdentity(extractIdentity(cmd, 100))
 
-	dbNames, err := cmd.Flags().GetString("dbs")
-	if err != nil {
-		if helperr := cmd.Help(); helperr != nil {
-			log.Fatal(helperr)
-		}
-		log.Fatalf("failed to parse dbs arg: %v", err)
-	}
-	params.DbNames = splitStringOn(dbNames, []rune{' ', ','})
+	params.SetDbNames(extractDbNames(cmd))
 
 	// check if user asked for a specific backbone, confirm it exists in one of the dbs
-	backbone, _ := cmd.Flags().GetString("backbone")
-	params.BackboneName = backbone
+	backboneName, _ := cmd.Flags().GetString("backbone")
+	params.SetBackboneName(backboneName)
 
 	// check if they also specified an enzyme
-	enzymes, _ := cmd.Flags().GetString("enzymeList")
-	params.EnzymeNames = splitStringOn(enzymes, []rune{' ', ','})
+	enzymeNames, _ := cmd.Flags().GetString("enzymeList")
+	params.SetEnzymeNames(splitStringOn(enzymeNames, []rune{' ', ','}))
+}
+
+// guessOutput gets an outpath path from an input path (if no output path is
+// specified). It uses the same name as the input path to create an output.
+func guessOutput(in string) (out string) {
+	ext := filepath.Ext(in)
+	noExt := in[0 : len(in)-len(ext)]
+	return noExt + ".output.json"
 }
 
 func splitStringOn(s string, separators []rune) []string {

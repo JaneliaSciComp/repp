@@ -20,7 +20,7 @@ type featureMatch struct {
 
 // Features assembles a plasmid with all the Features requested with the 'repp Features [feature ...]' command
 // repp assemble Features p10 promoter, mEGFP, T7 terminator
-func Features(assemblyParams SequenceAssemblyParams, conf *config.Config) [][]*Frag {
+func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
 	// get registered blast databases

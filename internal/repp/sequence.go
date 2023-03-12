@@ -10,31 +10,21 @@ import (
 	"time"
 
 	"github.com/Lattice-Automation/repp/internal/config"
-	"github.com/spf13/cobra"
 )
 
-type SequenceAssemblyParams interface {
-	GetIn() string
-	GetOut() string
-	GetFilters() []string
-	GetIdentity() int
-	GetBackboneName() string
-	getDBs() ([]DB, error)
-	getEnzymes() ([]enzyme, error)
-}
+// SequenceList is for BLAST'ing a sequence against the dbs and finding matches
+func SequenceList(
+	seq string,
+	filters []string,
+	identity int,
+	dbNames []string) {
 
-// SequenceListCmd is for BLAST'ing a sequence against the dbs and finding matches
-func SequenceListCmd(cmd *cobra.Command, args []string) {
-	if len(args) < 1 {
-		if helperr := cmd.Help(); helperr != nil {
-			rlog.Fatal(helperr)
-		}
-		rlog.Fatal("\nno sequence passed.")
+	dbs, err := getRegisteredDBs(dbNames)
+	if err != nil {
+		rlog.Fatal(err)
 	}
-	seq := args[0]
 
-	flags, _ := parseCmdFlags(cmd, args, false)
-	matches, err := blast("find_cmd", seq, true, flags.dbs, flags.filters, flags.identity)
+	matches, err := blast("find_cmd", seq, true, dbs, filters, identity)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -72,7 +62,7 @@ func SequenceListCmd(cmd *cobra.Command, args []string) {
 }
 
 // Sequence is for running an end to end plasmid design using a target sequence.
-func Sequence(assemblyParams SequenceAssemblyParams, conf *config.Config) (solutions [][]*Frag) {
+func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][]*Frag) {
 	start := time.Now()
 	// get registered blast databases
 	dbs, err := assemblyParams.getDBs()
