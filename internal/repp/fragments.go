@@ -62,8 +62,9 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 	target, solution := fragments(frags, conf)
 
 	// write the single list of fragments as a possible solution to the output file
-	if _, err := writeJSON(
+	if _, err := writeResult(
 		assemblyParams.GetOut(),
+		assemblyParams.GetOutputFormat(),
 		assemblyParams.GetIn(),
 		target.Seq,
 		[][]*Frag{solution},

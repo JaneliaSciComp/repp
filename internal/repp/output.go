@@ -59,35 +59,29 @@ func writeResult(
 	seconds float64,
 	backbone *Backbone,
 	conf *config.Config,
-) (out *Output, err error) {
-	if format == "CSV" {
-		return writeCSV(
-			filename,
-			targetName,
-			targetSeq,
-			assemblies,
-			insertSeqLength,
-			seconds,
-			backbone,
-			conf,
-		)
-	} else {
-		return writeJSON(
-			filename,
-			targetName,
-			targetSeq,
-			assemblies,
-			insertSeqLength,
-			seconds,
-			backbone,
-			conf,
-		)
+) (*Output, error) {
+	out, err := prepareSolutionsOutput(
+		targetName,
+		targetSeq,
+		assemblies,
+		insertSeqLength,
+		seconds,
+		backbone,
+		conf,
+	)
+	if err != nil {
+		return nil, err
 	}
+	if format == "CSV" {
+		err = writeCSV(filename, out)
+	} else {
+		err = writeJSON(filename, out)
+	}
+	return out, err
 }
 
-// writeCSV turns a list of solutions into a Solution object and writes to the filename requested.
-func writeCSV(
-	filename,
+// prepareSolutionsOutput turns a list of solutions into a Solution object.
+func prepareSolutionsOutput(
 	targetName,
 	targetSeq string,
 	assemblies [][]*Frag,
@@ -181,18 +175,26 @@ func writeCSV(
 		Backbone:  backbone,
 	}
 
+	return out, nil
+}
+
+// writeCSV writes solutions as csv.
+// The results are output to two csv files;
+// one containing the strategy and the other one the reagents
+func writeCSV(filename string, out *Output) (err error) {
+
 	reagentsFilename := resultFilename(filename, "reagents")
 	strategyFilename := resultFilename(filename, "strategy")
 
 	reagentsFile, err := os.Create(reagentsFilename)
 	if err != nil {
-		return out, err
+		return err
 	}
 	defer reagentsFile.Close()
 
 	strategyFile, err := os.Create(strategyFilename)
 	if err != nil {
-		return out, err
+		return err
 	}
 	defer strategyFile.Close()
 
@@ -200,7 +202,7 @@ func writeCSV(
 	// write timestamp
 	_, err = fmt.Fprintf(strategyFile, "# %s\n", out.Time)
 	if err != nil {
-		return out, err
+		return err
 	}
 
 	reagentsCSVWriter := csv.NewWriter(reagentsFile)
@@ -214,7 +216,7 @@ func writeCSV(
 		"Size",
 	})
 	if err != nil {
-		return out, nil
+		return nil
 	}
 	// Write the reagents headers
 	err = reagentsCSVWriter.Write([]string{
@@ -228,10 +230,10 @@ func writeCSV(
 			"# Solution %d\n# Fragments:%d, Cost: %f\n",
 			snumber,
 			s.Count, s.Cost); err != nil {
-			return out, err
+			return err
 		}
 		if _, err = fmt.Fprintf(reagentsFile, "# Solution %d\n", snumber); err != nil {
-			return out, err
+			return err
 		}
 		for fi, f := range s.Fragments {
 			fnumber := fi + 1
@@ -252,32 +254,31 @@ func writeCSV(
 				synthSeq = f.Seq
 			}
 
-			err = strategyCSVWriter.Write([]string{
+			if err = strategyCSVWriter.Write([]string{
 				f.ID,
 				f.Type,      // fragment type
 				fwdPrimerID, // fwd primer
 				revPrimerID, // rev primer
 				synthID,
 				strconv.Itoa(len(f.Seq)),
-			})
-			if err != nil {
-				return out, nil
+			}); err != nil {
+				return nil
 			}
 			if err = writeReagent(reagentsCSVWriter, fwdPrimerID, fwdPrimerSeq); err != nil {
-				return out, nil
+				return nil
 			}
 			if err = writeReagent(reagentsCSVWriter, revPrimerID, revPrimerSeq); err != nil {
-				return out, nil
+				return nil
 			}
 			if err = writeReagent(reagentsCSVWriter, synthID, synthSeq); err != nil {
-				return out, nil
+				return nil
 			}
 		}
 		strategyCSVWriter.Flush()
 		reagentsCSVWriter.Flush()
 	}
 
-	return out, nil
+	return nil
 }
 
 func resultFilename(template, suffix string) string {
@@ -296,112 +297,18 @@ func writeReagent(csvWriter *csv.Writer, reagentID, reagentSeq string) (err erro
 	return
 }
 
-// writeJSON turns a list of solutions into a Solution object and writes to the filename requested.
-func writeJSON(
-	filename,
-	targetName,
-	targetSeq string,
-	assemblies [][]*Frag,
-	insertSeqLength int,
-	seconds float64,
-	backbone *Backbone,
-	conf *config.Config,
-) (out *Output, err error) {
-	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
-	t := time.Now() // https://gobyexample.com/time-formatting-parsing
-	time := fmt.Sprintf(
-		"%d/%02d/%02d %02d:%02d:%02d",
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
-	)
-	roundCost := func(cost float64) (float64, error) {
-		return strconv.ParseFloat(fmt.Sprintf("%.2f", cost), 64)
-	}
-
-	// calculate final cost of the assembly and fragment count
-	solutions := []Solution{}
-	for _, assembly := range assemblies {
-		assemblyCost := 0.0
-		assemblyFragmentIDs := make(map[string]bool)
-		gibson := false // whether it will be assembled via Gibson assembly
-		hasPCR := false // whether there will be a batch PCR
-
-		for _, f := range assembly {
-			if f.fragType != linear && f.fragType != circular {
-				gibson = true
-			}
-
-			if f.fragType == pcr {
-				hasPCR = true
-			}
-
-			f.Type = f.fragType.String() // freeze fragment type
-
-			// round to two decimal places
-			if f.Cost, err = roundCost(f.cost(true)); err != nil {
-				return nil, err
-			}
-
-			// if it's already in the assembly, don't count cost twice
-			if _, contained := assemblyFragmentIDs[f.ID]; f.ID != "" && contained {
-				if f.Cost, err = roundCost(f.cost(false)); err != nil {
-					return nil, err // ignore repo procurement costs
-				}
-			} else {
-				assemblyFragmentIDs[f.ID] = true
-			}
-
-			// accumulate assembly cost
-			assemblyCost += f.Cost
-		}
-
-		if gibson {
-			assemblyCost += conf.GibsonAssemblyCost + conf.GibsonAssemblyTimeCost
-		}
-
-		if hasPCR {
-			assemblyCost += conf.PcrTimeCost
-		}
-
-		solutionCost, err := roundCost(assemblyCost)
-		if err != nil {
-			return nil, err
-		}
-
-		solutions = append(solutions, Solution{
-			Count:     len(assembly),
-			Cost:      solutionCost,
-			Fragments: assembly,
-		})
-	}
-
-	// sort solutions in increasing fragment count order
-	sort.Slice(solutions, func(i, j int) bool {
-		return solutions[i].Count < solutions[j].Count
-	})
-
-	if backbone.Seq == "" {
-		backbone = nil
-	}
-
-	out = &Output{
-		Time:      time,
-		Target:    targetName,
-		TargetSeq: strings.ToUpper(targetSeq),
-		Execution: seconds,
-		Solutions: solutions,
-		Backbone:  backbone,
-	}
-
+// writeJSON writes solutions as json.
+func writeJSON(filename string, out *Output) (err error) {
 	output, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
-		return out, fmt.Errorf("failed to serialize output: %v", err)
+		return fmt.Errorf("failed to serialize output: %v", err)
 	}
 
 	if err = os.WriteFile(filename, output, 0666); err != nil {
-		return out, fmt.Errorf("failed to write the output: %v", err)
+		return fmt.Errorf("failed to write the output: %v", err)
 	}
 
-	return out, nil
+	return
 }
 
 // writeFragsToFastaFile writes a slice of fragments to a FASTA file

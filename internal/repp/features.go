@@ -83,8 +83,9 @@ func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
 		insertLength += len(f[1])
 	}
 
-	if _, err := writeJSON(
+	if _, err := writeResult(
 		assemblyParams.GetOut(),
+		assemblyParams.GetOutputFormat(),
 		assemblyParams.GetIn(),
 		target,
 		solutions,
