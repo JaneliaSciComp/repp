@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -180,55 +181,119 @@ func writeCSV(
 		Backbone:  backbone,
 	}
 
-	outputFile, err := os.Create(filename)
+	reagentsFilename := resultFilename(filename, "reagents")
+	strategyFilename := resultFilename(filename, "strategy")
+
+	reagentsFile, err := os.Create(reagentsFilename)
 	if err != nil {
 		return out, err
 	}
-	defer outputFile.Close()
+	defer reagentsFile.Close()
 
-	csvWriter := csv.NewWriter(outputFile)
+	strategyFile, err := os.Create(strategyFilename)
+	if err != nil {
+		return out, err
+	}
+	defer strategyFile.Close()
+
+	strategyCSVWriter := csv.NewWriter(strategyFile)
 	// write timestamp
-	_, err = fmt.Fprintf(outputFile, "# %s\n", out.Time)
+	_, err = fmt.Fprintf(strategyFile, "# %s\n", out.Time)
 	if err != nil {
 		return out, err
 	}
 
+	reagentsCSVWriter := csv.NewWriter(reagentsFile)
+	// Write the strategy headers
+	err = strategyCSVWriter.Write([]string{
+		"ID",
+		"Type",
+		"Fwd Primer",
+		"Rev Primer",
+		"Synth Seq",
+		"Size",
+	})
+	if err != nil {
+		return out, nil
+	}
+	// Write the reagents headers
+	err = reagentsCSVWriter.Write([]string{
+		"ID",
+		"Seq",
+	})
 	for si, s := range out.Solutions {
+		snumber := si + 1
 		// Write the solution cost and the number of fragments
-		_, err = fmt.Fprintf(outputFile,
+		if _, err = fmt.Fprintf(strategyFile,
 			"# Solution %d\n# Fragments:%d, Cost: %f\n",
-			si,
-			s.Count, s.Cost)
-		if err != nil {
+			snumber,
+			s.Count, s.Cost); err != nil {
 			return out, err
 		}
-		// Write fragments
-		err = csvWriter.Write([]string{
-			"ID",
-			"Type",
-			"Fwd Seq",
-			"Rev Seq",
-			"Seq",
-		})
-		if err != nil {
-			return out, nil
+		if _, err = fmt.Fprintf(reagentsFile, "# Solution %d\n", snumber); err != nil {
+			return out, err
 		}
-		for _, f := range s.Fragments {
-			err = csvWriter.Write([]string{
+		for fi, f := range s.Fragments {
+			fnumber := fi + 1
+			var fwdPrimerID, fwdPrimerSeq,
+				revPrimerID, revPrimerSeq,
+				synthID, synthSeq string
+
+			fwdPrimerSeq = f.getPrimerSeq(true)
+			if fwdPrimerSeq != "" {
+				fwdPrimerID = fmt.Sprintf("%s_%d_%d_fwd", f.ID, snumber, fnumber)
+			}
+			revPrimerSeq = f.getPrimerSeq(false)
+			if revPrimerSeq != "" {
+				revPrimerID = fmt.Sprintf("%s_%d_%d_rev", f.ID, snumber, fnumber)
+			}
+			if fwdPrimerID == "" && revPrimerID == "" {
+				synthID = fmt.Sprintf("%s_%d_%d_synth", f.ID, snumber, fnumber)
+				synthSeq = f.Seq
+			}
+
+			err = strategyCSVWriter.Write([]string{
 				f.ID,
-				f.Type,                // fragment type
-				f.getPrimerSeq(true),  // fwd primer
-				f.getPrimerSeq(false), // rev primer
-				f.Seq,
+				f.Type,      // fragment type
+				fwdPrimerID, // fwd primer
+				revPrimerID, // rev primer
+				synthID,
+				strconv.Itoa(len(f.Seq)),
 			})
 			if err != nil {
 				return out, nil
 			}
+			if err = writeReagent(reagentsCSVWriter, fwdPrimerID, fwdPrimerSeq); err != nil {
+				return out, nil
+			}
+			if err = writeReagent(reagentsCSVWriter, revPrimerID, revPrimerSeq); err != nil {
+				return out, nil
+			}
+			if err = writeReagent(reagentsCSVWriter, synthID, synthSeq); err != nil {
+				return out, nil
+			}
 		}
-		csvWriter.Flush()
+		strategyCSVWriter.Flush()
+		reagentsCSVWriter.Flush()
 	}
 
 	return out, nil
+}
+
+func resultFilename(template, suffix string) string {
+	ext := filepath.Ext(template)
+	noExt := template[0 : len(template)-len(ext)]
+	return noExt + "-" + suffix + ext
+}
+
+func writeReagent(csvWriter *csv.Writer, reagentID, reagentSeq string) (err error) {
+	if reagentID != "" {
+		err = csvWriter.Write([]string{
+			reagentID,
+			reagentSeq,
+		})
+	}
+	return
 }
 
 // writeJSON turns a list of solutions into a Solution object and writes to the filename requested.
