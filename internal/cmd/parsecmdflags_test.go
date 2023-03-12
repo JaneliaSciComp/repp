@@ -92,7 +92,8 @@ func Test_getDBs(t *testing.T) {
 
 func Test_guessOutput(t *testing.T) {
 	type args struct {
-		in string
+		in           string
+		outputFormat string
 	}
 	tests := []struct {
 		name    string
@@ -102,14 +103,31 @@ func Test_guessOutput(t *testing.T) {
 		{
 			"append json suffix",
 			args{
-				in: "./test_file.fa",
+				in:           "./test_file.fa",
+				outputFormat: "JSON",
+			},
+			"./test_file.output.json",
+		},
+		{
+			"append csv suffix",
+			args{
+				in:           "./test_file.fa",
+				outputFormat: "CSV",
+			},
+			"./test_file.output.csv",
+		},
+		{
+			"unknown format - use JSON",
+			args{
+				in:           "./test_file.fa",
+				outputFormat: "Unknown",
 			},
 			"./test_file.output.json",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotOut := guessOutput(tt.args.in); gotOut != tt.wantOut {
+			if gotOut := guessOutput(tt.args.in, tt.args.outputFormat); gotOut != tt.wantOut {
 				t.Errorf("guessOutput() = %v, want %v", gotOut, tt.wantOut)
 			}
 		})

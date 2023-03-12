@@ -88,6 +88,7 @@ func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	sequenceCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
 	sequenceCmd.Flags().StringP("out", "o", "", "output file name")
+	sequenceCmd.Flags().StringP("out-fmt", "f", "JSON", "output file format; valid values [JSON, CSV]")
 	sequenceCmd.Flags().StringP("dbs", "d", "", "list of sequence databases by name")
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
@@ -137,7 +138,7 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if assemblyInputParams.GetOut() == "" {
-		assemblyInputParams.SetOut(guessOutput(assemblyInputParams.GetIn()))
+		assemblyInputParams.SetOut(guessOutput(assemblyInputParams.GetIn(), assemblyInputParams.GetOutputFormat()))
 	}
 
 	repp.Sequence(assemblyInputParams, config.New())

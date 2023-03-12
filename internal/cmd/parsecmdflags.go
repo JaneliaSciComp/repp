@@ -73,6 +73,26 @@ func extractDbNames(cmd *cobra.Command) []string {
 	return splitStringOn(dbNames, []rune{' ', ','})
 }
 
+func extractOutputFormat(cmd *cobra.Command) string {
+	outputFormat, err := cmd.Flags().GetString("out-fmt")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Printf("failed to parse output format arg: %v - will use JSON", err)
+		outputFormat = "JSON"
+	} else {
+		outputFormat = strings.ToUpper(outputFormat)
+	}
+
+	if outputFormat == "JSON" || outputFormat == "CSV" {
+		return outputFormat
+	} else {
+		log.Printf("unknown output format: %s - will use JSON", outputFormat)
+		return "JSON"
+	}
+}
+
 func extractCommonParams(cmd *cobra.Command, args []string, params repp.AssemblyParams) {
 	inputFname, err := cmd.Flags().GetString("in")
 	if err != nil {
@@ -84,7 +104,6 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 	params.SetIn(inputFname)
 
 	outputFName, err := cmd.Flags().GetString("out")
-
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
 			log.Fatal(helperr)
@@ -92,6 +111,8 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 		log.Fatalf("failed to parse output arg: %v", err)
 	}
 	params.SetOut(outputFName)
+
+	params.SetOutputFormat(extractOutputFormat(cmd))
 
 	// get identity for blastn searching
 	params.SetIdentity(extractIdentity(cmd, 100))
@@ -109,10 +130,16 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 
 // guessOutput gets an outpath path from an input path (if no output path is
 // specified). It uses the same name as the input path to create an output.
-func guessOutput(in string) (out string) {
+func guessOutput(in, format string) (out string) {
 	ext := filepath.Ext(in)
 	noExt := in[0 : len(in)-len(ext)]
-	return noExt + ".output.json"
+	var suffix string
+	if format == "CSV" {
+		suffix = ".output.csv"
+	} else {
+		suffix = ".output.json"
+	}
+	return noExt + suffix
 }
 
 func splitStringOn(s string, separators []rune) []string {

@@ -163,6 +163,17 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 	return frags
 }
 
+func (f Frag) getPrimerSeq(strand bool) string {
+	if len(f.Primers) > 0 {
+		for _, p := range f.Primers {
+			if p.Strand == strand {
+				return p.Seq
+			}
+		}
+	}
+	return ""
+}
+
 // copy returns a deep dopy of a Frag. used because nodes are mutated
 // during assembly filling, and we don't want primers being shared between
 // nodes in different assemblies

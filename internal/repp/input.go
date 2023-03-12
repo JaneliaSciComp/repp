@@ -24,6 +24,9 @@ type AssemblyParams interface {
 	GetOut() string
 	SetOut(out string)
 
+	GetOutputFormat() string
+	SetOutputFormat(f string)
+
 	GetFilters() []string
 	SetFilters(fs []string)
 
@@ -47,6 +50,9 @@ type assemblyParamsImpl struct {
 
 	// the name of the file to write the output to
 	out string
+
+	// output format (JSON, CSV)
+	outFormat string
 
 	// a list of dbs to run BLAST against (their names' on the filesystem)
 	dbNames []string
@@ -82,6 +88,14 @@ func (ap assemblyParamsImpl) GetOut() string {
 
 func (ap *assemblyParamsImpl) SetOut(out string) {
 	ap.out = out
+}
+
+func (ap assemblyParamsImpl) GetOutputFormat() string {
+	return ap.outFormat
+}
+
+func (ap *assemblyParamsImpl) SetOutputFormat(f string) {
+	ap.outFormat = f
 }
 
 func (ap assemblyParamsImpl) GetFilters() []string {

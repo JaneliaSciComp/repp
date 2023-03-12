@@ -96,8 +96,9 @@ func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][
 
 	// write the results to a file
 	elapsed := time.Since(start)
-	_, err = writeJSON(
+	_, err = writeResult(
 		assemblyParams.GetOut(),
+		assemblyParams.GetOutputFormat(),
 		target.ID,
 		target.Seq,
 		solutions,
