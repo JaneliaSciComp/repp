@@ -208,7 +208,7 @@ func writeCSV(filename string, out *Output) (err error) {
 	reagentsCSVWriter := csv.NewWriter(reagentsFile)
 	// Write the strategy headers
 	err = strategyCSVWriter.Write([]string{
-		"ID",
+		"Frag ID",
 		"Type",
 		"Fwd Primer",
 		"Rev Primer",
@@ -220,7 +220,7 @@ func writeCSV(filename string, out *Output) (err error) {
 	}
 	// Write the reagents headers
 	err = reagentsCSVWriter.Write([]string{
-		"ID",
+		"Reagent ID",
 		"Seq",
 	})
 	for si, s := range out.Solutions {
