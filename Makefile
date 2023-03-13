@@ -2,7 +2,7 @@ DOCKER_IMAGE=jjtimmons/repp
 VERSION=v1.0.0
 
 .PHONY: build
-build: fmt lint docs
+build: fmt lint
 	go mod tidy
 	go mod vendor
 	go build -o ./bin/repp ./cmd/repp
