@@ -8,6 +8,8 @@ import (
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
+	"golang.org/x/exp/maps"
 )
 
 // addCmd is for piecing together a list of input fragments into a plasmid
@@ -25,10 +27,10 @@ be passed to the --enzyme flag`,
 // databaseAddCmd is for adding a new sequence db
 var databaseAddCmd = &cobra.Command{
 	Use:                        "database",
-	Short:                      "Import a FASTA sequence database along with its cost",
+	Short:                      "Import a FASTA sequence database along with its cost.",
 	Run:                        runDatabaseAddCmd,
 	SuggestionsMinimumDistance: 2,
-	Long:                       "\nImport a new sequence database so its sequences are available to 'repp make'",
+	Long:                       "\nImport a new sequence database so its sequences are available to 'repp make'.",
 	Example:                    "  repp add database --name addgene --cost 65.0 ./addgene.fa",
 	Aliases:                    []string{"db"},
 }
@@ -62,7 +64,6 @@ a cut site in the complement sequence: "_". Use 'repp ls enzyme' for examples`,
 func init() {
 	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
 	databaseAddCmd.Flags().Float64P("cost", "c", 0.0, "the cost per plasmid procurement (eg order + shipping fee)")
-	databaseAddCmd.Flags().StringP("dir", "d", "", "directory containing FASTA or Genbank file(s) to be used for creating the BLAST database")
 	databaseAddCmd.Flags().BoolP("append", "a", false, "if true append to the database if it exists")
 
 	must(databaseAddCmd.MarkFlagRequired("name"))
@@ -90,13 +91,6 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 		}
 		log.Fatal("Cost must be a number", err)
 	}
-	seqDir, err := cmd.Flags().GetString("dir")
-	if err != nil {
-		if helperr := cmd.Help(); helperr != nil {
-			log.Fatal(helperr)
-		}
-		log.Fatal("Database name must be a string", err)
-	}
 	dbAppendFlag, err := cmd.Flags().GetBool("append")
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
@@ -105,25 +99,72 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("Append flag must be a boolean", err)
 	}
 
-	var seqFiles []string
-	if seqDir != "" {
-		// collect files from sequence dir
-		seqDirContent, err := os.ReadDir(seqDir)
-		if err != nil {
-			log.Fatalf("Error reading directory %s\n", seqDir)
-		}
-		for _, f := range seqDirContent {
-			if !f.IsDir() {
-				seqFiles = append(seqFiles, filepath.Join(seqDir, f.Name()))
-			}
-		}
-	}
-	// append the rest of files specified as positional args
-	seqFiles = append(seqFiles, args...)
+	seqFiles := collectSequenceFiles(args)
 
 	if err = repp.AddDatabase(dbName, seqFiles, cost, dbAppendFlag); err != nil {
 		log.Fatal("Error creating database", dbName, err)
 	}
+}
+
+func collectSequenceFiles(args []string) []string {
+	var allErrs error
+	allSeqFiles := map[string]string{}
+
+	for _, seqLocation := range args {
+		seqFiles, err := collectSequenceFilesFromLocation(seqLocation)
+		if err != nil {
+			allErrs = multierr.Append(allErrs, err)
+		} else {
+			for _, f := range seqFiles {
+				allSeqFiles[f] = f
+			}
+		}
+	}
+
+	if allErrs != nil {
+		if len(allSeqFiles) == 0 {
+			// if no file was found stop here
+			log.Fatalln("Errors encountered while accessing files from ", args, allErrs)
+		} else {
+			// continue even if not all arguments were valid files
+			log.Println("Errors encountered while accessing files from ", args, allErrs)
+		}
+	}
+
+	return maps.Values(allSeqFiles)
+}
+
+func collectSequenceFilesFromLocation(seqLocation string) (seqFiles []string, err error) {
+	if seqLocation != "" {
+		seqLocationInfo, statErr := os.Stat(seqLocation)
+		if statErr != nil {
+			// some error occurred - I don't care what type of error
+			return seqFiles, statErr
+		}
+		if seqLocationInfo.IsDir() {
+			// collect files from sequence dir
+			seqDirContent, dirErr := os.ReadDir(seqLocation)
+			if dirErr != nil {
+				return seqFiles, dirErr
+			}
+			for _, f := range seqDirContent {
+				if !f.IsDir() {
+					seqLocationPath, fpErr := filepath.Abs(filepath.Join(seqLocation, f.Name()))
+					if fpErr != nil {
+						return seqFiles, fpErr
+					}
+					seqFiles = append(seqFiles, seqLocationPath)
+				}
+			}
+		} else if !seqLocationInfo.IsDir() {
+			seqLocationPath, fpErr := filepath.Abs(seqLocation)
+			if fpErr != nil {
+				return seqFiles, fpErr
+			}
+			seqFiles = append(seqFiles, seqLocationPath)
+		}
+	}
+	return seqFiles, nil
 }
 
 func runFeaturesAddCmd(cmd *cobra.Command, args []string) {

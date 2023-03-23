@@ -192,26 +192,28 @@ func read(path string, feature bool) (fragments []*Frag, err error) {
 		}
 	}
 
-	dat, err := os.ReadFile(path)
+	fcontent, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	file := string(dat)
+	// convert content to string
+	scontent := strings.TrimSpace(string(fcontent))
 
-	path = strings.ToLower(path)
-	if strings.HasSuffix(path, "fa") ||
-		strings.HasSuffix(path, "fasta") ||
-		file[0] == '>' {
-		return readFasta(path, file)
+	// inspect content to figure out whether it's FASTA or Genbank
+	// this is slower than just looking at the file extension
+	// but the file is already in memory anyway
+	if scontent[0] == '>' {
+		rlog.Infof("Add sequences from FASTA file: %s", path)
+		return readFasta(path, scontent)
 	}
 
-	if strings.HasSuffix(path, "gb") ||
-		strings.HasSuffix(path, "gbk") ||
-		strings.HasSuffix(path, "genbank") {
-		return readGenbank(path, file, feature)
+	if strings.Contains(scontent, "LOCUS") && strings.Contains(scontent, "ORIGIN") {
+		rlog.Infof("Add sequences from Genbank file: %s", path)
+		return readGenbank(path, scontent, feature)
 	}
 
-	return nil, fmt.Errorf("failed to parse %s: unrecognized file type", path)
+	rlog.Infof("Ignoring file %s because it does not recognize the file type", path)
+	return []*Frag{}, nil
 }
 
 // readFasta parses the multifasta file to fragments.
