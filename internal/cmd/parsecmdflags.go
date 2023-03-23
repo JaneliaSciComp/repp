@@ -79,8 +79,8 @@ func extractOutputFormat(cmd *cobra.Command) string {
 		if helperr := cmd.Help(); helperr != nil {
 			log.Fatal(helperr)
 		}
-		log.Printf("failed to parse output format arg: %v - will use JSON", err)
-		outputFormat = "JSON"
+		log.Printf("failed to parse output format arg: %v - will use CSV", err)
+		outputFormat = "CSV"
 	} else {
 		outputFormat = strings.ToUpper(outputFormat)
 	}

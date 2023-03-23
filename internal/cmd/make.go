@@ -74,7 +74,6 @@ func init() {
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	fragmentsCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	must(fragmentsCmd.MarkFlagRequired("in"))
-	must(fragmentsCmd.MarkFlagRequired("out"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	featuresCmd.Flags().StringP("out", "o", "", "output file name")
@@ -88,14 +87,13 @@ func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
 	sequenceCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
 	sequenceCmd.Flags().StringP("out", "o", "", "output file name")
-	sequenceCmd.Flags().StringP("out-fmt", "f", "JSON", "output file format; valid values [JSON, CSV]")
+	sequenceCmd.Flags().StringP("out-fmt", "f", "CSV", "output file format; valid values [JSON, CSV]")
 	sequenceCmd.Flags().StringP("dbs", "d", "", "list of sequence databases by name")
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 	must(sequenceCmd.MarkFlagRequired("in"))
-	must(sequenceCmd.MarkFlagRequired("out"))
 
 	makeCmd.AddCommand(fragmentsCmd)
 	makeCmd.AddCommand(featuresCmd)
@@ -112,6 +110,10 @@ func init() {
 
 func runFragmentsCmd(cmd *cobra.Command, args []string) {
 	fragmentsInputParams := parseFragmentsAssemblyParams(cmd, args, true)
+
+	if fragmentsInputParams.GetOut() == "" {
+		fragmentsInputParams.SetOut(guessOutput(fragmentsInputParams.GetIn(), fragmentsInputParams.GetOutputFormat()))
+	}
 
 	repp.AssembleFragments(fragmentsInputParams, config.New())
 }
