@@ -271,7 +271,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 					synthOligo.assignNewOligoID(oligos.getNewOligoID(newOligoSequenceIndex))
 					newOligoSequenceIndex++
 				}
-				reagents = append(reagents, revOligo)
+				reagents = append(reagents, synthOligo)
 			}
 
 			if err = strategyCSVWriter.Write([]string{
