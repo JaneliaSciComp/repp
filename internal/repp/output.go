@@ -288,7 +288,11 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 		strategyCSVWriter.Flush()
 		sort.Sort(sortedOligosByID(reagents))
 		for _, r := range reagents {
-			writeReagent(reagentsCSVWriter, r.getIDOrNA(true), r.seq)
+			reagentID := r.getIDOrNA(true)
+			err = writeReagent(reagentsCSVWriter, reagentID, r.seq)
+			if err != nil {
+				rlog.Errorf("Error writing reagent %s: %v", reagentID, err)
+			}
 		}
 		reagentsCSVWriter.Flush()
 	}
