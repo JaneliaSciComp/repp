@@ -127,6 +127,8 @@ func readOligos(manifest string) (oligos *oligosDB) {
 
 func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {
 
+	manifestReader.Comment = '#'
+	manifestReader.TrimLeadingSpace = true
 	records, err := manifestReader.ReadAll()
 	if err != nil {
 		return err

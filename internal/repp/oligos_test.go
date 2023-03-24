@@ -21,7 +21,7 @@ func Test_readOligosFromCSV(t *testing.T) {
 		{
 			name: "parse oligos manifest with header",
 			args: args{
-				`
+				`#comment
 				primer_id, sequence
 				os1, act
 				os2,tgacg`,
@@ -57,6 +57,18 @@ func Test_readOligosFromCSV(t *testing.T) {
 				"TGACGGG": {id: "os", seq: "tgacggg"},
 			},
 			nextIndex: 4,
+		},
+		{
+			name: "jump in next index",
+			args: args{
+				`os1,act
+				os10,tgacg`,
+			},
+			want: map[string]oligo{
+				"ACT":   {id: "os1", seq: "act"},
+				"TGACG": {id: "os10", seq: "tgacg"},
+			},
+			nextIndex: 11,
 		},
 	}
 
