@@ -36,7 +36,7 @@ docs/serve: docs
 	cd docs && make serve
 
 fmt:
-	gofmt -l ./internal
+	gofmt -l ./cmd ./internal
 
 lint:
 	golangci-lint run
