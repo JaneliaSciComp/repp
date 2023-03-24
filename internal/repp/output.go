@@ -55,6 +55,7 @@ func writeResult(
 	targetName,
 	targetSeq string,
 	assemblies [][]*Frag,
+	oligos *oligosDB,
 	insertSeqLength int,
 	seconds float64,
 	backbone *Backbone,
@@ -73,7 +74,7 @@ func writeResult(
 		return nil, err
 	}
 	if format == "CSV" {
-		err = writeCSV(filename, out)
+		err = writeCSV(filename, fragmentBase(filename), oligos, out)
 	} else {
 		err = writeJSON(filename, out)
 	}
@@ -181,7 +182,7 @@ func prepareSolutionsOutput(
 // writeCSV writes solutions as csv.
 // The results are output to two csv files;
 // one containing the strategy and the other one the reagents
-func writeCSV(filename string, out *Output) (err error) {
+func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (err error) {
 
 	reagentsFilename := resultFilename(filename, "reagents")
 	strategyFilename := resultFilename(filename, "strategy")
@@ -209,10 +210,10 @@ func writeCSV(filename string, out *Output) (err error) {
 	// Write the strategy headers
 	err = strategyCSVWriter.Write([]string{
 		"Frag ID",
-		"Type",
 		"Fwd Primer",
 		"Rev Primer",
 		"Synth Seq",
+		"Template",
 		"Size",
 	})
 	if err != nil {
@@ -235,50 +236,74 @@ func writeCSV(filename string, out *Output) (err error) {
 		if _, err = fmt.Fprintf(reagentsFile, "# Solution %d\n", snumber); err != nil {
 			return err
 		}
+		reagents := []oligo{}
+		var newOligoSequenceIndex int = 0
 		for fi, f := range s.Fragments {
 			fnumber := fi + 1
-			var fwdPrimerID, fwdPrimerSeq,
-				revPrimerID, revPrimerSeq,
-				synthID, synthSeq string
+			var fwdPrimerSeq, revPrimerSeq, synthSeq string
 
+			fID := fmt.Sprintf("%s_%d_%s", fragmentIDBase, fnumber, f.Type)
 			fwdPrimerSeq = f.getPrimerSeq(true)
-			if fwdPrimerSeq != "" {
-				fwdPrimerID = fmt.Sprintf("%s_%d_%d_fwd", f.ID, snumber, fnumber)
-			}
 			revPrimerSeq = f.getPrimerSeq(false)
-			if revPrimerSeq != "" {
-				revPrimerID = fmt.Sprintf("%s_%d_%d_rev", f.ID, snumber, fnumber)
-			}
-			if fwdPrimerID == "" && revPrimerID == "" {
-				synthID = fmt.Sprintf("%s_%d_%d_synth", f.ID, snumber, fnumber)
+			if fwdPrimerSeq == "" && revPrimerSeq == "" {
 				synthSeq = f.Seq
 			}
 
+			fwdOligo := oligos.findOligo(fwdPrimerSeq)
+			if !fwdOligo.isEmpty() {
+				if !fwdOligo.hasID() {
+					fwdOligo.assignNewOligoID(oligos.getNewOligoID(newOligoSequenceIndex))
+					newOligoSequenceIndex++
+				}
+				reagents = append(reagents, fwdOligo)
+			}
+			revOligo := oligos.findOligo(revPrimerSeq)
+			if !revOligo.isEmpty() {
+				if !revOligo.hasID() {
+					revOligo.assignNewOligoID(oligos.getNewOligoID(newOligoSequenceIndex))
+					newOligoSequenceIndex++
+				}
+				reagents = append(reagents, revOligo)
+			}
+			synthOligo := oligos.findOligo(synthSeq)
+			if !synthOligo.isEmpty() {
+				if !synthOligo.hasID() {
+					synthOligo.assignNewOligoID(oligos.getNewOligoID(newOligoSequenceIndex))
+					newOligoSequenceIndex++
+				}
+				reagents = append(reagents, revOligo)
+			}
+
 			if err = strategyCSVWriter.Write([]string{
-				f.ID,
-				f.Type,      // fragment type
-				fwdPrimerID, // fwd primer
-				revPrimerID, // rev primer
-				synthID,
+				fID,
+				fwdOligo.getIDOrNA(false),   // fwd primer
+				revOligo.getIDOrNA(false),   // rev primer
+				synthOligo.getIDOrNA(false), // synth sequence
+				f.ID,                        // template
 				strconv.Itoa(len(f.Seq)),
 			}); err != nil {
 				return nil
 			}
-			if err = writeReagent(reagentsCSVWriter, fwdPrimerID, fwdPrimerSeq); err != nil {
-				return nil
-			}
-			if err = writeReagent(reagentsCSVWriter, revPrimerID, revPrimerSeq); err != nil {
-				return nil
-			}
-			if err = writeReagent(reagentsCSVWriter, synthID, synthSeq); err != nil {
-				return nil
-			}
 		}
 		strategyCSVWriter.Flush()
+		sort.Sort(sortedOligosByID(reagents))
+		for _, r := range reagents {
+			writeReagent(reagentsCSVWriter, r.getIDOrNA(true), r.seq)
+		}
 		reagentsCSVWriter.Flush()
 	}
 
 	return nil
+}
+
+func fragmentBase(template string) string {
+	baseNameWithExt := filepath.Base(template)
+	extSep := strings.Index(baseNameWithExt, ".")
+	if extSep == -1 {
+		return baseNameWithExt
+	} else {
+		return baseNameWithExt[:extSep]
+	}
 }
 
 func resultFilename(template, suffix string) string {

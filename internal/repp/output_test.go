@@ -1,13 +1,13 @@
 package repp
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func Test_writeGenbank(t *testing.T) {
 	dir := t.TempDir()
-	output, err := ioutil.TempFile(dir, "*.gb")
+	output, err := os.CreateTemp(dir, "*.gb")
 	if err != nil {
 		t.Error(err)
 	}

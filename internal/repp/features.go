@@ -83,12 +83,16 @@ func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
 		insertLength += len(f[1])
 	}
 
+	// do not use the oligos manifest
+	oligos := readOligos(assemblyParams.GetOligosManifest())
+
 	if _, err := writeResult(
 		assemblyParams.GetOut(),
 		assemblyParams.GetOutputFormat(),
 		assemblyParams.GetIn(),
 		target,
 		solutions,
+		oligos,
 		insertLength,
 		time.Since(start).Seconds(),
 		backboneMeta,

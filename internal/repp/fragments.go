@@ -61,6 +61,9 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 
 	target, solution := fragments(frags, conf)
 
+	// do not use the oligos manifest
+	oligos := readOligos(assemblyParams.GetOligosManifest())
+
 	// write the single list of fragments as a possible solution to the output file
 	if _, err := writeResult(
 		assemblyParams.GetOut(),
@@ -68,6 +71,7 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 		assemblyParams.GetIn(),
 		target.Seq,
 		[][]*Frag{solution},
+		oligos,
 		len(target.Seq),
 		0,
 		backboneMeta,

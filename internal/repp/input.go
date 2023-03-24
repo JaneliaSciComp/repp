@@ -36,6 +36,9 @@ type AssemblyParams interface {
 	GetBackboneName() string
 	SetBackboneName(bn string)
 
+	GetOligosManifest() string
+	SetOligosManifest(manifest string)
+
 	getDBs() ([]DB, error)
 	SetDbNames(dbNames []string)
 
@@ -59,6 +62,9 @@ type assemblyParamsImpl struct {
 
 	// the backbone (optional) to insert the pieces into
 	backboneName string
+
+	// oligos manifest
+	oligosManifest string
 
 	// list of enzimes
 	enzymeNames []string
@@ -120,6 +126,14 @@ func (ap assemblyParamsImpl) GetBackboneName() string {
 
 func (ap *assemblyParamsImpl) SetBackboneName(backboneName string) {
 	ap.backboneName = backboneName
+}
+
+func (ap assemblyParamsImpl) GetOligosManifest() string {
+	return ap.oligosManifest
+}
+
+func (ap *assemblyParamsImpl) SetOligosManifest(manifest string) {
+	ap.oligosManifest = manifest
 }
 
 func (ap assemblyParamsImpl) getDBs() (dbs []DB, err error) {

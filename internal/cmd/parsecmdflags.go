@@ -28,7 +28,8 @@ func parseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool)
 	extractCommonParams(cmd, args, params)
 	// extract filters
 	params.SetFilters(extractExcludedValues(cmd))
-
+	// extract oligos manifest
+	params.SetOligosManifest(extractOligosDatabase(cmd))
 	return params
 }
 
@@ -88,9 +89,20 @@ func extractOutputFormat(cmd *cobra.Command) string {
 	if outputFormat == "JSON" || outputFormat == "CSV" {
 		return outputFormat
 	} else {
-		log.Printf("unknown output format: %s - will use JSON", outputFormat)
-		return "JSON"
+		log.Printf("unknown output format: %s - will use CSV", outputFormat)
+		return "CSV"
 	}
+}
+
+func extractOligosDatabase(cmd *cobra.Command) string {
+	manifest, err := cmd.Flags().GetString("oligos-database")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Printf("failed to parse oligos manifest arg: %v", err)
+	}
+	return manifest
 }
 
 func extractCommonParams(cmd *cobra.Command, args []string, params repp.AssemblyParams) {

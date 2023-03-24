@@ -94,6 +94,8 @@ func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][
 		rlog.Fatal(err)
 	}
 
+	oligos := readOligos(assemblyParams.GetOligosManifest())
+
 	// write the results to a file
 	elapsed := time.Since(start)
 	_, err = writeResult(
@@ -102,6 +104,7 @@ func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][
 		target.ID,
 		target.Seq,
 		solutions,
+		oligos,
 		len(insert.Seq),
 		elapsed.Seconds(),
 		backboneMeta,
