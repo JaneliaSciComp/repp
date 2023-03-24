@@ -28,8 +28,6 @@ func parseSequenceAssemblyParams(cmd *cobra.Command, args []string, strict bool)
 	extractCommonParams(cmd, args, params)
 	// extract filters
 	params.SetFilters(extractExcludedValues(cmd))
-	// extract oligos manifest
-	params.SetOligosManifest(extractOligosDatabase(cmd))
 	return params
 }
 
@@ -138,6 +136,9 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 	// check if they also specified an enzyme
 	enzymeNames, _ := cmd.Flags().GetString("enzymeList")
 	params.SetEnzymeNames(splitStringOn(enzymeNames, []rune{' ', ','}))
+
+	// extract oligos manifest
+	params.SetOligosManifest(extractOligosDatabase(cmd))
 }
 
 // guessOutput gets an outpath path from an input path (if no output path is
