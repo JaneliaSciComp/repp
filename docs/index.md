@@ -76,9 +76,13 @@ for db in igem addgene dnasu; do
 done
 
 # add sequence DBs with the cost of ordering a plasmid from each source
+# add sequence from standard input
 repp add database --name igem --cost 0.0 < igem.fa
 repp add database --name addgene --cost 65.0 < addgene.fa
-repp add database --name dnasu --cost 55.0 < dnasu.fa
+# add sequence from file
+repp add database --name dnasu --cost 55.0 dnasu.fa
+# add all sequence files from a directory
+repp add database --name dnasu --cost 55.0 --dir dnasu
 ```
 
 ## Plasmid Design
