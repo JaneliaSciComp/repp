@@ -152,6 +152,18 @@ func (ap *assemblyParamsImpl) SetEnzymeNames(enzymeNames []string) {
 	ap.enzymeNames = enzymeNames
 }
 
+type inputReport struct {
+	successful, skipped, errored, duplicatedIDs, sequencesRead int
+}
+
+func (r inputReport) printReport() {
+	rlog.Infof("Files read successfully: %d", r.successful)
+	rlog.Infof("Sequences read: %d", r.sequencesRead)
+	rlog.Infof("Duplicated sequence IDs found: %d", r.duplicatedIDs)
+	rlog.Infof("Files skipped: %d", r.skipped)
+	rlog.Infof("Files with errors: %d", r.errored)
+}
+
 func prepareBackbone(
 	bbName string,
 	enzymes []enzyme,
@@ -183,14 +195,28 @@ func prepareBackbone(
 }
 
 // read a dir of FASTA or Genbank files to a slice of fragments
-func multiFileRead(fs []string) (fragments []*Frag, err error) {
+func multiFileRead(fs []string) (fragments []*Frag, rep inputReport, err error) {
+	newFrags := make(map[string]*Frag)
 	for _, f := range fs {
 		fFrags, ferr := read(f, false)
 		if ferr != nil {
-			rlog.Warnf("Error reading sequence from %s\n", f)
 			err = multierr.Append(err, ferr)
+			rep.errored++
+		} else if len(fFrags) == 0 {
+			rep.skipped++
 		} else {
-			fragments = append(fragments, fFrags...)
+			rep.successful++
+			for _, frag := range fFrags {
+				indexedFragID := strings.ToUpper(frag.ID)
+				_, found := newFrags[indexedFragID]
+				if found {
+					rep.duplicatedIDs++
+				} else {
+					newFrags[indexedFragID] = frag
+					fragments = append(fragments, frag)
+					rep.sequencesRead++
+				}
+			}
 		}
 	}
 
@@ -217,16 +243,16 @@ func read(path string, feature bool) (fragments []*Frag, err error) {
 	// this is slower than just looking at the file extension
 	// but the file is already in memory anyway
 	if scontent[0] == '>' {
-		rlog.Infof("Add sequences from FASTA file: %s", path)
+		rlog.Debugf("Add sequences from FASTA file: %s", path)
 		return readFasta(path, scontent)
 	}
 
 	if strings.Contains(scontent, "LOCUS") && strings.Contains(scontent, "ORIGIN") {
-		rlog.Infof("Add sequences from Genbank file: %s", path)
+		rlog.Debugf("Add sequences from Genbank file: %s", path)
 		return readGenbank(path, scontent, feature)
 	}
 
-	rlog.Infof("Ignoring file %s because it does not recognize the file type", path)
+	rlog.Debugf("Ignoring file %s because it does not recognize the file type", path)
 	return []*Frag{}, nil
 }
 
@@ -288,7 +314,9 @@ func readFasta(path, contents string) (frags []*Frag, err error) {
 // readGenbank parses a genbank file to fragments. Returns either fragments or parseFeatures,
 // depending on the parseFeatures parameter.
 func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, err error) {
-	genbankSplit := strings.Split(contents, "ORIGIN")
+	// use "\nORIGIN" because there are annotations that contain the word origin
+	// which may generate an error because of more than 2 components as a result of the split
+	genbankSplit := strings.Split(contents, "\nORIGIN")
 
 	if len(genbankSplit) != 2 {
 		return nil, fmt.Errorf("failed to parse %s: improperly formatted genbank file", path)

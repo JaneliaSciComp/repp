@@ -77,15 +77,20 @@ func AddDatabase(dbName string, seqFiles []string, cost float64, appendMode bool
 			return err
 		}
 	} else {
-		dbSeqs, err := multiFileRead(seqFiles)
+		dbSeqs, report, err := multiFileRead(seqFiles)
+		report.printReport()
 		if err != nil {
-			rlog.Errorf("Error reading one or more sequence files into the database")
-			return err
+			rlog.Warnf("Error reading one or more sequence files into the database: %v", err)
 		}
-		err = writeFragsToFastaFile(dbSeqs, dbSeqFile)
-		if err != nil {
-			rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
-			return err
+		if len(dbSeqs) > 0 {
+			err = writeFragsToFastaFile(dbSeqs, dbSeqFile)
+			if err != nil {
+				rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
+				return err
+			}
+		} else {
+			rlog.Warnf("No sequence was read from the input files")
+			return nil
 		}
 	}
 

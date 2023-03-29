@@ -5,7 +5,6 @@ import (
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 // RootCmd represents the base command when called without any subcommands.
@@ -14,7 +13,7 @@ var RootCmd = &cobra.Command{
 	Short: `repository-based plasmid design. Build cost-efficient plasmids`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("verbose").Value.String() == "true" {
-			repp.LogLevel.SetLevel(zap.DebugLevel)
+			repp.SetVerboseLogging()
 		}
 	},
 	Version: "1.0.0",
