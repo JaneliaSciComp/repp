@@ -272,9 +272,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 				reagents = append(reagents, revOligo)
 			}
 			var templateID string
-			if synthSeq == "" {
-				templateID = f.ID
-			} else {
+			if f.fragType == synthetic {
 				templateID = naValue
 				synthReagent := oligo{
 					id:    fID,
@@ -282,6 +280,8 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 					synth: true,
 				}
 				reagents = append(reagents, synthReagent)
+			} else {
+				templateID = f.ID
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,

@@ -211,6 +211,7 @@ func multiFileRead(fs []string) (fragments []*Frag, rep inputReport, err error) 
 				_, found := newFrags[indexedFragID]
 				if found {
 					rep.duplicatedIDs++
+					rlog.Debugf("Skip %s from %s because ID already exists\n", frag.ID, f)
 				} else {
 					newFrags[indexedFragID] = frag
 					fragments = append(fragments, frag)
