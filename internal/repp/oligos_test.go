@@ -75,7 +75,7 @@ func Test_readOligosFromCSV(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := csv.NewReader(strings.NewReader(tt.args.csvData))
-			oligos := newOligos()
+			oligos := newOligosDB()
 			err := readOligosFromCSV(r, oligos)
 			if err != nil {
 				t.Errorf("%s: Error parsing oligos %v\n", tt.name, err)

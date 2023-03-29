@@ -120,6 +120,20 @@ type Primer struct {
 	Range ranged `json:"-"`
 }
 
+func fragTypeAsString(ft fragType) string {
+	switch ft {
+	case linear:
+		return "lin"
+	case circular:
+		return "cir"
+	case pcr:
+		return "pcr"
+	case synthetic:
+		return "syn"
+	}
+	return "unk"
+}
+
 // newFrag creates a Frag from a match
 func newFrag(m match, conf *config.Config) *Frag {
 	fType := pcr

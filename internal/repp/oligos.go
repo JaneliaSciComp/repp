@@ -10,10 +10,13 @@ import (
 )
 
 type oligo struct {
-	id        string
-	seq       string
-	markAsNew bool
+	id    string
+	seq   string
+	isNew bool
+	synth bool
 }
+
+var naValue string = "N/A"
 
 func (o oligo) isEmpty() bool {
 	return o.seq == ""
@@ -23,21 +26,21 @@ func (o oligo) hasID() bool {
 	return o.id != ""
 }
 
-func (o oligo) getIDOrNA(markNewOligo bool) string {
+func (o oligo) getIDOrNA(markID bool) string {
 	if o.hasID() {
-		if markNewOligo && o.markAsNew {
+		if markID {
 			return "*" + o.id
 		} else {
 			return o.id
 		}
 	} else {
-		return "N/A"
+		return naValue
 	}
 }
 
 func (o *oligo) assignNewOligoID(id string) {
 	o.id = id
-	o.markAsNew = true
+	o.isNew = true
 }
 
 var (
@@ -53,14 +56,32 @@ func (a sortedOligosByID) Len() int {
 }
 
 func (a sortedOligosByID) Less(i, j int) bool {
-	idBase1, index1 := extractOligoIDComps(a[i].id)
-	idBase2, index2 := extractOligoIDComps(a[j].id)
+	if a[i].synth && !a[j].synth {
+		return false
+	} else if !a[i].synth && a[i].synth {
+		return true
+	} else if !a[i].synth && !a[j].synth {
+		return compOligoIDs(a[i], a[j]) < 0
+	} else {
+		return strings.Compare(a[i].id, a[j].id) < 0
+	}
+}
+
+func compOligoIDs(o1, o2 oligo) int {
+	idBase1, index1 := extractOligoIDComps(o1.id)
+	idBase2, index2 := extractOligoIDComps(o2.id)
 
 	idBaseCmpRes := strings.Compare(idBase1, idBase2)
 	if idBaseCmpRes == 0 {
-		return index1 < index2
+		if index1 < index2 {
+			return -1
+		} else if index1 > index2 {
+			return 1
+		} else {
+			return 0
+		}
 	} else {
-		return idBaseCmpRes < 0
+		return idBaseCmpRes
 	}
 }
 
@@ -74,27 +95,11 @@ type oligosDB struct {
 	nextOligoID   uint
 }
 
-// check if the provided sequence exists in the database
-// if it exists it returns a full oligo (that has both the ID and the sequence set)
-// otherwise the oligo has only the sequence filled in
-// if the provided sequence is empty it returns an empty oligo (no ID and no sequence set)
-func (oligos oligosDB) findOligo(seq string) oligo {
-	if seq == "" {
-		return oligo{}
-	}
-	o, found := oligos.indexedOligos[strings.ToUpper(seq)]
-	if found {
-		return o
-	} else {
-		return oligo{seq: seq}
-	}
-}
-
 func (oligos oligosDB) getNewOligoID(newSeqIndex int) string {
 	return fmt.Sprintf("%s%d", oligos.oligoIDBase, oligos.nextOligoID+uint(newSeqIndex))
 }
 
-func newOligos() *oligosDB {
+func newOligosDB() *oligosDB {
 	var o = &oligosDB{}
 	o.indexedOligos = make(map[string]oligo)
 	o.oligoIDBase = "oS" // default ID base
@@ -102,8 +107,29 @@ func newOligos() *oligosDB {
 	return o
 }
 
+func (oligos *oligosDB) addOligo(o oligo) {
+	oligos.indexedOligos[strings.ToUpper(o.seq)] = o
+}
+
+// check if the provided sequence exists in the provided databases
+// if it exists it returns a full oligo (that has both the ID and the sequence set)
+// otherwise the oligo has only the sequence filled in
+// if the provided sequence is empty it returns an empty oligo (no ID and no sequence set)
+func searchOligoDBs(seq string, oligoDBs []*oligosDB) oligo {
+	if seq == "" {
+		return oligo{}
+	}
+	for _, oligoDB := range oligoDBs {
+		o, found := oligoDB.indexedOligos[strings.ToUpper(seq)]
+		if found {
+			return o
+		}
+	}
+	return oligo{seq: seq}
+}
+
 func readOligos(manifest string) (oligos *oligosDB) {
-	oligos = newOligos()
+	oligos = newOligosDB()
 
 	if manifest == "" {
 		return
@@ -174,9 +200,9 @@ func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {
 		}
 		oligo := oligo{
 			id:  oligoIdField,
-			seq: oligoSeqField, // put the original sequence field here as read from the file
+			seq: oligoSequence, // put the original sequence field here as read from the file
 		}
-		oligos.indexedOligos[strings.ToUpper(oligoSequence)] = oligo
+		oligos.addOligo(oligo)
 	}
 
 	return nil
