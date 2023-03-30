@@ -351,6 +351,7 @@ func writeJSON(filename string, out *Output) (err error) {
 // writeFragsToFastaFile writes a slice of fragments to a FASTA file
 func writeFragsToFastaFile(frags []*Frag, fastaFile *os.File) (err error) {
 	for _, f := range frags {
+		rlog.Debugf("Write %s", f.ID)
 		if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", f.ID, f.Seq)); ferr != nil {
 			rlog.Errorf("Error writing fragment %s\n", f.ID)
 			err = multierr.Append(err, ferr)

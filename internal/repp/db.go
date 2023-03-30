@@ -49,13 +49,12 @@ type DB struct {
 func AddDatabase(dbName string, seqFiles []string, cost float64, appendMode bool) (err error) {
 	dbSequenceFilepath := path.Join(config.SeqDatabaseDir, dbName)
 
-	var openFlags int
+	var dbSeqFile *os.File
 	if appendMode {
-		openFlags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
+		dbSeqFile, err = os.OpenFile(dbSequenceFilepath, os.O_RDWR|os.O_APPEND, 0664)
 	} else {
-		openFlags = os.O_WRONLY | os.O_CREATE
+		dbSeqFile, err = os.Create(dbSequenceFilepath)
 	}
-	dbSeqFile, err := os.OpenFile(dbSequenceFilepath, openFlags, 0644)
 	if err != nil {
 		rlog.Errorf("Error creating database sequence file %f\n", dbSequenceFilepath)
 		return err
@@ -183,14 +182,17 @@ func (m *manifest) empty() bool {
 
 // remove deletes a local, repp-managed FASTA file and removes it from the manifest
 func (m *manifest) remove(name string) error {
-	if _, ok := m.DBs[name]; !ok {
-		return fmt.Errorf("no DB found with name %s", name)
+	db, ok := m.DBs[name]
+	if !ok {
+		rlog.Warnf("No DB with name %s was found", name)
+		return nil
 	}
+	cleanblastdb(db.Path)
 	delete(m.DBs, name)
 	return m.save()
 }
 
-func (m *manifest) save() error {
+func (m manifest) save() error {
 	contents, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
@@ -224,7 +226,7 @@ func getRegisteredDBs(dbNames []string) (dbs []DB, err error) {
 	}
 
 	if len(dbs) == 0 {
-		err = fmt.Errorf("None of the requested databases was found.\n The know DBs are: %v", m.GetNames())
+		err = fmt.Errorf("none of the requested databases was found - known databases: %v", m.GetNames())
 	}
 
 	return

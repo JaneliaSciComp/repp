@@ -40,3 +40,6 @@ fmt:
 
 lint:
 	golangci-lint run
+
+clean:
+	rm -rf ./bin ./vendor

@@ -2,7 +2,6 @@ package repp
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -51,10 +50,10 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		}
 	}
 
-	in, err := ioutil.TempFile("", "annotate-in-*")
+	in, err := os.CreateTemp("", "annotate-in-*")
 	handleErr(err)
 
-	out, err := ioutil.TempFile("", "annotate-out-*")
+	out, err := os.CreateTemp("", "annotate-out-*")
 	handleErr(err)
 
 	// create a subject file with all the blast features
@@ -67,7 +66,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq))
 		featIndex++
 	}
-	subjectFile, err := ioutil.TempFile("", "features-*")
+	subjectFile, err := os.CreateTemp("", "features-*")
 	handleErr(err)
 	defer os.Remove(subjectFile.Name())
 

@@ -3,7 +3,6 @@ package repp
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -290,7 +289,7 @@ func (p *primer3) parse(target string) (err error) {
 	defer os.Remove(p.in.Name())
 	defer os.Remove(p.out.Name())
 
-	fileBytes, err := ioutil.ReadFile(p.out.Name())
+	fileBytes, err := os.ReadFile(p.out.Name())
 	if err != nil {
 		return
 	}

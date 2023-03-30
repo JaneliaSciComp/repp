@@ -2,7 +2,7 @@ package repp
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
 // kv is a simple JSON/serialized key-value store.
@@ -13,7 +13,7 @@ type kv struct {
 }
 
 func newKV(path string) *kv {
-	dat, err := ioutil.ReadFile(path)
+	dat, err := os.ReadFile(path)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -34,5 +34,5 @@ func (k *kv) save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(k.path, dat, 0644)
+	return os.WriteFile(k.path, dat, 0644)
 }

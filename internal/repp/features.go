@@ -2,7 +2,6 @@ package repp
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -382,7 +381,7 @@ func subjectDatabase(extendedMatches []match, dbs []DB) (filename string, frags 
 		frags = append(frags, frag)
 	}
 
-	in, err := ioutil.TempFile("", "feature-subject-*")
+	in, err := os.CreateTemp("", "feature-subject-*")
 	if err != nil {
 		rlog.Fatal(err)
 	}
