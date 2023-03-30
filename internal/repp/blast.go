@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -811,6 +812,7 @@ func makeblastdb(fullDbPath string) error {
 		"-dbtype", "nucl",
 		"-in", fullDbPath,
 		"-parse_seqids",
+		"-max_file_sz", "5M",
 	)
 
 	rlog.Debugf("Run: %v", cmd.Args)
@@ -822,15 +824,21 @@ func makeblastdb(fullDbPath string) error {
 
 func cleanblastdb(fullDbPath string, includeDbFile bool) {
 	blastdbExts := []string{
-		".nhr", ".nos", ".nto", ".nin", ".not",
-		".njs", ".nsq", ".ndb", ".nog", ".ntf",
+		".nhr", ".nin", ".nog", ".nsq",
+		".nal", ".nos", ".nto", ".not",
+		".njs", ".ndb", ".ntf",
 	}
-
 	for _, ext := range blastdbExts {
-		dbFilename := fullDbPath + ext
-		rlog.Debugf("Delete %s", dbFilename)
-		if err := os.Remove(dbFilename); err != nil {
+		dbFilenamePattern := fullDbPath + "*" + ext
+		dbFileMatches, err := filepath.Glob(dbFilenamePattern)
+		if err != nil {
 			rlog.Debugf("Error: %v", err)
+		}
+		for _, dbFilename := range dbFileMatches {
+			rlog.Debugf("Delete %s", dbFilename)
+			if err := os.RemoveAll(dbFilename); err != nil {
+				rlog.Debugf("Error: %v", err)
+			}
 		}
 	}
 	if includeDbFile {
