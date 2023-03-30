@@ -16,8 +16,6 @@ type oligo struct {
 	synth bool
 }
 
-var naValue string = "N/A"
-
 func (o oligo) isEmpty() bool {
 	return o.seq == ""
 }
@@ -34,7 +32,7 @@ func (o oligo) getIDOrNA(markID bool) string {
 			return o.id
 		}
 	} else {
-		return naValue
+		return "N/A"
 	}
 }
 

@@ -273,7 +273,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 			}
 			var templateID string
 			if f.fragType == synthetic {
-				templateID = naValue
+				templateID = "N/A"
 				synthReagent := oligo{
 					id:    fID,
 					seq:   synthSeq,
