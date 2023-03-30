@@ -805,7 +805,7 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 // makeblastdb runs makeblastdb against a FASTA file.
 func makeblastdb(fullDbPath string) error {
 	rlog.Infof("Make BlastDB %s\n", fullDbPath)
-	cleanblastdb(fullDbPath)
+	cleanblastdb(fullDbPath, false)
 
 	cmd := exec.Command("makeblastdb",
 		"-dbtype", "nucl",
@@ -820,7 +820,7 @@ func makeblastdb(fullDbPath string) error {
 	return nil
 }
 
-func cleanblastdb(fullDbPath string) {
+func cleanblastdb(fullDbPath string, includeDbFile bool) {
 	blastdbExts := []string{
 		".nhr", ".nos", ".nto", ".nin", ".not",
 		".njs", ".nsq", ".ndb", ".nog", ".ntf",
@@ -830,6 +830,12 @@ func cleanblastdb(fullDbPath string) {
 		dbFilename := fullDbPath + ext
 		rlog.Debugf("Delete %s", dbFilename)
 		if err := os.Remove(dbFilename); err != nil {
+			rlog.Debugf("Error: %v", err)
+		}
+	}
+	if includeDbFile {
+		rlog.Debugf("Delete %s", fullDbPath)
+		if err := os.Remove(fullDbPath); err != nil {
 			rlog.Debugf("Error: %v", err)
 		}
 	}

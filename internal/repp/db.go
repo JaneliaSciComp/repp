@@ -187,7 +187,7 @@ func (m *manifest) remove(name string) error {
 		rlog.Warnf("No DB with name %s was found", name)
 		return nil
 	}
-	cleanblastdb(db.Path)
+	cleanblastdb(db.Path, true)
 	delete(m.DBs, name)
 	return m.save()
 }
