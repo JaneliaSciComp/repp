@@ -812,7 +812,7 @@ func makeblastdb(fullDbPath string) error {
 		"-dbtype", "nucl",
 		"-in", fullDbPath,
 		"-parse_seqids",
-		"-max_file_sz", "5M",
+		"-max_file_sz", "10M",
 	)
 
 	rlog.Debugf("Run: %v", cmd.Args)
