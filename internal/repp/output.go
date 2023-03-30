@@ -285,9 +285,9 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,
-				fwdOligo.getIDOrNA(false), // fwd primer
-				revOligo.getIDOrNA(false), // rev primer
-				templateID,                // template
+				fwdOligo.getIDOrDefault(false, "N/A"), // fwd primer
+				revOligo.getIDOrDefault(false, "N/A"), // rev primer
+				templateID,                            // template
 				strconv.Itoa(len(f.Seq)),
 			}); err != nil {
 				return nil
@@ -296,7 +296,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 		strategyCSVWriter.Flush()
 		sort.Sort(sortedOligosByID(reagents))
 		for _, r := range reagents {
-			reagentID := r.getIDOrNA(!r.isNew && !r.synth) // mark the ID if this reagent already existed in the original manifest
+			reagentID := r.getIDOrDefault(!r.isNew && !r.synth, "N/A") // mark the ID if this reagent already existed in the original manifest
 			err = writeReagent(reagentsCSVWriter, reagentID, r.seq)
 			if err != nil {
 				rlog.Errorf("Error writing reagent %s: %v", reagentID, err)

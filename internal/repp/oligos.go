@@ -24,7 +24,7 @@ func (o oligo) hasID() bool {
 	return o.id != ""
 }
 
-func (o oligo) getIDOrNA(markID bool) string {
+func (o oligo) getIDOrDefault(markID bool, defaultValue string) string {
 	if o.hasID() {
 		if markID {
 			return "*" + o.id
@@ -32,7 +32,7 @@ func (o oligo) getIDOrNA(markID bool) string {
 			return o.id
 		}
 	} else {
-		return "N/A"
+		return defaultValue
 	}
 }
 
