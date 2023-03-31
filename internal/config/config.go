@@ -184,43 +184,47 @@ func Setup() {
 		log.Fatal(err)
 	}
 
-	// copy the default config file if it doesn't exist
-	_, err = os.Stat(configPath)
-	if os.IsNotExist(err) {
+	// the rest of the configuration files are always overwritten for now
+
+	// default config file
+	if isConfigFileNeeded(configPath, true) {
 		if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
 			log.Fatal(err)
 		}
-	} else if err != nil {
-		log.Fatal(err)
 	}
 
-	// create the features DB if it doesn't exist
-	_, err = os.Stat(FeatureDB)
-	if os.IsNotExist(err) {
+	// features DB
+	if isConfigFileNeeded(FeatureDB, true) {
 		if err = os.WriteFile(FeatureDB, DefaultFeatures, 0644); err != nil {
 			log.Fatal(err)
 		}
-	} else if err != nil {
-		log.Fatal(err)
 	}
 
-	// create the enzymes DB if it doesn't exist
-	_, err = os.Stat(EnzymeDB)
-	if os.IsNotExist(err) {
+	// enzymes DB
+	if isConfigFileNeeded(EnzymeDB, true) {
 		if err = os.WriteFile(EnzymeDB, DefaultEnzymes, 0644); err != nil {
 			log.Fatal(err)
 		}
-	} else if err != nil {
-		log.Fatal(err)
 	}
 
-	// create the primer3 config directory if it does not exist
-	_, err = os.Stat(Primer3Config)
-	if os.IsNotExist(err) {
+	// primer3 config directory
+	if isConfigFileNeeded(Primer3Config, true) {
 		copyFromEmbeded(DefaultPrimer3Config, "primer3_config", Primer3Config)
+	}
+}
+
+func isConfigFileNeeded(configFile string, overwritePreference bool) bool {
+	// write the default config file
+	if overwritePreference {
+		return true
+	}
+	_, err := os.Stat(configFile)
+	if os.IsNotExist(err) {
+		return true
 	} else if err != nil {
 		log.Fatal(err)
 	}
+	return false
 }
 
 // copyFrom copies an embedded directory to a local directory recursively
