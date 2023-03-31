@@ -152,14 +152,24 @@ func Test_Frag_synthDist(t *testing.T) {
 }
 
 func Test_Frag_costTo(t *testing.T) {
+	// set config values explicitly
+	// so that the test does not depend on default config
 	c := config.New()
 	c.FragmentsMinHomology = 20
+	c.FragmentsMaxHomology = 120
+	c.PcrMinLength = 60
+	c.PcrPrimerMaxEmbedLength = 20
 	c.PcrBpCost = 0.03
+	c.PcrBufferLength = 20
+	c.SyntheticMinLength = 125
+	c.SyntheticMaxLength = 3000
 	c.SyntheticFragmentCost = map[int]config.SynthCost{
-		100000: {
-			Fixed: false,
-			Cost:  0.05,
-		},
+		100000: {Fixed: false, Cost: 0.05},
+	}
+	c.SyntheticPlasmidCost = map[int]config.SynthCost{
+		500:   {Fixed: true, Cost: 160},
+		3000:  {Fixed: false, Cost: 0.35},
+		30000: {Fixed: false, Cost: 0.6},
 	}
 
 	n1 := &Frag{
