@@ -1,6 +1,9 @@
 DOCKER_IMAGE=jjtimmons/repp
 VERSION=v1.0.0
 
+.PHONY: all
+all: build test
+
 .PHONY: build
 build: fmt lint
 	go mod tidy

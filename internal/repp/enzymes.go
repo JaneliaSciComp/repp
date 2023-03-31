@@ -115,11 +115,12 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 		}
 
 		return &Frag{
-				ID:       frag.ID,
-				uniqueID: "backbone",
-				Seq:      digestedSeq,
-				fragType: linear,
-				db:       frag.db,
+				ID:         frag.ID,
+				uniqueID:   "backbone",
+				Seq:        digestedSeq,
+				fragType:   linear,
+				db:         frag.db,
+				matchRatio: frag.matchRatio,
 			},
 			&Backbone{
 				Seq:      frag.Seq,
@@ -160,11 +161,12 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 	digestedSeq := doubled[cut1Index:cut2Index]
 
 	return &Frag{
-			ID:       frag.ID,
-			uniqueID: "backbone",
-			Seq:      digestedSeq,
-			fragType: linear,
-			db:       frag.db,
+			ID:         frag.ID,
+			uniqueID:   "backbone",
+			Seq:        digestedSeq,
+			fragType:   linear,
+			db:         frag.db,
+			matchRatio: frag.matchRatio,
 		},
 		&Backbone{
 			Seq:      frag.Seq,

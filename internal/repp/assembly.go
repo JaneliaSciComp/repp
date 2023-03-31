@@ -126,10 +126,11 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 
 		return []*Frag{
 			{
-				ID:       f.ID,
-				Seq:      strings.ToUpper(f.Seq)[0:len(target)], // it may be longer
-				fragType: circular,
-				conf:     conf,
+				ID:         f.ID,
+				Seq:        strings.ToUpper(f.Seq)[0:len(target)], // it may be longer
+				fragType:   circular,
+				matchRatio: f.matchRatio,
+				conf:       conf,
 			},
 		}, nil
 	}
@@ -210,10 +211,11 @@ func (a *assembly) mockNext(frags []*Frag, i int, target string, conf *config.Co
 
 	// mock up a next fragment that's to the right of this terminal Frag
 	return &Frag{
-		ID:    frags[0].ID,
-		start: frags[0].start + len(target),
-		end:   frags[0].end + len(target),
-		conf:  conf,
+		ID:         frags[0].ID,
+		start:      frags[0].start + len(target),
+		end:        frags[0].end + len(target),
+		conf:       conf,
+		matchRatio: frags[0].matchRatio,
 	}
 }
 

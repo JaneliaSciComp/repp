@@ -384,6 +384,7 @@ func Test_new(t *testing.T) {
 				uniqueID:   "0testMatch",
 				start:      0,
 				end:        12,
+				matchRatio: 1.0,
 				assemblies: nil,
 				conf:       c,
 			},

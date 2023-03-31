@@ -214,6 +214,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 		"Rev Primer",
 		"Template",
 		"Size",
+		"Match Pct",
 	})
 	if err != nil {
 		return nil
@@ -272,8 +273,10 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 				reagents = append(reagents, revOligo)
 			}
 			var templateID string
+			var matchRatio string
 			if f.fragType == synthetic {
 				templateID = "N/A"
+				matchRatio = "N/A"
 				synthReagent := oligo{
 					id:    fID,
 					seq:   synthSeq,
@@ -282,6 +285,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 				reagents = append(reagents, synthReagent)
 			} else {
 				templateID = f.ID
+				matchRatio = fmt.Sprintf("%d", int(f.matchRatio*100))
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,
@@ -289,6 +293,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 				revOligo.getIDOrDefault(false, "N/A"), // rev primer
 				templateID,                            // template
 				strconv.Itoa(len(f.Seq)),
+				matchRatio,
 			}); err != nil {
 				return nil
 			}

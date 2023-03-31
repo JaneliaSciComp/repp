@@ -74,6 +74,9 @@ type Frag struct {
 	// end of this Frag on the target plasmid
 	end int
 
+	// match ratio
+	matchRatio float64
+
 	// start of the frag's first feature
 	featureStart int
 
@@ -141,15 +144,18 @@ func newFrag(m match, conf *config.Config) *Frag {
 		fType = circular
 	}
 
+	seqLength := len(m.seq)
+	matchRatio := float64(seqLength-(m.mismatching)) / float64(seqLength)
 	return &Frag{
-		ID:       m.entry,
-		uniqueID: m.uniqueID,
-		Seq:      strings.ToUpper(m.seq),
-		start:    m.queryStart,
-		end:      m.queryEnd,
-		db:       m.db,
-		conf:     conf,
-		fragType: fType,
+		ID:         m.entry,
+		uniqueID:   m.uniqueID,
+		Seq:        strings.ToUpper(m.seq),
+		start:      m.queryStart,
+		end:        m.queryEnd,
+		matchRatio: matchRatio,
+		db:         m.db,
+		conf:       conf,
+		fragType:   fType,
 	}
 }
 
@@ -196,7 +202,6 @@ func (f *Frag) copy() (newFrag *Frag) {
 	if err := copier.Copy(newFrag, f); err != nil {
 		rlog.Fatal(err)
 	}
-
 	return
 }
 
