@@ -81,7 +81,7 @@ func init() {
 	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	featuresCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	featuresCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
+	featuresCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
 	must(featuresCmd.MarkFlagRequired("out"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
@@ -92,7 +92,7 @@ func init() {
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
+	sequenceCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
 	sequenceCmd.Flags().StringP("oligos-database", "m", "", "Oligos database as a CSV file")
 	must(sequenceCmd.MarkFlagRequired("in"))
 
