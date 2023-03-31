@@ -92,7 +92,7 @@ func init() {
 	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	sequenceCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
+	sequenceCmd.Flags().IntP("identity", "p", 98, "%-identity threshold (see 'blastn -help')")
 	sequenceCmd.Flags().StringP("oligos-database", "m", "", "Oligos database as a CSV file")
 	must(sequenceCmd.MarkFlagRequired("in"))
 
