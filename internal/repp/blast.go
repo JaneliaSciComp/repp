@@ -497,7 +497,7 @@ func properize(matches []match, limit int) []match {
 }
 
 // sortMatches sorts matches by their start index
-// for fragments with equivelant starting indexes, put the larger one first
+// for fragments with equivalent starting indexes, put the larger one first
 func sortMatches(matches []match) {
 	sort.Slice(matches, func(i, j int) bool {
 		if matches[i].queryStart != matches[j].queryStart {
@@ -508,6 +508,8 @@ func sortMatches(matches []match) {
 			return true
 		} else if !matches[i].circular && matches[j].circular {
 			return false
+		} else if matches[i].mismatching != matches[j].mismatching {
+			return matches[i].mismatching < matches[j].mismatching
 		}
 		return matches[i].entry > matches[j].entry
 	})
