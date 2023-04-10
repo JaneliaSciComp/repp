@@ -88,19 +88,25 @@ func (a sortedOligosByID) Swap(i, j int) {
 }
 
 type oligosDB struct {
-	indexedOligos map[string]oligo
-	oligoIDBase   string
-	nextOligoID   uint
+	indexedOligos     map[string]oligo
+	oligoIDBasePrefix string
+	nextOligoID       uint
 }
 
-func (oligos oligosDB) getNewOligoID(newSeqIndex int) string {
-	return fmt.Sprintf("%s%d", oligos.oligoIDBase, oligos.nextOligoID+uint(newSeqIndex))
+func (oligos oligosDB) getNewOligoID(altIDSuffix string, newSeqIndex int) string {
+	if len(oligos.indexedOligos) == 0 {
+		// if the oligos database is empty the ID scheme is <id>_<altIDSuffix>
+		return fmt.Sprintf("%d_%s", oligos.nextOligoID+uint(newSeqIndex), altIDSuffix)
+	} else {
+		// otherwise use the oligoIDBase as a prefix
+		return fmt.Sprintf("%s%d", oligos.oligoIDBasePrefix, oligos.nextOligoID+uint(newSeqIndex))
+	}
 }
 
 func newOligosDB() *oligosDB {
 	var o = &oligosDB{}
 	o.indexedOligos = make(map[string]oligo)
-	o.oligoIDBase = "oS" // default ID base
+	o.oligoIDBasePrefix = "oS" // default ID base
 	o.nextOligoID = 1
 	return o
 }
@@ -177,7 +183,7 @@ func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {
 
 		currentOligoIDBase, currentOligoIndex := extractOligoIDComps(oligoIdField)
 		if currentOligoIDBase != "" {
-			oligos.oligoIDBase = currentOligoIDBase
+			oligos.oligoIDBasePrefix = currentOligoIDBase
 		}
 		// if an index is found - nextIndex becomes current index +1
 		// otherwise increment previous value

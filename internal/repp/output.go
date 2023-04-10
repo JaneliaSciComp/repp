@@ -257,7 +257,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 			fwdOligo := searchOligoDBs(fwdPrimerSeq, allOligoDBs)
 			if !fwdOligo.isEmpty() {
 				if !fwdOligo.hasID() {
-					fwdOligo.assignNewOligoID(oligos.getNewOligoID(newOligoSequenceIndex))
+					fwdOligo.assignNewOligoID(oligos.getNewOligoID(fragmentIDBase, newOligoSequenceIndex))
 					newOligos.addOligo(fwdOligo)
 					newOligoSequenceIndex++
 				}
@@ -266,7 +266,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 			revOligo := searchOligoDBs(revPrimerSeq, allOligoDBs)
 			if !revOligo.isEmpty() {
 				if !revOligo.hasID() {
-					revOligo.assignNewOligoID(oligos.getNewOligoID(newOligoSequenceIndex))
+					revOligo.assignNewOligoID(oligos.getNewOligoID(fragmentIDBase, newOligoSequenceIndex))
 					newOligos.addOligo(revOligo)
 					newOligoSequenceIndex++
 				}
