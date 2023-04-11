@@ -335,7 +335,7 @@ func DeleteEnzyme(enzyme string) (bresult bool, err error) {
 	f := NewEnzymeDB()
 
 	if _, contained := f.contents[enzyme]; !contained {
-		return false, fmt.Errorf("failed to find %s in the enzymes database\n", enzyme)
+		return false, fmt.Errorf("failed to find %s in the enzymes database", enzyme)
 	}
 
 	delete(f.contents, enzyme)
