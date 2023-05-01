@@ -6,12 +6,10 @@ all: build test
 
 ifeq ($(OS), Windows_NT)
    REPP_EXECUTABLE=repp.exe
-   RM=cmd
-   RMFLAGS=/C rd /S /Q
+   RM=rd /S /Q
 else
    REPP_EXECUTABLE=repp
-   RM=rm
-   RMFLAGS=-rf
+   RM=rm -rf
 endif
 
 .PHONY: build
@@ -55,4 +53,4 @@ lint:
 	golangci-lint run
 
 clean:
-	$(RM) $(RMFLAGS) bin vendor
+	$(RM) bin vendor
