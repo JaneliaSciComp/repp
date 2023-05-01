@@ -4,11 +4,17 @@ VERSION=v1.0.0
 .PHONY: all
 all: build test
 
+ifeq ($(OS), Windows_NT)
+   REPP_EXECUTABLE=repp.exe
+else
+   REPP_EXECUTABLE=repp
+endif
+
 .PHONY: build
 build: fmt lint
 	go mod tidy
 	go mod vendor
-	go build -o ./bin/repp ./cmd/repp
+	go build -o ./bin/$(REPP_EXECUTABLE) ./cmd/repp
 
 .PHONY: install
 install:
