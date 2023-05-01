@@ -6,11 +6,11 @@ all: build test
 
 ifeq ($(OS), Windows_NT)
    REPP_EXECUTABLE=repp.exe
-   RM="rd"
+   RM=rd
    RMFLAGS="/S /Q"
 else
    REPP_EXECUTABLE=repp
-   RM="rm"
+   RM=rm
    RMFLAGS="-rf"
 endif
 
