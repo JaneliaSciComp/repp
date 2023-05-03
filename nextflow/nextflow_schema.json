@@ -83,6 +83,27 @@
           "hidden": true,
           "description": "Plasmid assembly output format",
           "enum": ["CSV", "JSON"]
+        },
+        "make_plasmid_cpus": {
+          "type": "integer",
+          "default": 4,
+          "hidden": true,
+          "description": "Number of CPU cores used for plasmid assembly",
+          "minimum": 1
+        },
+        "make_plasmid_mem_gb": {
+          "type": "integer",
+          "default": 1,
+          "hidden": true,
+          "description": "Memory available for plasmid assembly",
+          "minimum": 1
+        },
+        "sequence_identity": {
+          "type": "integer",
+          "default": 100,
+          "description": "Percent sequence identity",
+          "minimum": 1,
+          "maximum": 100
         }
       }
     }
