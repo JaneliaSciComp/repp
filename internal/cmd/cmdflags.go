@@ -155,6 +155,22 @@ func guessOutput(in, format string) (out string) {
 	return noExt + suffix
 }
 
+func adjustOutput(name, format string) (newName string) {
+	ext := filepath.Ext(name)
+	if ext == "" {
+		noExt := name[0 : len(name)-len(ext)]
+		var suffix string
+		if format == "CSV" {
+			suffix = ".csv"
+		} else {
+			suffix = ".json"
+		}
+		return noExt + suffix
+	} else {
+		return name
+	}
+}
+
 func splitStringOn(s string, separators []rune) []string {
 	splitFunc := func(c rune) bool {
 		return slices.Contains(separators, c)

@@ -142,6 +142,8 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 
 	if assemblyInputParams.GetOut() == "" {
 		assemblyInputParams.SetOut(guessOutput(assemblyInputParams.GetIn(), assemblyInputParams.GetOutputFormat()))
+	} else {
+		assemblyInputParams.SetOut(adjustOutput(assemblyInputParams.GetOut(), assemblyInputParams.GetOutputFormat()))
 	}
 
 	repp.Sequence(assemblyInputParams, config.New())
