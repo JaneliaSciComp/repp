@@ -133,6 +133,5 @@
       "description": "location of the REPP data",
       "hidden": true
     }
-  },
-  "required": ["cmd", "repp_repository"]
+  }
 }
