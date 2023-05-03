@@ -75,7 +75,8 @@
         },
         "assembly_output": {
           "type": "string",
-          "description": "Assembly output"
+          "description": "Assembly output",
+          "hidden": true
         },
         "assembly_output_format": {
           "type": "string",
@@ -103,7 +104,8 @@
           "default": 100,
           "description": "Percent sequence identity",
           "minimum": 1,
-          "maximum": 100
+          "maximum": 100,
+          "hidden": true
         }
       }
     }
@@ -132,5 +134,5 @@
       "hidden": true
     }
   },
-  "required": ["cmd"]
+  "required": ["cmd", "repp_repository"]
 }
