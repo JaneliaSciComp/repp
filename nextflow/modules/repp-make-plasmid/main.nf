@@ -7,6 +7,7 @@ include {
 process REPP_MAKE_PLASMID {
     container { params.repp_container }
     containerOptions { get_runtime_opts([
+        parentfile(input_seq, 1),
         parentfile(params.oligos_manifest, 1),
         parentfile(assembly_output, 2),
     ]) }
@@ -14,30 +15,32 @@ process REPP_MAKE_PLASMID {
     memory { "${params.make_plasmid_mem_gb} GB"}
 
     input:
-    tuple path(input_seq),
-	      val(assembly_output),
-	      val(db_names)
+    tuple val(input_seq),
+          val(assembly_output),
+          val(db_names)
 
     output:
-    path(input_seq)
+    val(input_seq)
 
     script:
     def repp_repository_env = params.repp_repository
-    	? "REPP_DATA_DIR=${params.repp_repository}"
-	    : ''
+        ? "REPP_DATA_DIR=${params.repp_repository}"
+            : ''
     def dbs_arg = db_names
         ? "--dbs ${db_names}"
         : ''
     def oligos_manifest_arg = params.oligos_manifest
         ? "-m ${normalized_file_name(params.oligos_manifest)}"
         : ''
+    def assembly_output_name = assembly_output
     def mk_output_dir
     def output_arg
-    if (assembly_output) {
-        assembly_output_dir = file(assembly_output).parent
+    if (assembly_output_name) {
+        def assembly_output_dir = file(assembly_output_name).parent
         mk_output_dir = "mkdir -p ${assembly_output_dir}"
-        output_arg = "-o ${normalized_file_name(assembly_output)}"
+        output_arg = "-o ${normalized_file_name(assembly_output_name)}"
     } else {
+        def input_dir = file(input_seq).parent
         mk_output_dir = ''
         output_arg = ''
     }
@@ -52,11 +55,11 @@ process REPP_MAKE_PLASMID {
 
     ${repp_repository_env} \
         /go/bin/repp make sequence \
-	-i ${input_seq} \
-	${dbs_arg} \
-	${oligos_manifest_arg} \
-	${output_arg} \
-    ${sequence_identity_arg} \
-	${output_format_arg}
+            -i ${normalized_file_name(input_seq)} \
+            ${dbs_arg} \
+            ${oligos_manifest_arg} \
+            ${output_arg} \
+            ${sequence_identity_arg} \
+            ${output_format_arg}
     """
 }
