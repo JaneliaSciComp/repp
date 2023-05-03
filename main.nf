@@ -4,16 +4,15 @@ nextflow.enable.dsl=2
 
 include {
     REPP_ADD_DB;
-} from './modules/repp-add-db/main'
+} from './nextflow/modules/repp-add-db/main'
 
 include {
     REPP_MAKE_PLASMID;
-} from './modules/repp-make-plasmid/main'
+} from './nextflow/modules/repp-make-plasmid/main'
 
 workflow {
     main:
     if (params.cmd == "add-db") {
-        log.info "!!!! REPP REPO: ${params.repp_repository}"
         REPP_ADD_DB(
             Channel.of(
                 [
