@@ -1,15 +1,22 @@
-DOCKER_IMAGE=jjtimmons/repp
+DOCKER_IMAGE=janeliascicomp/repp
 VERSION=v1.0.0
 
 .PHONY: all
 all: build test
 
 ifeq ($(OS), Windows_NT)
-   REPP_EXECUTABLE=repp.exe
-   RM=rd /S /Q
+    REPP_EXECUTABLE=repp.exe
+    RM=rd /S /Q
+    PLATFORM_ARG=
 else
-   REPP_EXECUTABLE=repp
-   RM=rm -rf
+    ARCH := $(shell arch)
+	ifeq ($(ARCH), arm64)
+		PLATFORM_ARG=--platform linux/x86_64
+	else
+		PLATFORM_ARG=
+	endif
+    REPP_EXECUTABLE=repp
+    RM=rm -rf
 endif
 
 .PHONY: build
@@ -24,7 +31,7 @@ install:
 
 .PHONY: image
 image:
-	docker build \
+	docker build ${PLATFORM_ARG} \
 		-t ${DOCKER_IMAGE}:$(VERSION) \
 		-t ${DOCKER_IMAGE}:latest .
 

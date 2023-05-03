@@ -1,4 +1,4 @@
-FROM golang:1.18.3
+FROM golang:1.20
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -12,4 +12,4 @@ WORKDIR $HOME/src
 
 ADD . .
 RUN go install ./cmd/repp
-ENTRYPOINT ["repp"]
+CMD ["repp"]

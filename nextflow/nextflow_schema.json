@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
+  "title": ". pipeline parameters",
+  "description": "REPP based plasmid assembly",
+  "type": "object",
+  "definitions": {
+    "general_runtime_options": {
+      "title": "General runtime options",
+      "type": "object",
+      "description": "",
+      "default": "",
+      "properties": {
+        "runtime_opts": {
+          "type": "string",
+          "hidden": true
+        },
+        "singularity_cache_dir": {
+          "type": "string",
+          "default": "/Users/goinac/.singularity_cache",
+          "hidden": true
+        },
+        "lsf_opts": {
+          "type": "string",
+          "description": "LSF options such as project code, LSF queue, LSF resources, etc",
+          "hidden": true
+        },
+        "repp_container": {
+          "type": "string",
+          "description": "Docker container - only change this if you want to use a different version",
+          "hidden": true,
+          "default": "public.ecr.aws/janeliascicomp/repp:v1.0.0"
+        }
+      },
+      "required": ["repp_container"]
+    },
+    "add_database_options": {
+      "title": "Add database options",
+      "type": "object",
+      "description": "",
+      "default": "",
+      "properties": {
+        "dbname": {
+          "type": "string",
+          "description": "Name of the database to be added"
+        },
+        "dbcost": {
+          "type": "number",
+          "description": "Database cost",
+          "default": 0
+        },
+        "dbpath": {
+          "type": "string",
+          "description": "File or directory path to be added to a database"
+        }
+      }
+    },
+    "make_plasmid_options": {
+      "title": "Make plasmid options",
+      "type": "object",
+      "description": "",
+      "default": "",
+      "properties": {
+        "seq_file": {
+          "type": "string",
+          "description": "FASTA or Genbank sequence input file"
+        },
+        "dbs": {
+          "type": "string",
+          "description": "Database searched for creating the plasmid assembly. If not set it will search all available databases."
+        },
+        "oligos_manifest": {
+          "type": "string",
+          "description": "CSV file containing available oligos"
+        },
+        "assembly_output": {
+          "type": "string",
+          "description": "Assembly output"
+        },
+        "assembly_output_format": {
+          "type": "string",
+          "default": "CSV",
+          "hidden": true,
+          "description": "Plasmid assembly output format",
+          "enum": ["CSV", "JSON"]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/definitions/general_runtime_options"
+    },
+    {
+      "$ref": "#/definitions/add_database_options"
+    },
+    {
+      "$ref": "#/definitions/make_plasmid_options"
+    }
+  ],
+  "properties": {
+    "cmd": {
+      "type": "string",
+      "description": "Command to be executed",
+      "enum": ["add-db", "make-plasmid"]
+    },
+    "repp_repository": {
+      "type": "string",
+      "default": "$HOME/.repp",
+      "description": "location of the REPP data",
+      "hidden": true
+    }
+  },
+  "required": ["cmd"]
+}

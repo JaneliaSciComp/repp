@@ -38,3 +38,6 @@ docs/_site
 vendor
 
 .vscode
+
+.nextflow*
+work
