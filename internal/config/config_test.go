@@ -5,7 +5,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	Setup()
+	Setup("", "")
 }
 
 func TestConfig_SynthCost(t *testing.T) {

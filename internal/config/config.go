@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
@@ -23,9 +24,9 @@ var (
 	// configPath is the path to a local/default config file
 	configPath string
 
-	// Primer3Config is the path to a primer3 config directory
+	// defaultPrimer3ConfigDir is the path to a primer3 config directory
 	// primer3 is (overly) particular about the trailing slash
-	Primer3Config string
+	defaultPrimer3ConfigDir string
 
 	// FeatureDB is the path to the features file
 	FeatureDB string
@@ -131,22 +132,35 @@ type Config struct {
 
 	// maximum length of a synthesized piece of DNA
 	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
+
+	// user provided path to primer3 config dir
+	p3ConfigDir string
 }
 
-func initDataPaths() (err error) {
-	reppDir = os.Getenv("REPP_DATA_DIR")
-	if reppDir == "" {
-		// use $HOMEDIR/.repp
-		var home string
-		home, err = homedir.Dir()
-		if err != nil {
-			return
+func initDataPaths(providedReppDir, providedReppConfigFile string) (err error) {
+	if providedReppDir == "" {
+		// if no repp dir was provided
+		// try to get it from the environment
+		reppDir = os.Getenv("REPP_DATA_DIR")
+		if reppDir == "" {
+			// use $HOMEDIR/.repp
+			var home string
+			home, err = homedir.Dir()
+			if err != nil {
+				return
+			}
+			reppDir = filepath.Join(home, ".repp")
 		}
-		reppDir = filepath.Join(home, ".repp")
+	} else {
+		reppDir = providedReppDir
 	}
 
-	configPath = filepath.Join(reppDir, "config.yaml")
-	Primer3Config = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
+	if providedReppConfigFile == "" {
+		configPath = filepath.Join(reppDir, "config.yaml")
+	} else {
+		configPath = providedReppConfigFile
+	}
+	defaultPrimer3ConfigDir = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
 	FeatureDB = filepath.Join(reppDir, "features.json")
 	EnzymeDB = filepath.Join(reppDir, "enzymes.json")
 	SeqDatabaseDir = filepath.Join(reppDir, "dbs")
@@ -157,9 +171,9 @@ func initDataPaths() (err error) {
 
 // Setup checks that the REPP data directory exists.
 // It creates one and writes default config files to it otherwise.
-func Setup() {
+func Setup(providedReppDir, providedReppConfigFile string) {
 
-	err := initDataPaths()
+	err := initDataPaths(providedReppDir, providedReppConfigFile)
 	if err != nil {
 		log.Fatal("Error creating repp data paths", err)
 	}
@@ -184,14 +198,17 @@ func Setup() {
 		log.Fatal(err)
 	}
 
-	// the rest of the configuration files are always overwritten for now
-
-	// default config file
-	if isConfigFileNeeded(configPath, true) {
-		if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
-			log.Fatal(err)
+	if providedReppConfigFile == "" {
+		// only copy default config file
+		// if it does not exist
+		if isConfigFileNeeded(configPath, false) {
+			if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
+
+	// the rest of the configuration files are always overwritten for now
 
 	// features DB
 	if isConfigFileNeeded(FeatureDB, true) {
@@ -208,8 +225,8 @@ func Setup() {
 	}
 
 	// primer3 config directory
-	if isConfigFileNeeded(Primer3Config, true) {
-		copyFromEmbeded(DefaultPrimer3Config, "primer3_config", Primer3Config)
+	if isConfigFileNeeded(defaultPrimer3ConfigDir, true) {
+		copyFromEmbeded(DefaultPrimer3Config, "primer3_config", defaultPrimer3ConfigDir)
 	}
 }
 
@@ -291,6 +308,26 @@ func New() *Config {
 		log.Fatalf("failed to decode settings file %s: %v", viper.ConfigFileUsed(), err)
 	}
 	return config
+}
+
+// Return the path to the primer3 config directory
+func (c *Config) SetPrimer3ConfigDir(p3ConfigDir string) {
+	if p3ConfigDir != "" {
+		if strings.HasSuffix(p3ConfigDir, "/") {
+			c.p3ConfigDir = p3ConfigDir
+		} else {
+			c.p3ConfigDir = p3ConfigDir + "/"
+		}
+	}
+}
+
+// Return the path to the primer3 config directory
+func (c *Config) GetPrimer3ConfigDir() string {
+	if c.p3ConfigDir != "" {
+		return c.p3ConfigDir
+	} else {
+		return defaultPrimer3ConfigDir
+	}
 }
 
 // SynthFragmentCost returns the cost of synthesizing a linear stretch of DNA

@@ -8,7 +8,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	config.Setup()
+	config.Setup("", "")
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }

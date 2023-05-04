@@ -786,7 +786,7 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 		"-a", "END1", // end of primer sequence
 		"-s1", primer,
 		"-s2", ectopic,
-		"-path", config.Primer3Config,
+		"-path", c.GetPrimer3ConfigDir(),
 		"-r", // temperature only
 	)
 

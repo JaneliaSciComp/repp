@@ -52,7 +52,7 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 		in:             in,
 		out:            out,
 		primer3Path:    "primer3_core",
-		primer3ConfDir: config.Primer3Config,
+		primer3ConfDir: conf.GetPrimer3ConfigDir(),
 	}
 }
 
@@ -382,19 +382,19 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 		"-r",       // temperature only
 		"-t", "50", // gibson assembly is at 50 degrees
 		"-s1", seq,
-		"-path", config.Primer3Config,
+		"-path", conf.GetPrimer3ConfigDir(),
 	)
 
 	ntthalOut, err := ntthalCmd.CombinedOutput()
 	if err != nil {
-		stderr.Printf("failed to execute ntthal: -s1 %s -path %s", seq, config.Primer3Config)
+		stderr.Printf("failed to execute ntthal: -s1 %s -path %s", seq, conf.GetPrimer3ConfigDir())
 		rlog.Fatal(err)
 	}
 
 	ntthalOutString := string(ntthalOut)
 	temp, err := strconv.ParseFloat(strings.TrimSpace(ntthalOutString), 64)
 	if err != nil {
-		stderr.Printf("failed to parse ntthal: -s1 %s -path %s", seq, config.Primer3Config)
+		stderr.Printf("failed to parse ntthal: -s1 %s -path %s", seq, conf.GetPrimer3ConfigDir())
 		rlog.Fatal(err)
 	}
 
