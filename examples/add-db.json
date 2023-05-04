@@ -1,0 +1,13 @@
+{
+    "singularity_cache_dir": "/Users/goinac/.singularity_cache",
+    "repp_container": "janeliascicomp/repp:v1.0.0",
+    "reppcmd": "add-db",
+    "repp_repository": "$HOME/.repp",
+    "dbname": "cg",
+    "dbcost": 0,
+    "dbpath": "/groups/scicompsoft/home/goinac/Work/nextflow/repp-data/pS1_lib.fa",
+    "assembly_output_format": "CSV",
+    "make_plasmid_cpus": 4,
+    "make_plasmid_mem_gb": 1,
+    "sequence_identity": 100
+}

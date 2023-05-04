@@ -1,0 +1,13 @@
+{
+    "singularity_cache_dir": "/Users/goinac/.singularity_cache",
+    "repp_container": "janeliascicomp/repp:v1.0.0",
+    "reppcmd": "make-plasmid",
+    "repp_repository": "$HOME/.repp",
+    "seq_file": "/groups/scicompsoft/home/goinac/Work/nextflow/repp-data/pS1.fa",
+    "dbs": "cg",
+    "oligos_manifest": "/groups/scicompsoft/home/goinac/Work/nextflow/repp-data/primer_database.csv",
+    "assembly_output_format": "CSV",
+    "make_plasmid_cpus": 6,
+    "make_plasmid_mem_gb": 1,
+    "sequence_identity": 100
+}
