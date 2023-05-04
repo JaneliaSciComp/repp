@@ -7,6 +7,10 @@ include {
 } from './nextflow/modules/repp-add-db/main'
 
 include {
+    REPP_LIST_DB;
+} from './nextflow/modules/repp-list-db/main'
+
+include {
     REPP_MAKE_PLASMID;
 } from './nextflow/modules/repp-make-plasmid/main'
 
@@ -22,6 +26,8 @@ workflow {
                 ]
             )
         )
+    } else if (params.reppcmd == "list-db") {
+        REPP_LIST_DB | view
     } else if (params.reppcmd == "make-plasmid") {
         REPP_MAKE_PLASMID(
             Channel.of(
