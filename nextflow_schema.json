@@ -34,6 +34,25 @@
       },
       "required": ["repp_container"]
     },
+    "common_options": {
+      "title": "Common options",
+      "type": "object",
+      "description": "",
+      "default": "",
+      "properties": {
+        "reppcmd": {
+          "type": "string",
+          "description": "REPP command"
+        },
+        "repp_repository": {
+          "type": "string",
+          "default": "$HOME/.repp",
+          "description": "location of the REPP data",
+          "hidden": true
+        }
+      },
+      "required": ["reppcmd"]
+    },
     "add_database_options": {
       "title": "Add database options",
       "type": "object",
@@ -115,22 +134,13 @@
       "$ref": "#/definitions/general_runtime_options"
     },
     {
+      "$ref": "#/definitions/common_options"
+    },
+    {
       "$ref": "#/definitions/add_database_options"
     },
     {
       "$ref": "#/definitions/make_plasmid_options"
     }
-  ],
-  "properties": {
-    "repp_repository": {
-      "type": "string",
-      "default": "$HOME/.repp",
-      "description": "location of the REPP data",
-      "hidden": true
-    },
-    "reppcmd": {
-      "type": "string",
-      "description": "REPP command"
-    }
-  }
+  ]
 }
