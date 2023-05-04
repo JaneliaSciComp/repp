@@ -42,7 +42,8 @@
       "properties": {
         "reppcmd": {
           "type": "string",
-          "description": "REPP command"
+          "description": "REPP command",
+          "enum": ["add-db", "make-plasmid"]
         },
         "repp_repository": {
           "type": "string",
