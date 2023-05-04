@@ -21,8 +21,8 @@ var (
 	// reppDir is the root directory where repp settings and database files live
 	reppDir string
 
-	// configPath is the path to a local/default config file
-	configPath string
+	// defaultConfigPath is the path to a local/default config file
+	defaultConfigPath string
 
 	// defaultPrimer3ConfigDir is the path to a primer3 config directory
 	// primer3 is (overly) particular about the trailing slash
@@ -155,7 +155,7 @@ func initDataPaths(providedReppDir string) (err error) {
 		reppDir = providedReppDir
 	}
 
-	configPath = filepath.Join(reppDir, "config.yaml")
+	defaultConfigPath = filepath.Join(reppDir, "config.yaml")
 	defaultPrimer3ConfigDir = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
 	FeatureDB = filepath.Join(reppDir, "features.json")
 	EnzymeDB = filepath.Join(reppDir, "enzymes.json")
@@ -198,8 +198,8 @@ func Setup(providedReppDir string) {
 
 	// only copy default config file
 	// if it does not exist
-	if isConfigFileNeeded(configPath, true) {
-		if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
+	if isConfigFileNeeded(defaultConfigPath, true) {
+		if err = os.WriteFile(defaultConfigPath, DefaultConfig, 0644); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -274,7 +274,7 @@ func copyFromEmbeded(fs embed.FS, from, to string) {
 func New() *Config {
 	// read in the default settings first
 	viper.SetConfigType("yaml")
-	viper.SetConfigFile(configPath)
+	viper.SetConfigFile(defaultConfigPath)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
