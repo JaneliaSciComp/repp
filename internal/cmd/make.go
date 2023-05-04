@@ -8,7 +8,6 @@ import (
 	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -100,11 +99,7 @@ func init() {
 	makeCmd.AddCommand(featuresCmd)
 	makeCmd.AddCommand(sequenceCmd)
 
-	// config is an optional parameter for a settings file (that overrides defaults)
-	makeCmd.PersistentFlags().StringP("config", "c", "", "path to a config file")
-	if err := viper.BindPFlag("config", makeCmd.PersistentFlags().Lookup("config")); err != nil {
-		log.Fatal(err)
-	}
+	makeCmd.PersistentFlags().String("primer3-config", "", "primer3 config folder to be used instead of the default")
 
 	RootCmd.AddCommand(makeCmd)
 }
@@ -116,7 +111,8 @@ func runFragmentsCmd(cmd *cobra.Command, args []string) {
 		fragmentsInputParams.SetOut(guessOutput(fragmentsInputParams.GetIn(), fragmentsInputParams.GetOutputFormat()))
 	}
 
-	repp.AssembleFragments(fragmentsInputParams, config.New())
+	repp.AssembleFragments(fragmentsInputParams,
+		config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String()))
 }
 
 func runFeaturesCmd(cmd *cobra.Command, args []string) {
@@ -126,7 +122,8 @@ func runFeaturesCmd(cmd *cobra.Command, args []string) {
 		featuresInputParams.SetIn(combineAllIntoCSV(args))
 	}
 
-	repp.Features(featuresInputParams, config.New())
+	repp.Features(featuresInputParams,
+		config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String()))
 }
 
 func runSequenceCmd(cmd *cobra.Command, args []string) {
@@ -146,5 +143,6 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 		assemblyInputParams.SetOut(adjustOutput(assemblyInputParams.GetOut(), assemblyInputParams.GetOutputFormat()))
 	}
 
-	repp.Sequence(assemblyInputParams, config.New())
+	repp.Sequence(assemblyInputParams,
+		config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String()))
 }

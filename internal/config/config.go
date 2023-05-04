@@ -137,7 +137,7 @@ type Config struct {
 	p3ConfigDir string
 }
 
-func initDataPaths(providedReppDir, providedReppConfigFile string) (err error) {
+func initDataPaths(providedReppDir string) (err error) {
 	if providedReppDir == "" {
 		// if no repp dir was provided
 		// try to get it from the environment
@@ -155,11 +155,7 @@ func initDataPaths(providedReppDir, providedReppConfigFile string) (err error) {
 		reppDir = providedReppDir
 	}
 
-	if providedReppConfigFile == "" {
-		configPath = filepath.Join(reppDir, "config.yaml")
-	} else {
-		configPath = providedReppConfigFile
-	}
+	configPath = filepath.Join(reppDir, "config.yaml")
 	defaultPrimer3ConfigDir = filepath.Join(reppDir, "primer3_config") + string(os.PathSeparator)
 	FeatureDB = filepath.Join(reppDir, "features.json")
 	EnzymeDB = filepath.Join(reppDir, "enzymes.json")
@@ -171,9 +167,9 @@ func initDataPaths(providedReppDir, providedReppConfigFile string) (err error) {
 
 // Setup checks that the REPP data directory exists.
 // It creates one and writes default config files to it otherwise.
-func Setup(providedReppDir, providedReppConfigFile string) {
+func Setup(providedReppDir string) {
 
-	err := initDataPaths(providedReppDir, providedReppConfigFile)
+	err := initDataPaths(providedReppDir)
 	if err != nil {
 		log.Fatal("Error creating repp data paths", err)
 	}
@@ -198,17 +194,15 @@ func Setup(providedReppDir, providedReppConfigFile string) {
 		log.Fatal(err)
 	}
 
-	if providedReppConfigFile == "" {
-		// only copy default config file
-		// if it does not exist
-		if isConfigFileNeeded(configPath, false) {
-			if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
-				log.Fatal(err)
-			}
+	// the rest of the configuration files are always overwritten for now
+
+	// only copy default config file
+	// if it does not exist
+	if isConfigFileNeeded(configPath, true) {
+		if err = os.WriteFile(configPath, DefaultConfig, 0644); err != nil {
+			log.Fatal(err)
 		}
 	}
-
-	// the rest of the configuration files are always overwritten for now
 
 	// features DB
 	if isConfigFileNeeded(FeatureDB, true) {
@@ -311,7 +305,7 @@ func New() *Config {
 }
 
 // Return the path to the primer3 config directory
-func (c *Config) SetPrimer3ConfigDir(p3ConfigDir string) {
+func (c *Config) SetPrimer3ConfigDir(p3ConfigDir string) *Config {
 	if p3ConfigDir != "" {
 		if strings.HasSuffix(p3ConfigDir, "/") {
 			c.p3ConfigDir = p3ConfigDir
@@ -319,6 +313,7 @@ func (c *Config) SetPrimer3ConfigDir(p3ConfigDir string) {
 			c.p3ConfigDir = p3ConfigDir + "/"
 		}
 	}
+	return c
 }
 
 // Return the path to the primer3 config directory
