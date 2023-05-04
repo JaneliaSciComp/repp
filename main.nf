@@ -12,7 +12,7 @@ include {
 
 workflow {
     main:
-    if (params.cmd == "add-db") {
+    if (params.reppcmd == "add-db") {
         REPP_ADD_DB(
             Channel.of(
                 [
@@ -22,7 +22,7 @@ workflow {
                 ]
             )
         )
-    } else if (params.cmd == "make-plasmid") {
+    } else if (params.reppcmd == "make-plasmid") {
         REPP_MAKE_PLASMID(
             Channel.of(
                 [
@@ -33,6 +33,6 @@ workflow {
             )
         )
     } else {
-        log.error "Invalid command: ${params.cmd}"
+        log.error "Invalid command: ${params.reppcmd}"
     }
 }

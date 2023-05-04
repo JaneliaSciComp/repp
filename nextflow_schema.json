@@ -122,16 +122,15 @@
     }
   ],
   "properties": {
-    "cmd": {
-      "type": "string",
-      "description": "Command to be executed",
-      "enum": ["add-db", "make-plasmid"]
-    },
     "repp_repository": {
       "type": "string",
       "default": "$HOME/.repp",
       "description": "location of the REPP data",
       "hidden": true
+    },
+    "reppcmd": {
+      "type": "string",
+      "description": "REPP command"
     }
   }
 }
