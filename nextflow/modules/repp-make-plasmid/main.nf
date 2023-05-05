@@ -32,6 +32,9 @@ process REPP_MAKE_PLASMID {
     def oligos_manifest_arg = params.oligos_manifest
         ? "-m ${normalized_file_name(params.oligos_manifest)}"
         : ''
+    def config_arg = params.config
+        ? "--config ${params.config}"
+        : ''
     def assembly_output_name = assembly_output
     def mk_output_dir
     def output_arg
@@ -60,6 +63,7 @@ process REPP_MAKE_PLASMID {
             ${oligos_manifest_arg} \
             ${output_arg} \
             ${sequence_identity_arg} \
+            ${config_arg} \
             ${output_format_arg}
     """
 }

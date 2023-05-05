@@ -126,6 +126,11 @@
           "minimum": 1,
           "maximum": 100,
           "hidden": true
+        },
+        "config": {
+          "type": "string",
+          "description": "Optional config yaml file that can override default settings",
+          "hidden": true
         }
       }
     }
