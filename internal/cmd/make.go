@@ -101,7 +101,7 @@ func init() {
 	makeCmd.AddCommand(sequenceCmd)
 
 	// config is an optional parameter for a settings file (that overrides defaults)
-	makeCmd.PersistentFlags().StringP("config", "c", "", "User defined config file that may overrides the default settings")
+	makeCmd.PersistentFlags().StringP("config", "c", "", "User defined config file that may override all or some default settings")
 	makeCmd.PersistentFlags().String("primer3-config", "", "primer3 config folder to be used instead of the default")
 	if err := viper.BindPFlag("config", makeCmd.PersistentFlags().Lookup("config")); err != nil {
 		log.Fatal(err)
