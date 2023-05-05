@@ -6,7 +6,6 @@ import (
 	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // RootCmd represents the base command when called without any subcommands.
@@ -27,12 +26,6 @@ var RootCmd = &cobra.Command{
 func init() {
 	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "write DEBUG logs")
 	RootCmd.PersistentFlags().String("repp-data-dir", "", "Default REPP data directory")
-
-	// config is an optional parameter for a settings file (that overrides defaults)
-	RootCmd.PersistentFlags().String("config", "", "User defined config file that may overrides the default settings")
-	if err := viper.BindPFlag("config", RootCmd.PersistentFlags().Lookup("config")); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func must(err error) {
