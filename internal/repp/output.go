@@ -74,7 +74,7 @@ func writeResult(
 		return nil, err
 	}
 	if format == "CSV" {
-		err = writeCSV(filename, fragmentBase(filename), oligos, out)
+		err = writeCSV(filename, fragmentBase(targetName), oligos, out)
 	} else {
 		err = writeJSON(filename, out)
 	}
