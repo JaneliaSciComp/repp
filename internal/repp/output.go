@@ -74,7 +74,7 @@ func writeResult(
 		return nil, err
 	}
 	if format == "CSV" {
-		err = writeCSV(filename, fragmentBase(targetName), oligos, out)
+		err = writeCSV(filename, fragmentBase(filename), oligos, out)
 	} else {
 		err = writeJSON(filename, out)
 	}
@@ -313,13 +313,20 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 	return nil
 }
 
-func fragmentBase(template string) string {
-	baseNameWithExt := filepath.Base(template)
-	extSep := strings.Index(baseNameWithExt, ".")
-	if extSep == -1 {
-		return baseNameWithExt
+func fragmentBase(filename string) string {
+	var fragmentIDSeparators = " ,_-."
+
+	splitFunc := func(c rune) bool {
+		return strings.ContainsRune(fragmentIDSeparators, c)
+	}
+
+	baseNameFromFilename := strings.FieldsFunc(filepath.Base(filename), splitFunc)[0]
+
+	if len(baseNameFromFilename) > 10 {
+		// truncate if name is too long
+		return baseNameFromFilename[:10]
 	} else {
-		return baseNameWithExt[:extSep]
+		return baseNameFromFilename
 	}
 }
 
