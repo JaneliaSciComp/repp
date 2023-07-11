@@ -284,7 +284,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 				}
 				reagents = append(reagents, synthReagent)
 			} else {
-				templateID = f.ID
+				templateID = fragmentBase(f.ID)
 				matchRatio = fmt.Sprintf("%d", int(f.matchRatio*100))
 			}
 			if err = strategyCSVWriter.Write([]string{
