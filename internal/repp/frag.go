@@ -486,7 +486,8 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		return
 	}
 
-	// update Frag's range, and add additional bp to the left and right primer if it wasn't included in the primer3 output
+	// update Frag's range, and add additional bp to the left and right primer
+	// if it wasn't included in the primer3 output
 	mutatePrimers(f, seq, addLeft, addRight)
 
 	// make sure the fragment's length is still long enough for PCR
