@@ -94,7 +94,8 @@ func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][
 		rlog.Fatal(err)
 	}
 
-	oligos := readOligos(assemblyParams.GetOligosManifest())
+	primersDB := readOligos(assemblyParams.GetPrimersDBName(), primerIDPrefix, false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBName(), synthFragIDPrefix, true)
 
 	// write the results to a file
 	elapsed := time.Since(start)
@@ -104,7 +105,8 @@ func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][
 		target.ID,
 		target.Seq,
 		solutions,
-		oligos,
+		primersDB,
+		synthFragsDB,
 		len(insert.Seq),
 		elapsed.Seconds(),
 		backboneMeta,

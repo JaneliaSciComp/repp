@@ -55,7 +55,7 @@ func writeResult(
 	targetName,
 	targetSeq string,
 	assemblies [][]*Frag,
-	oligos *oligosDB,
+	primersDB, synthFragsDB *oligosDB,
 	insertSeqLength int,
 	seconds float64,
 	backbone *Backbone,
@@ -74,7 +74,7 @@ func writeResult(
 		return nil, err
 	}
 	if format == "CSV" {
-		err = writeCSV(filename, fragmentBase(filename), oligos, out)
+		err = writeCSV(filename, fragmentBase(filename), primersDB, synthFragsDB, out)
 	} else {
 		err = writeJSON(filename, out)
 	}
@@ -182,7 +182,9 @@ func prepareSolutionsOutput(
 // writeCSV writes solutions as csv.
 // The results are output to two csv files;
 // one containing the strategy and the other one the reagents
-func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (err error) {
+func writeCSV(filename, fragmentIDBase string,
+	existingPrimers, existingSynthFrags *oligosDB,
+	out *Output) (err error) {
 
 	reagentsFilename := resultFilename(filename, "reagents")
 	strategyFilename := resultFilename(filename, "strategy")
@@ -237,12 +239,22 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 			return err
 		}
 		reagents := []oligo{}
-		var newOligoSequenceIndex int = 0
-		newOligos := newOligosDB()
-		var allOligoDBs []*oligosDB = []*oligosDB{
-			oligos,
-			newOligos,
+		var newPrimerIndex int = 0
+		var newSynthFragIndex int = 0
+
+		newPrimers := newOligosDB(primerIDPrefix, false)
+		newSynthFrags := newOligosDB(synthFragIDPrefix, true)
+
+		var updatedPrimerDBs []*oligosDB = []*oligosDB{
+			existingPrimers,
+			newPrimers,
 		}
+
+		var updatedSynthFragsDBs []*oligosDB = []*oligosDB{
+			existingSynthFrags,
+			newSynthFrags,
+		}
+
 		for fi, f := range s.Fragments {
 			fnumber := fi + 1
 			var fwdPrimerSeq, revPrimerSeq, synthSeq string
@@ -254,34 +266,37 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 				synthSeq = f.Seq
 			}
 
-			fwdOligo := searchOligoDBs(fwdPrimerSeq, allOligoDBs)
-			if !fwdOligo.isEmpty() {
-				if !fwdOligo.hasID() {
-					fwdOligo.assignNewOligoID(oligos.getNewOligoID(fragmentIDBase, newOligoSequenceIndex))
-					newOligos.addOligo(fwdOligo)
-					newOligoSequenceIndex++
+			fwdPrimer := searchOligoDBs(fwdPrimerSeq, updatedPrimerDBs)
+			if !fwdPrimer.isEmpty() {
+				if !fwdPrimer.hasID() {
+					fwdPrimer.assignNewOligoID(existingPrimers.getNewOligoID(newPrimerIndex))
+					newPrimers.addOligo(fwdPrimer)
+					newPrimerIndex++
 				}
-				reagents = append(reagents, fwdOligo)
+				reagents = append(reagents, fwdPrimer)
 			}
-			revOligo := searchOligoDBs(revPrimerSeq, allOligoDBs)
-			if !revOligo.isEmpty() {
-				if !revOligo.hasID() {
-					revOligo.assignNewOligoID(oligos.getNewOligoID(fragmentIDBase, newOligoSequenceIndex))
-					newOligos.addOligo(revOligo)
-					newOligoSequenceIndex++
+			revPrimer := searchOligoDBs(revPrimerSeq, updatedPrimerDBs)
+			if !revPrimer.isEmpty() {
+				if !revPrimer.hasID() {
+					revPrimer.assignNewOligoID(existingPrimers.getNewOligoID(newPrimerIndex))
+					newPrimers.addOligo(revPrimer)
+					newPrimerIndex++
 				}
-				reagents = append(reagents, revOligo)
+				reagents = append(reagents, revPrimer)
 			}
 			var templateID string
 			var matchRatio string
 			if f.fragType == synthetic {
+				synthReagent := searchOligoDBs(synthSeq, updatedSynthFragsDBs)
+				if !synthReagent.hasID() {
+					synthReagent.assignNewOligoID(existingSynthFrags.getNewOligoID(newSynthFragIndex))
+					synthReagent.synth = true
+					newSynthFrags.addOligo(synthReagent)
+					newSynthFragIndex++
+				}
+				fID = synthReagent.id
 				templateID = "N/A"
 				matchRatio = "N/A"
-				synthReagent := oligo{
-					id:    fID,
-					seq:   synthSeq,
-					synth: true,
-				}
 				reagents = append(reagents, synthReagent)
 			} else {
 				templateID = fragmentBase(f.ID)
@@ -289,9 +304,9 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,
-				fwdOligo.getIDOrDefault(false, "N/A"), // fwd primer
-				revOligo.getIDOrDefault(false, "N/A"), // rev primer
-				templateID,                            // template
+				fwdPrimer.getIDOrDefault(false, "N/A"), // fwd primer
+				revPrimer.getIDOrDefault(false, "N/A"), // rev primer
+				templateID,                             // template
 				strconv.Itoa(len(f.Seq)),
 				matchRatio,
 			}); err != nil {
@@ -301,7 +316,7 @@ func writeCSV(filename, fragmentIDBase string, oligos *oligosDB, out *Output) (e
 		strategyCSVWriter.Flush()
 		sort.Sort(sortedOligosByID(reagents))
 		for _, r := range reagents {
-			reagentID := r.getIDOrDefault(!r.isNew && !r.synth, "N/A") // mark the ID if this reagent already existed in the original manifest
+			reagentID := r.getIDOrDefault(!r.isNew, "N/A") // mark the ID if this reagent already existed in the original manifest
 			err = writeReagent(reagentsCSVWriter, reagentID, r.seq)
 			if err != nil {
 				rlog.Errorf("Error writing reagent %s: %v", reagentID, err)

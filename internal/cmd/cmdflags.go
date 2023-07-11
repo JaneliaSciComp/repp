@@ -92,13 +92,13 @@ func extractOutputFormat(cmd *cobra.Command) string {
 	}
 }
 
-func extractOligosDatabase(cmd *cobra.Command) string {
-	manifest, err := cmd.Flags().GetString("oligos-database")
+func extractOligosDatabase(cmd *cobra.Command, argname string) string {
+	manifest, err := cmd.Flags().GetString(argname)
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
 			log.Fatal(helperr)
 		}
-		log.Printf("failed to parse oligos manifest arg: %v", err)
+		log.Printf("failed to parse fragments database arg: %v", err)
 	}
 	return manifest
 }
@@ -137,8 +137,11 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 	enzymeNames, _ := cmd.Flags().GetString("enzymeList")
 	params.SetEnzymeNames(splitStringOn(enzymeNames, []rune{' ', ','}))
 
-	// extract oligos manifest
-	params.SetOligosManifest(extractOligosDatabase(cmd))
+	// extract primers dbname (CSV file)
+	params.SetPrimersDBName(extractOligosDatabase(cmd, "primers-database"))
+
+	// extract synthesized fragments dbname (CSV file)
+	params.SetSynthFragsDBName(extractOligosDatabase(cmd, "synth-frags-database"))
 }
 
 // guessOutput gets an outpath path from an input path (if no output path is

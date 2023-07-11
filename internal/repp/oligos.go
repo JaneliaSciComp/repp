@@ -91,23 +91,20 @@ type oligosDB struct {
 	indexedOligos     map[string]oligo
 	oligoIDBasePrefix string
 	nextOligoID       uint
+	synthOligos       bool
 }
 
-func (oligos oligosDB) getNewOligoID(altIDSuffix string, newSeqIndex int) string {
-	if len(oligos.indexedOligos) == 0 {
-		// if the oligos database is empty the ID scheme is <id>_<altIDSuffix>
-		return fmt.Sprintf("%d_%s", oligos.nextOligoID+uint(newSeqIndex), altIDSuffix)
-	} else {
-		// otherwise use the oligoIDBase as a prefix
-		return fmt.Sprintf("%s%d", oligos.oligoIDBasePrefix, oligos.nextOligoID+uint(newSeqIndex))
-	}
+func (oligos oligosDB) getNewOligoID(newSeqIndex int) string {
+	// otherwise use the oligoIDBase as a prefix
+	return fmt.Sprintf("%s%d", oligos.oligoIDBasePrefix, oligos.nextOligoID+uint(newSeqIndex))
 }
 
-func newOligosDB() *oligosDB {
+func newOligosDB(defaultBasePrefix string, synthOligos bool) *oligosDB {
 	var o = &oligosDB{}
 	o.indexedOligos = make(map[string]oligo)
-	o.oligoIDBasePrefix = "oS" // default ID base
+	o.oligoIDBasePrefix = defaultBasePrefix
 	o.nextOligoID = 1
+	o.synthOligos = synthOligos
 	return o
 }
 
@@ -132,8 +129,8 @@ func searchOligoDBs(seq string, oligoDBs []*oligosDB) oligo {
 	return oligo{seq: seq}
 }
 
-func readOligos(manifest string) (oligos *oligosDB) {
-	oligos = newOligosDB()
+func readOligos(manifest, basePrefix string, synthOligos bool) (oligos *oligosDB) {
+	oligos = newOligosDB(basePrefix, synthOligos)
 
 	if manifest == "" {
 		return
@@ -203,8 +200,9 @@ func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {
 			oligoSequence = oligoSeqField[sequenceStart+1:]
 		}
 		oligo := oligo{
-			id:  oligoIdField,
-			seq: oligoSequence, // put the original sequence field here as read from the file
+			id:    oligoIdField,
+			seq:   oligoSequence, // put the original sequence field here as read from the file
+			synth: oligos.synthOligos,
 		}
 		oligos.addOligo(oligo)
 	}

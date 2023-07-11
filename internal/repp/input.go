@@ -17,6 +17,9 @@ var (
 	stderr = log.New(os.Stderr, "", 0)
 )
 
+const primerIDPrefix = "oS"
+const synthFragIDPrefix = "syn"
+
 type AssemblyParams interface {
 	GetIn() string
 	SetIn(in string)
@@ -36,8 +39,11 @@ type AssemblyParams interface {
 	GetBackboneName() string
 	SetBackboneName(bn string)
 
-	GetOligosManifest() string
-	SetOligosManifest(manifest string)
+	GetPrimersDBName() string
+	SetPrimersDBName(dbName string)
+
+	GetSynthFragsDBName() string
+	SetSynthFragsDBName(dbName string)
 
 	getDBs() ([]DB, error)
 	SetDbNames(dbNames []string)
@@ -63,8 +69,11 @@ type assemblyParamsImpl struct {
 	// the backbone (optional) to insert the pieces into
 	backboneName string
 
-	// oligos manifest
-	oligosManifest string
+	// primers manifest
+	primersManifest string
+
+	// synthetic fragments manifest
+	synthFragsManifest string
 
 	// list of enzimes
 	enzymeNames []string
@@ -128,12 +137,20 @@ func (ap *assemblyParamsImpl) SetBackboneName(backboneName string) {
 	ap.backboneName = backboneName
 }
 
-func (ap assemblyParamsImpl) GetOligosManifest() string {
-	return ap.oligosManifest
+func (ap assemblyParamsImpl) GetPrimersDBName() string {
+	return ap.primersManifest
 }
 
-func (ap *assemblyParamsImpl) SetOligosManifest(manifest string) {
-	ap.oligosManifest = manifest
+func (ap *assemblyParamsImpl) SetPrimersDBName(manifest string) {
+	ap.primersManifest = manifest
+}
+
+func (ap assemblyParamsImpl) GetSynthFragsDBName() string {
+	return ap.synthFragsManifest
+}
+
+func (ap *assemblyParamsImpl) SetSynthFragsDBName(manifest string) {
+	ap.synthFragsManifest = manifest
 }
 
 func (ap assemblyParamsImpl) getDBs() (dbs []DB, err error) {

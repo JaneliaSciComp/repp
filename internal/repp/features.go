@@ -83,7 +83,8 @@ func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
 	}
 
 	// do not use the oligos manifest
-	oligos := readOligos(assemblyParams.GetOligosManifest())
+	primersDB := readOligos(assemblyParams.GetPrimersDBName(), primerIDPrefix, false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBName(), synthFragIDPrefix, true)
 
 	if _, err := writeResult(
 		assemblyParams.GetOut(),
@@ -91,7 +92,8 @@ func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
 		assemblyParams.GetIn(),
 		target,
 		solutions,
-		oligos,
+		primersDB,
+		synthFragsDB,
 		insertLength,
 		time.Since(start).Seconds(),
 		backboneMeta,
