@@ -212,10 +212,10 @@ func prepareBackbone(
 }
 
 // read a dir of FASTA or Genbank files to a slice of fragments
-func multiFileRead(fs []string) (fragments []*Frag, rep inputReport, err error) {
+func multiFileRead(fs []string, prefixSeqIDWithFName bool) (fragments []*Frag, rep inputReport, err error) {
 	newFrags := make(map[string]*Frag)
 	for _, f := range fs {
-		fFrags, ferr := read(f, false)
+		fFrags, ferr := read(f, false, prefixSeqIDWithFName)
 		if ferr != nil {
 			err = multierr.Append(err, ferr)
 			rep.errored++
@@ -242,7 +242,7 @@ func multiFileRead(fs []string) (fragments []*Frag, rep inputReport, err error) 
 }
 
 // read a FASTA or Genbank file (by its path on local FS) to a slice of Fragments.
-func read(path string, feature bool) (fragments []*Frag, err error) {
+func read(path string, feature, prefixSeqIDWithFName bool) (fragments []*Frag, err error) {
 	if !filepath.IsAbs(path) {
 		path, err = filepath.Abs(path)
 		if err != nil {
@@ -257,17 +257,24 @@ func read(path string, feature bool) (fragments []*Frag, err error) {
 	// convert content to string
 	scontent := strings.TrimSpace(string(fcontent))
 
+	var seqIDNamespace string
+	if prefixSeqIDWithFName {
+		fname := filepath.Base(path)
+		fext := filepath.Ext(fname)
+		seqIDNamespace = strings.ReplaceAll(fname[0:len(fname)-len(fext)], " ", "_")
+	}
+
 	// inspect content to figure out whether it's FASTA or Genbank
 	// this is slower than just looking at the file extension
 	// but the file is already in memory anyway
 	if scontent[0] == '>' {
 		rlog.Debugf("Add sequences from FASTA file: %s", path)
-		return readFasta(path, scontent)
+		return readFasta(path, scontent, seqIDNamespace)
 	}
 
 	if strings.Contains(scontent, "LOCUS") && strings.Contains(scontent, "ORIGIN") {
 		rlog.Debugf("Add sequences from Genbank file: %s", path)
-		return readGenbank(path, scontent, feature)
+		return readGenbank(path, scontent, feature, seqIDNamespace)
 	}
 
 	rlog.Debugf("Ignoring file %s because it does not recognize the file type", path)
@@ -275,7 +282,7 @@ func read(path string, feature bool) (fragments []*Frag, err error) {
 }
 
 // readFasta parses the multifasta file to fragments.
-func readFasta(path, contents string) (frags []*Frag, err error) {
+func readFasta(path, contents, idNamespace string) (frags []*Frag, err error) {
 	// split by newlines
 	lines := strings.Split(contents, "\n")
 
@@ -313,9 +320,15 @@ func readFasta(path, contents string) (frags []*Frag, err error) {
 	}
 
 	// build and return the new frags
+	var seqIDNamespace string
+	if idNamespace == "" {
+		seqIDNamespace = ""
+	} else {
+		seqIDNamespace = idNamespace + ";"
+	}
 	for i, id := range ids {
 		frags = append(frags, &Frag{
-			ID:       id,
+			ID:       seqIDNamespace + id,
 			Seq:      seqs[i],
 			fragType: fragTypes[i],
 		})
@@ -331,7 +344,7 @@ func readFasta(path, contents string) (frags []*Frag, err error) {
 
 // readGenbank parses a genbank file to fragments. Returns either fragments or parseFeatures,
 // depending on the parseFeatures parameter.
-func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, err error) {
+func readGenbank(path, contents string, parseFeatures bool, idNamespace string) (fragments []*Frag, err error) {
 	// use "\nORIGIN" because there are annotations that contain the word origin
 	// which may generate an error because of more than 2 components as a result of the split
 	genbankSplit := strings.Split(contents, "\nORIGIN")
@@ -343,6 +356,13 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 	seq := strings.ToUpper(genbankSplit[1])
 	nonBpRegex := regexp.MustCompile("[^ATGC]")
 	cleanedSeq := nonBpRegex.ReplaceAllString(seq, "")
+
+	var seqIDNamespace string
+	if idNamespace == "" {
+		seqIDNamespace = ""
+	} else {
+		seqIDNamespace = idNamespace + ";"
+	}
 
 	if parseFeatures {
 		// parse each feature to a fragment (misnomer)
@@ -386,7 +406,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 			}
 
 			features = append(features, &Frag{
-				ID:  label,
+				ID:  seqIDNamespace + label,
 				Seq: featureSeq,
 			})
 		}
@@ -411,7 +431,7 @@ func readGenbank(path, contents string, parseFeatures bool) (fragments []*Frag, 
 
 	return []*Frag{
 		{
-			ID:  id,
+			ID:  seqIDNamespace + id,
 			Seq: cleanedSeq,
 		},
 	}, nil

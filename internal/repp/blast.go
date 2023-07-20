@@ -518,7 +518,7 @@ func sortMatches(matches []match) {
 // queryDatabases is for finding a fragment/plasmid with the entry name in one of the dbs
 func queryDatabases(entry string, dbs []DB) (f *Frag, err error) {
 	// first try to get the entry out of a local file
-	if frags, err := read(entry, false); err == nil && len(frags) > 0 {
+	if frags, err := read(entry, false, false); err == nil && len(frags) > 0 {
 		return frags[0], nil // it was a local file
 	}
 
@@ -550,7 +550,7 @@ func queryDatabases(entry string, dbs []DB) (f *Frag, err error) {
 		}
 		defer os.Remove(outFile)
 
-		if frags, err := read(outFile, false); err == nil {
+		if frags, err := read(outFile, false, false); err == nil {
 			targetFrag := frags[0]
 
 			// fix the ID, don't want titles in the ID (bug)
@@ -687,7 +687,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 	}
 
 	// read in the results as fragments. set their sequence to the full one returned from blastdbcmd
-	fragments, err := read(output.Name(), false)
+	fragments, err := read(output.Name(), false, false)
 	if err == nil && len(fragments) >= 1 {
 		for _, f := range fragments {
 			f.fullSeq = f.Seq // set fullSeq, faster to check for primer off-targets later

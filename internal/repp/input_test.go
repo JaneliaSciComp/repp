@@ -12,6 +12,7 @@ func Test_read(t *testing.T) {
 		file         string
 		fragCount    int
 		readFeatures bool
+		prefixIDs    bool
 	}
 
 	files := []fileRead{
@@ -20,29 +21,40 @@ func Test_read(t *testing.T) {
 			path.Join("..", "..", "test", "input", "113726(circular).parent"),
 			1,
 			false,
+			true,
+		},
+		{
+			"113726(circular)",
+			path.Join("..", "..", "test", "input", "113726(circular).parent"),
+			1,
+			false,
+			false,
 		},
 		{
 			"multi.fasta",
 			path.Join("..", "..", "test", "input", "multi.fasta"),
 			5,
 			false,
+			true,
 		},
 		{
 			"genbank sequence",
 			path.Join("..", "..", "test", "input", "genbank.gb"),
 			1,
 			false,
+			true,
 		},
 		{
 			"genbank features",
 			path.Join("..", "..", "test", "input", "genbank.gb"),
 			66,
 			true,
+			false,
 		},
 	}
 
 	for _, f := range files {
-		fragments, err := read(f.file, f.readFeatures)
+		fragments, err := read(f.file, f.readFeatures, f.prefixIDs)
 
 		if err != nil {
 			t.Error(err)

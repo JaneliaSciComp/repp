@@ -111,7 +111,7 @@ func queryFeatures(
 	backbone *Frag,
 	dbs []DB) ([][]string, []string) {
 	var insertFeats [][]string // slice of tuples [feature name, feature sequence]
-	if readFeatures, err := read(featuresInput, true); err == nil {
+	if readFeatures, err := read(featuresInput, true, false); err == nil {
 		// see if the features are in a file (multi-FASTA or features in a Genbank)
 		seenFeatures := make(map[string]string) // map feature name to sequence
 		for _, f := range readFeatures {

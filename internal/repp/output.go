@@ -329,7 +329,7 @@ func writeCSV(filename, fragmentIDBase string,
 }
 
 func fragmentBase(filename string) string {
-	var fragmentIDSeparators = " ,_-."
+	var fragmentIDSeparators = " ,_-.;:"
 
 	splitFunc := func(c rune) bool {
 		return strings.ContainsRune(fragmentIDSeparators, c)
@@ -376,10 +376,33 @@ func writeJSON(filename string, out *Output) (err error) {
 }
 
 // writeFragsToFastaFile writes a slice of fragments to a FASTA file
-func writeFragsToFastaFile(frags []*Frag, fastaFile *os.File) (err error) {
+func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (err error) {
+	uniqueIDs := make(map[string]int)
+	fragmentIDSeparators := " ,_-.;:"
+
+	splitFunc := func(c rune) bool {
+		return strings.ContainsRune(fragmentIDSeparators, c)
+	}
+
+	truncID := func(s string) string {
+		if len(s) < maxIDLength {
+			return s
+		} else {
+			return s[:maxIDLength]
+		}
+	}
+
 	for _, f := range frags {
+		fragID := truncID(f.ID)
+		nFragIDs, fragIDFound := uniqueIDs[fragID]
+		uniqueIDs[fragID] = nFragIDs + 1
+		if fragIDFound {
+			fragIDPrefix := strings.FieldsFunc(f.ID, splitFunc)[0]
+			fragIDSuffix := f.ID[len(fragIDPrefix):]
+			fragID = truncID(fmt.Sprintf("%s-(%d)-%s", fragIDPrefix, nFragIDs+1, fragIDSuffix))
+		}
 		rlog.Debugf("Write %s", f.ID)
-		if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", f.ID, f.Seq)); ferr != nil {
+		if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", fragID, f.Seq)); ferr != nil {
 			rlog.Errorf("Error writing fragment %s\n", f.ID)
 			err = multierr.Append(err, ferr)
 		}

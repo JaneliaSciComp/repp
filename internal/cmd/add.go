@@ -64,6 +64,7 @@ a cut site in the complement sequence: "_". Use 'repp ls enzyme' for examples`,
 func init() {
 	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
 	databaseAddCmd.Flags().Float64P("cost", "c", 0.0, "the cost per plasmid procurement (eg order + shipping fee)")
+	databaseAddCmd.Flags().Bool("prefixSeqIDs", true, "Prefix sequence IDs with filename")
 
 	must(databaseAddCmd.MarkFlagRequired("name"))
 	must(databaseAddCmd.MarkFlagRequired("cost"))
@@ -90,10 +91,15 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 		}
 		log.Fatal("Cost must be a number", err)
 	}
+	prefixSeqIDs, err := cmd.Flags().GetBool("prefixSeqIDs")
+	if err != nil {
+		log.Print("Error encountered reading prefiSeqIDs flag", err)
+		prefixSeqIDs = false
+	}
 
 	seqFiles := collectSequenceFiles(args)
 
-	if err = repp.AddDatabase(dbName, seqFiles, cost); err != nil {
+	if err = repp.AddDatabase(dbName, seqFiles, cost, prefixSeqIDs); err != nil {
 		log.Fatal("Error creating database", dbName, err)
 	}
 }

@@ -22,7 +22,7 @@ func Annotate(inputName, inputQuery string,
 		if inputName == "" {
 			rlog.Fatal("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
 		} else {
-			frags, err := read(inputName, false)
+			frags, err := read(inputName, false, false)
 			if err != nil {
 				rlog.Fatal(err)
 			}

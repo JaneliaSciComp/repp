@@ -169,6 +169,7 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 		f := newFrag(m, conf)
 
 		// try and shrink to avoid a duplicate junction with self
+		// wondering if this should be repeated in case there are repeats at the end of the fragment
 		selfJunction := f.junction(f, min, max)
 		if selfJunction != "" {
 			f.end -= len(selfJunction)
@@ -368,19 +369,24 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 	// for every possible start index
 	for i := start; i <= end; i++ {
 		// traverse from that index to the end of the seq
+		var noOverlap bool = false
 		for k, j := i, 0; k < len(s1); j, k = j+1, k+1 {
 			if j >= len(s2) {
+				// second fragment is too short
+				noOverlap = true
 				break
 			}
 
 			if s1[k] != s2[j] {
+				// different bps
+				noOverlap = true
 				break
 			}
 
-			// we made it to the end of the sequence, there's a junction
-			if k == len(s1)-1 {
-				return s1[i:]
-			}
+		}
+		// a junction was found
+		if !noOverlap {
+			return s1[i:]
 		}
 	}
 
