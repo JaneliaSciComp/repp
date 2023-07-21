@@ -85,6 +85,7 @@ func AddDatabase(dbName string, seqFiles []string, cost float64, prefixSeqIDWith
 				rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
 				return err
 			}
+			rlog.Infof("%d fragments written to %s", len(dbSeqs), dbSequenceFilepath)
 		} else {
 			rlog.Warnf("No sequence was read from the input files")
 			return nil

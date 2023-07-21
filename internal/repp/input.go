@@ -227,13 +227,14 @@ func multiFileRead(fs []string, prefixSeqIDWithFName bool) (fragments []*Frag, r
 				indexedFragID := strings.ToUpper(frag.ID)
 				_, found := newFrags[indexedFragID]
 				if found {
+					// do not skip the duplicates but report them
 					rep.duplicatedIDs++
-					rlog.Debugf("Skip %s from %s because ID already exists\n", frag.ID, f)
+					rlog.Debugf("Duplicate id found %s in %s", frag.ID, f)
 				} else {
 					newFrags[indexedFragID] = frag
-					fragments = append(fragments, frag)
-					rep.sequencesRead++
 				}
+				fragments = append(fragments, frag)
+				rep.sequencesRead++
 			}
 		}
 	}

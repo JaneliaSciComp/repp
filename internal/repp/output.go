@@ -286,6 +286,7 @@ func writeCSV(filename, fragmentIDBase string,
 			}
 			var templateID string
 			var matchRatio string
+			var pcrSeqSize int
 			if f.fragType == synthetic {
 				synthReagent := searchOligoDBs(synthSeq, updatedSynthFragsDBs)
 				if !synthReagent.hasID() {
@@ -297,17 +298,20 @@ func writeCSV(filename, fragmentIDBase string,
 				fID = synthReagent.id
 				templateID = "N/A"
 				matchRatio = "N/A"
+				pcrSeqSize = len(f.Seq)
 				reagents = append(reagents, synthReagent)
 			} else {
 				templateID = fragmentBase(f.ID)
 				matchRatio = fmt.Sprintf("%d", int(f.matchRatio*100))
+				// for PCR fragments display the length including the overhanging primers
+				pcrSeqSize = len(f.PCRSeq)
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,
 				fwdPrimer.getIDOrDefault(false, "N/A"), // fwd primer
 				revPrimer.getIDOrDefault(false, "N/A"), // rev primer
 				templateID,                             // template
-				strconv.Itoa(len(f.Seq)),
+				strconv.Itoa(pcrSeqSize),
 				matchRatio,
 			}); err != nil {
 				return nil
@@ -329,20 +333,23 @@ func writeCSV(filename, fragmentIDBase string,
 }
 
 func fragmentBase(filename string) string {
-	var fragmentIDSeparators = " ,_-.;:"
-
-	splitFunc := func(c rune) bool {
-		return strings.ContainsRune(fragmentIDSeparators, c)
-	}
-
-	baseNameFromFilename := strings.FieldsFunc(filepath.Base(filename), splitFunc)[0]
-
+	baseNameFromFilename := fragIDComponents(filepath.Base(filename))[0]
 	if len(baseNameFromFilename) > 10 {
 		// truncate if name is too long
 		return baseNameFromFilename[:10]
 	} else {
 		return baseNameFromFilename
 	}
+}
+
+func fragIDComponents(fragID string) []string {
+	var fragmentIDSeparators = " ,_-.;:"
+
+	splitFunc := func(c rune) bool {
+		return strings.ContainsRune(fragmentIDSeparators, c)
+	}
+
+	return strings.FieldsFunc(fragID, splitFunc)
 }
 
 func resultFilename(template, suffix string) string {
@@ -377,13 +384,6 @@ func writeJSON(filename string, out *Output) (err error) {
 
 // writeFragsToFastaFile writes a slice of fragments to a FASTA file
 func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (err error) {
-	uniqueIDs := make(map[string]int)
-	fragmentIDSeparators := " ,_-.;:"
-
-	splitFunc := func(c rune) bool {
-		return strings.ContainsRune(fragmentIDSeparators, c)
-	}
-
 	truncID := func(s string) string {
 		if len(s) < maxIDLength {
 			return s
@@ -392,19 +392,54 @@ func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (
 		}
 	}
 
+	// create a multimap of fragments indexed by truncated ID
+	fragsByTruncatedIDs := make(map[string][]*Frag)
 	for _, f := range frags {
 		fragID := truncID(f.ID)
-		nFragIDs, fragIDFound := uniqueIDs[fragID]
-		uniqueIDs[fragID] = nFragIDs + 1
+		fragsWithFragID, fragIDFound := fragsByTruncatedIDs[fragID]
 		if fragIDFound {
-			fragIDPrefix := strings.FieldsFunc(f.ID, splitFunc)[0]
-			fragIDSuffix := f.ID[len(fragIDPrefix):]
-			fragID = truncID(fmt.Sprintf("%s-(%d)-%s", fragIDPrefix, nFragIDs+1, fragIDSuffix))
+			fragsByTruncatedIDs[fragID] = append(fragsWithFragID, f)
+		} else {
+			fragsByTruncatedIDs[fragID] = []*Frag{f}
 		}
-		rlog.Debugf("Write %s", f.ID)
-		if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", fragID, f.Seq)); ferr != nil {
-			rlog.Errorf("Error writing fragment %s\n", f.ID)
-			err = multierr.Append(err, ferr)
+	}
+
+	// convert an int to an Excel like column a ... z, aa .. az, ba .. bz
+	// just to be safe
+	base10ToBase26 := func(i int) string {
+		var base26Val string = ""
+		for currVal := i; ; {
+			if currVal >= 26 {
+				mod := currVal % 26
+				currVal = currVal/26 - 1
+				base26Val = fmt.Sprintf("%c", 'a'+rune(mod)) + base26Val
+			} else {
+				return fmt.Sprintf("%c", 'a'+rune(currVal)) + base26Val
+			}
+		}
+	}
+
+	for fragID, fragsWithFragID := range fragsByTruncatedIDs {
+		if len(fragsWithFragID) == 1 {
+			// no duplicates
+			f := fragsWithFragID[0]
+			rlog.Debugf("Write %s", f.ID)
+			if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", fragID, f.Seq)); ferr != nil {
+				rlog.Errorf("Error writing fragment %s\n", f.ID)
+				err = multierr.Append(err, ferr)
+			}
+		} else {
+			// handle duplicates
+			rlog.Infof("%d blast DB fragment ID duplicates found for %s", len(fragsWithFragID), fragID)
+			for i, f := range fragsWithFragID {
+				fragIDPrefix := fragIDComponents(f.ID)[0]
+				fragIDSuffix := f.ID[len(fragIDPrefix):]
+				newFragID := truncID(fmt.Sprintf("%s%s%s", fragIDPrefix, base10ToBase26(i), fragIDSuffix))
+				if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", newFragID, f.Seq)); ferr != nil {
+					rlog.Errorf("Error writing fragment %s\n", f.ID)
+					err = multierr.Append(err, ferr)
+				}
+			}
 		}
 	}
 
