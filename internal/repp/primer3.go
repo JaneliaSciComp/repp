@@ -145,7 +145,7 @@ func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *F
 // bpToAdd returns the number of bp to add the end of the left Frag to create a junction
 // with the right Frag
 func (p *primer3) bpToAdd(left, right *Frag) int {
-	if !left.overlapsViaPCR(right) {
+	if !left.couldOverlapViaPCR(right) {
 		return 0 // we're going to synthesize there, don't add bp via PCR
 	}
 

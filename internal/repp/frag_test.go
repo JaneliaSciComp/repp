@@ -365,6 +365,73 @@ func Test_Frag_reach(t *testing.T) {
 	}
 }
 
+func Test_selfJunction(t *testing.T) {
+	c := config.New()
+
+	c.FragmentsMinHomology = 2
+	c.FragmentsMaxHomology = 4
+
+	type args struct {
+		f                        *Frag
+		minHomology, maxHomology int
+	}
+
+	tests := []struct {
+		name           string
+		args           args
+		wantedJunction string
+	}{
+		{
+			"Entire sequence anneals to itself",
+			args{
+				&Frag{
+					ID:   "f1",
+					Seq:  "cgcgcg",
+					conf: c,
+				},
+				2,
+				4,
+			},
+			"CGCGCG",
+		},
+		{
+			"Entire sequence anneals partially to itself",
+			args{
+				&Frag{
+					ID:   "f1",
+					Seq:  "cgatcg",
+					conf: c,
+				},
+				2,
+				3,
+			},
+			"CG",
+		},
+		{
+			"No self junction",
+			args{
+				&Frag{
+					ID:   "f1",
+					Seq:  "cgatgt",
+					conf: c,
+				},
+				2,
+				4,
+			},
+			"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotJunction := tt.args.f.selfJunction(tt.args.minHomology, tt.args.maxHomology); gotJunction != tt.wantedJunction {
+				t.Errorf("Frag.selfJunction() = %v, want %v", gotJunction, tt.wantedJunction)
+			}
+		})
+
+	}
+
+}
+
 func Test_new(t *testing.T) {
 	c := config.New()
 

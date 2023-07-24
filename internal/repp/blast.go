@@ -278,7 +278,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 		}
 
 		// get a unique identifier to distinguish this match/fragment from the others
-		uniqueID := entry + strconv.Itoa(queryStart%len(b.seq))
+		uniqueID := entry + "-" + strconv.Itoa(queryStart%len(b.seq))
 
 		// gather the query sequence
 		querySeq := fullQuery[queryStart : queryEnd+1]

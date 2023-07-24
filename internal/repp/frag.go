@@ -170,7 +170,7 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 
 		// try and shrink to avoid a duplicate junction with self
 		// wondering if this should be repeated in case there are repeats at the end of the fragment
-		selfJunction := f.junction(f, min, max)
+		selfJunction := f.selfJunction(min, max)
 		if selfJunction != "" {
 			f.end -= len(selfJunction)
 			if f.end-f.start < conf.PcrMinLength {
@@ -193,6 +193,14 @@ func (f Frag) getPrimerSeq(strand bool) string {
 		}
 	}
 	return ""
+}
+
+func (f *Frag) getFragSeq() string {
+	if f.PCRSeq != "" {
+		return strings.ToUpper(f.PCRSeq)
+	} else {
+		return strings.ToUpper(f.Seq)
+	}
 }
 
 // copy returns a deep dopy of a Frag. used because nodes are mutated
@@ -230,9 +238,9 @@ func (f *Frag) distTo(other *Frag) (bpDist int) {
 	return other.start - f.end
 }
 
-// overlapsViaPCR returns whether this Frag could overlap the other Frag through homology
-// created via PCR
-func (f *Frag) overlapsViaPCR(other *Frag) bool {
+// couldOverlapViaPCR returns whether this Frag could overlap the other Frag
+// through homology created via PCR
+func (f *Frag) couldOverlapViaPCR(other *Frag) bool {
 	return f.distTo(other) <= f.conf.PcrPrimerMaxEmbedLength
 }
 
@@ -248,7 +256,7 @@ func (f *Frag) overlapsViaHomology(other *Frag) bool {
 func (f *Frag) synthDist(other *Frag) (synthCount int) {
 	dist := f.distTo(other)
 
-	if f.overlapsViaPCR(other) {
+	if f.couldOverlapViaPCR(other) {
 		// if the dist is <MaxEmbedLength, we can PCR our way there
 		// and add the mutated bp between the nodes with PCR
 		return 0
@@ -256,8 +264,12 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 
 	floatDist := math.Max(1.0, float64(dist))
 
-	// split up the distance between them by the max synthesized fragment size
-	return int(math.Ceil(floatDist / float64(f.conf.SyntheticMaxLength)))
+	// split up the distance between them by the max synthesized fragment size if set
+	if f.conf.SyntheticMaxLength > 0 {
+		return int(math.Ceil(floatDist / float64(f.conf.SyntheticMaxLength)))
+	} else {
+		return int(math.Ceil(floatDist))
+	}
 }
 
 // costTo estimates the $ amount needed to get from this fragment
@@ -282,7 +294,7 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 		return 0
 	}
 
-	if f.overlapsViaPCR(other) {
+	if f.couldOverlapViaPCR(other) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
 			// estimating two primers, primer length assumed to be 25bp
@@ -340,22 +352,17 @@ func (f *Frag) reach(nodes []*Frag, i int, features bool) (reachable []int) {
 // junction checks for and returns any 100% identical homology between the end of this
 // Frag and the start of the other. returns an empty string if there's no junction between them
 func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction string) {
-	s1 := f.Seq
-	if f.PCRSeq != "" {
-		s1 = f.PCRSeq
-	}
+	s1 := f.getFragSeq()
+	s2 := other.getFragSeq()
 
-	s2 := other.Seq
-	if other.PCRSeq != "" {
-		s2 = other.PCRSeq
-	}
+	return seqOverlap(s1, s2, minHomology, maxHomology)
+}
 
-	s1 = strings.ToUpper(s1)
-	s2 = strings.ToUpper(s2)
-
-	//      v-maxHomology from end    v-minHomology from end
-	// ------------------------------------
-	//                    -----------------------------
+// return sequence overlap between s1 and s2
+func seqOverlap(s1, s2 string, minHomology, maxHomology int) string {
+	// Check sequence overlap for all ends starting from
+	// len(s1) - maxHomology to len(s1) - minHomology
+	// and the start of s2
 	start := len(s1) - maxHomology
 	end := len(s1) - minHomology
 
@@ -369,7 +376,7 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 	// for every possible start index
 	for i := start; i <= end; i++ {
 		// traverse from that index to the end of the seq
-		var noOverlap bool = false
+		noOverlap := false
 		for k, j := i, 0; k < len(s1); j, k = j+1, k+1 {
 			if j >= len(s2) {
 				// second fragment is too short
@@ -384,13 +391,31 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 			}
 
 		}
-		// a junction was found
 		if !noOverlap {
+			// an overlap was found
 			return s1[i:]
 		}
 	}
 
-	return
+	return ""
+}
+
+// find potentially repeatable self junction
+func (f *Frag) selfJunction(min, max int) string {
+	selfJunction := ""
+	s1 := f.getFragSeq()
+	s2 := s1
+	for {
+		overlap := seqOverlap(s1, s2, min, max)
+		if overlap == "" {
+			return selfJunction
+		}
+		selfJunction = overlap + selfJunction
+		if len(s1)-len(overlap) == 0 {
+			return selfJunction
+		}
+		s1 = s1[0 : len(s1)-len(overlap)]
+	}
 }
 
 // synthTo returns synthetic fragments to get this Frag to the next.
@@ -399,8 +424,6 @@ func (f *Frag) junction(other *Frag, minHomology, maxHomology int) (junction str
 // target is the plasmid's full sequence. We need it to build up the target
 // plasmid's sequence
 func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
-	jL := f.conf.FragmentsMinHomology // junction length
-
 	// check whether we need to make synthetic fragments to get
 	// to the next fragment in the assembly
 	synCount := f.synthDist(next) // fragment count
@@ -408,12 +431,12 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 		return nil
 	}
 
-	tL := len(target)               // length of the full target plasmid
-	fL := f.distTo(next) / synCount // each fragment's length
-	fL += jL * 2                    // account for homology on either end of each synthetic fragment
-	if f.conf.SyntheticMinLength > fL {
+	tL := len(target) // length of the full target plasmid
+	// synthetic fragment length must account for homology on both ends
+	synthSeqLength := f.distTo(next)/synCount + 2*f.conf.FragmentsMinHomology
+	if f.conf.SyntheticMinLength > synthSeqLength {
 		// need to synthesize at least Synthesis.MinLength bps
-		fL = f.conf.SyntheticMinLength
+		synthSeqLength = f.conf.SyntheticMinLength
 	}
 
 	// add to self to account for sequence across the zero-index (when sequence subselecting)
@@ -423,15 +446,15 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 	// and create one at each point, each w/ jL for the fragment
 	// before and after it
 	synths = []*Frag{}
-	start := f.end - jL + tL // start w/ homology, move left
+	start := f.end - f.conf.FragmentsMinHomology + tL // start w/ homology, move left
 	for len(synths) < synCount {
-		end := start + fL + 1
+		end := start + synthSeqLength + 1
 		seq := target[start:end]
 
 		// check for a hairpin in the junction and shift this fragment's synthesis
 		// to the right if a hairpin is found
-		for hairpin(seq[len(seq)-jL:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
-			end += jL / 2
+		for hairpin(seq[len(seq)-f.conf.FragmentsMinHomology:], f.conf) > f.conf.FragmentsMaxHairpinMelt {
+			end += f.conf.FragmentsMinHomology / 2
 			seq = target[start:end]
 		}
 
@@ -444,7 +467,7 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 			conf:     f.conf,
 		})
 
-		start = end - jL
+		start = end - f.conf.FragmentsMinHomology
 	}
 
 	return
@@ -453,8 +476,8 @@ func (f *Frag) synthTo(next *Frag, target string) (synths []*Frag) {
 // setPrimers creates primers against a Frag and returns an error if:
 //  1. the primers have an unacceptably high primer3 penalty score
 //  2. the primers have off-targets in their source plasmid/fragment
-func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (err error) {
-	pHash := primerHash(last, f, next)
+func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (err error) {
+	pHash := primerHash(prev, f, next)
 	if oldPrimers, contained := madePrimers[pHash]; contained {
 		f.Primers = oldPrimers
 		mutatePrimers(f, seq, 0, 0) // set PCRSeq
@@ -465,7 +488,7 @@ func (f *Frag) setPrimers(last, next *Frag, seq string, conf *config.Config) (er
 		return oldErr
 	}
 
-	psExec := newPrimer3(last, f, next, seq, conf)
+	psExec := newPrimer3(prev, f, next, seq, conf)
 
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
@@ -622,6 +645,6 @@ func fragsCost(frags []*Frag) (cost float64) {
 }
 
 // primerHash returns a unique hash for a PCR run
-func primerHash(last, f, next *Frag) string {
-	return fmt.Sprintf("%s%d%d%d%d", f.uniqueID, last.end, f.start, f.end, next.start)
+func primerHash(prev, f, next *Frag) string {
+	return fmt.Sprintf("%s%d%d%d%d", f.uniqueID, prev.end, f.start, f.end, next.start)
 }

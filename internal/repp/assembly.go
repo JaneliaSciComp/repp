@@ -26,21 +26,26 @@ type assembly struct {
 }
 
 // add Frag to the end of an assembly. Return a new assembly and whether it circularized
-func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newAssembly assembly, created, circularized bool) {
-	firstStart := a.frags[0].start
-	start := f.start
-	end := f.end
-	lastEnd := a.frags[len(a.frags)-1].end
+func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (assembly /*created*/, bool /*circularized*/, bool) {
+	var firstStart int
+	var start int
+	var end int
+	var lastEnd int
 
 	if features {
 		firstStart = a.frags[0].featureStart
 		start = f.featureStart
 		end = f.featureEnd
 		lastEnd = a.frags[len(a.frags)-1].featureEnd
+	} else {
+		firstStart = a.frags[0].start
+		start = f.start
+		end = f.end
+		lastEnd = a.frags[len(a.frags)-1].end
 	}
 
 	// check if we could complete an assembly with this new Frag
-	circularized = end >= firstStart+targetLength-1
+	circularized := end >= firstStart+targetLength-1
 
 	// check if this is the first fragment annealing to itself
 	selfAnnealing := f.uniqueID == a.frags[0].uniqueID
@@ -63,8 +68,6 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newA
 	if newCount > maxCount || (end-assemblyEnd < f.conf.PcrMinLength && !features) {
 		return assembly{}, false, false
 	}
-
-	created = true
 
 	// calc the estimated dollar cost of getting to the next Frag
 	annealCost := last.costTo(f)
@@ -102,7 +105,7 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (newA
 		frags:  newFrags,
 		cost:   a.cost + annealCost,
 		synths: a.synths + synths,
-	}, created, circularized
+	}, true, circularized
 }
 
 // len returns len(assembly.nodes) + the synthesis fragment count.
@@ -112,10 +115,10 @@ func (a *assembly) len() int {
 
 // fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
 // It can fail. For example, a PCR Frag may have off-targets in the parent plasmid.
-func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
+func (a *assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 	// check for and error out if there are duplicate ends between fragments,
 	// ie unintended junctions between fragments that shouldn't be annealing
-	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, conf.FragmentsMinHomology, conf.FragmentsMaxHomology); hasDuplicate {
+	if hasDuplicate, left, right, dupSeq := duplicates(a.frags, conf.FragmentsMinHomology, conf.FragmentsMaxHomology); hasDuplicate {
 		return nil, fmt.Errorf("duplicate junction between %s and %s: %s", left, right, dupSeq)
 	}
 
@@ -142,33 +145,25 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		origFrags = append(origFrags, f.copy())
 	}
 
+	frags := []*Frag{}
+
 	// fill in primers. let each Frag create primers for itself that
 	// will span it to the last and next fragments (if reachable)
 	for i, f := range a.frags {
-		// try and make primers for the fragment (need last and next nodes)
-		var last *Frag
-		if i == 0 {
-			// mock up a last fragment that's to the left of this starting Frag
-			last = &Frag{
-				start: origFrags[len(origFrags)-1].start - len(target),
-				end:   origFrags[len(origFrags)-1].end - len(target),
-				conf:  conf,
-			}
-		} else {
-			last = origFrags[i-1]
-		}
+		// try and make primers for the fragment (need prev and next nodes)
+		prev := prevFragment(origFrags, i, target, conf)
+		next := nextFragment(origFrags, i, target, conf)
 
-		next := a.mockNext(origFrags, i, target, conf)
-
-		// create primers for the Frag and add them to the Frag if it needs them
-		// to anneal to the adjacent fragments
-		lastPCR := !last.overlapsViaHomology(f) && last.overlapsViaPCR(f)
-		nextPCR := !f.overlapsViaHomology(next) && f.overlapsViaPCR(next)
-		needsPCR := f.fragType == circular || f.fragType == pcr || lastPCR || nextPCR
+		needsPCR := f.fragType == circular ||
+			f.fragType == pcr ||
+			!prev.overlapsViaHomology(f) && prev.couldOverlapViaPCR(f) ||
+			!f.overlapsViaHomology(next) && f.couldOverlapViaPCR(next)
 
 		// if the Frag has a full target from upload or
 		if needsPCR {
-			if err := f.setPrimers(last, next, target, conf); err != nil || len(f.Primers) < 2 {
+			// create primers for the Frag and add them to the Frag if it needs them
+			// to anneal to the adjacent fragments
+			if err := f.setPrimers(prev, next, target, conf); err != nil || len(f.Primers) < 2 {
 				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
 			}
 			f.fragType = pcr // is now a pcr type
@@ -186,7 +181,7 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 		}
 
 		// add synthesized fragments between this Frag and the next (if necessary)
-		next := a.mockNext(frags, i, target, conf)
+		next := nextFragment(frags, i, target, conf)
 		if synthedFrags := f.synthTo(next, target); synthedFrags != nil {
 			fragsWithSynth = append(fragsWithSynth, synthedFrags...)
 		}
@@ -201,27 +196,46 @@ func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err 
 	return frags, nil
 }
 
-// mockNext returns the fragment that's one beyond the one passed.
-// If there is none, it mocks one using the first fragment and changing
-// its start and end index.
-func (a *assembly) mockNext(frags []*Frag, i int, target string, conf *config.Config) *Frag {
+// nextFragment returns the fragment that's one beyond the one passed.
+// The fragments are considered to be part of a "circular" sequence
+// simulated by concatenating the sequence to itself
+// the next fragment after the last from the list is based on the
+// first fragment from the list by adding target sequence length to its start and end
+func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Frag {
 	if i < len(frags)-1 {
 		return frags[i+1]
 	}
 
 	// mock up a next fragment that's to the right of this terminal Frag
 	return &Frag{
-		ID:         frags[0].ID,
-		start:      frags[0].start + len(target),
-		end:        frags[0].end + len(target),
-		conf:       conf,
-		matchRatio: frags[0].matchRatio,
+		start: frags[0].start + len(target),
+		end:   frags[0].end + len(target),
+		conf:  conf,
+	}
+}
+
+// prevFragment returns the fragment that's one before the current one.
+// The fragments are considered to be part of a "circular" sequence
+// simulated by concatenating the sequence to itself
+// the prev fragment of the first from the list is based on the
+// last fragment from the list by subtracting the length of the target sequence
+// from its start and end
+func prevFragment(frags []*Frag, i int, target string, conf *config.Config) *Frag {
+	if i > 0 {
+		return frags[i-1]
+	}
+
+	// mock up a next fragment that's to the right of this terminal Frag
+	return &Frag{
+		start: frags[len(frags)-1].start - len(target),
+		end:   frags[len(frags)-1].end - len(target),
+		conf:  conf,
 	}
 }
 
 // duplicates runs through all the nodes in an assembly and checks whether any of
 // them have unintended homology, or "duplicate homology".
-func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup string) {
+func duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup string) {
 	c := len(frags) // Frag count
 	for i, f := range frags {
 		// check to make sure the fragment doesn't anneal to itself

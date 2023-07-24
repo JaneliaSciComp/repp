@@ -317,11 +317,6 @@ func Test_countMaps(t *testing.T) {
 }
 
 func Test_assembly_duplicates(t *testing.T) {
-	type fields struct {
-		frags  []*Frag
-		cost   float64
-		synths int
-	}
 	type args struct {
 		frags       []*Frag
 		minHomology int
@@ -329,14 +324,12 @@ func Test_assembly_duplicates(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		fields       fields
 		args         args
 		want         bool
 		wantJunction string
 	}{
 		{
 			"no false positive",
-			fields{},
 			args{
 				frags: []*Frag{
 					{
@@ -360,7 +353,6 @@ func Test_assembly_duplicates(t *testing.T) {
 		},
 		{
 			"assembly with a self-annealing Frag",
-			fields{},
 			args{
 				frags: []*Frag{
 					{
@@ -384,7 +376,6 @@ func Test_assembly_duplicates(t *testing.T) {
 		},
 		{
 			"assembly with a duplicate junction",
-			fields{},
 			args{
 				frags: []*Frag{
 					{
@@ -412,7 +403,6 @@ func Test_assembly_duplicates(t *testing.T) {
 		},
 		{
 			"another false positive to avoid",
-			fields{},
 			args{
 				frags: []*Frag{
 					{
@@ -434,12 +424,7 @@ func Test_assembly_duplicates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &assembly{
-				frags:  tt.fields.frags,
-				cost:   tt.fields.cost,
-				synths: tt.fields.synths,
-			}
-			isDuplicate, _, _, duplicateSeq := a.duplicates(tt.args.frags, tt.args.minHomology, tt.args.maxHomology)
+			isDuplicate, _, _, duplicateSeq := duplicates(tt.args.frags, tt.args.minHomology, tt.args.maxHomology)
 
 			if isDuplicate != tt.want {
 				t.Errorf("assembly.duplicates() = %v, want %v", isDuplicate, tt.want)

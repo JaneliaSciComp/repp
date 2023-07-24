@@ -175,7 +175,7 @@ func Test_parentMismatch(t *testing.T) {
 			true,
 			match{
 				entry:       "addgene:107006",
-				uniqueID:    "addgene:1070060",
+				uniqueID:    "addgene:107006-0",
 				seq:         "AGTATAGTAGGTAGTCATTCTT",
 				querySeq:    "AGTATAGGATAGGTAGTCATTCTT",
 				queryStart:  0,

@@ -133,6 +133,9 @@ type Config struct {
 	// maximum length of a synthesized piece of DNA
 	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 
+	// configurable penalty for synthetic fragments
+	SyntheticFragmentPenalty int `mapstructure:"synthetic-fragment-penalty"`
+
 	// user provided path to primer3 config dir
 	p3ConfigDir string
 }
