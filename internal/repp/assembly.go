@@ -18,6 +18,9 @@ type assembly struct {
 	// estimated cost of making this assembly
 	cost float64
 
+	// cost adjusted based on synthetic fragments
+	// adjustedCost float64
+
 	// total number of synthetic nodes that will be needed to make this
 	synths int
 }
@@ -110,12 +113,9 @@ func (a *assembly) len() int {
 // fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
 // It can fail. For example, a PCR Frag may have off-targets in the parent plasmid.
 func (a *assembly) fill(target string, conf *config.Config) (frags []*Frag, err error) {
-	min := conf.FragmentsMinHomology
-	max := conf.FragmentsMaxHomology
-
 	// check for and error out if there are duplicate ends between fragments,
 	// ie unintended junctions between fragments that shouldn't be annealing
-	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, min, max); hasDuplicate {
+	if hasDuplicate, left, right, dupSeq := a.duplicates(a.frags, conf.FragmentsMinHomology, conf.FragmentsMaxHomology); hasDuplicate {
 		return nil, fmt.Errorf("duplicate junction between %s and %s: %s", left, right, dupSeq)
 	}
 
@@ -252,10 +252,6 @@ func (a *assembly) duplicates(frags []*Frag, min, max int) (isDup bool, first, s
 //		   foreach assembly on fragment:
 //	      add otherFragment to the assembly to create a new assembly, store on otherFragment
 func createAssemblies(frags []*Frag, target string, targetLength int, features bool, conf *config.Config) (assemblies []assembly) {
-	// number of additional frags try synthesizing to, in addition to those that
-	// already have enough homology for overlap without any modifications for each Frag
-	maxNodes := conf.FragmentsMaxCount
-
 	// sort by start index again
 	sort.Slice(frags, func(i, j int) bool {
 		return frags[i].start < frags[j].start
@@ -287,7 +283,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	for i, f := range frags { // for every Frag in the list of increasing start index frags
 		for _, j := range f.reach(frags, i, features) { // for every overlapping fragment + reach more
 			for _, a := range f.assemblies { // for every assembly on the reaching fragment
-				newAssembly, created, circularized := a.add(frags[j], maxNodes, targetLength, features)
+				newAssembly, created, circularized := a.add(frags[j], conf.FragmentsMaxCount, targetLength, features)
 
 				if !created { // if a new assembly wasn't created, move on
 					continue
