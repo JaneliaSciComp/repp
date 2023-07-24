@@ -240,7 +240,7 @@ func duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup str
 	for i, f := range frags {
 		// check to make sure the fragment doesn't anneal to itself
 		if c > 1 {
-			if selfJ := f.junction(f, min, max); selfJ != "" && len(selfJ) < len(f.Seq) {
+			if selfJ := f.selfJunction(min, max); selfJ != "" && len(selfJ) < len(f.Seq) {
 				return true, f.ID, f.ID, selfJ
 			}
 		}

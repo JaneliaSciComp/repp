@@ -170,13 +170,13 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 
 		// try and shrink to avoid a duplicate junction with self
 		// wondering if this should be repeated in case there are repeats at the end of the fragment
-		selfJunction := f.selfJunction(min, max)
-		if selfJunction != "" {
-			f.end -= len(selfJunction)
+		selfJ := f.selfJunction(min, max)
+		if selfJ != "" {
+			f.end -= len(selfJ)
 			if f.end-f.start < conf.PcrMinLength {
 				continue
 			}
-			f.Seq = f.Seq[:len(f.Seq)-len(selfJunction)]
+			f.Seq = f.Seq[:len(f.Seq)-len(selfJ)]
 		}
 
 		frags = append(frags, f)
