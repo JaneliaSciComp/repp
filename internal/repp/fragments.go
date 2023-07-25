@@ -155,19 +155,12 @@ func validateJunctions(frags []*Frag, conf *config.Config) error {
 		next := frags[(i+1)%len(frags)]
 		j := f.junction(next, conf.FragmentsMinHomology, conf.FragmentsMaxHomology+1)
 		if j == "" {
-			s1 := f.Seq
-			if f.PCRSeq != "" {
-				s1 = f.PCRSeq
-			}
+			s1 := f.getFragSeq()
+			s2 := next.getFragSeq()
 
-			s2 := next.Seq
-			if next.PCRSeq != "" {
-				s2 = next.PCRSeq
-			}
-
-			left := f.ID
-			right := next.ID
-			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", left, right, s1, s2)
+			currID := f.ID
+			nextID := next.ID
+			return fmt.Errorf("no junction found between %s and %s\n%s\n\n%s", currID, nextID, s1, s2)
 		}
 	}
 

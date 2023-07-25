@@ -27,25 +27,25 @@ type assembly struct {
 
 // add Frag to the end of an assembly. Return a new assembly and whether it circularized
 func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (assembly /*created*/, bool /*circularized*/, bool) {
-	var firstStart int
+	var currAssemblyStart int
 	var start int
 	var end int
-	var lastEnd int
+	var currAssemblyEnd int
 
 	if features {
-		firstStart = a.frags[0].featureStart
+		currAssemblyStart = a.frags[0].featureStart
+		currAssemblyEnd = a.frags[len(a.frags)-1].featureEnd
 		start = f.featureStart
 		end = f.featureEnd
-		lastEnd = a.frags[len(a.frags)-1].featureEnd
 	} else {
-		firstStart = a.frags[0].start
+		currAssemblyStart = a.frags[0].start
+		currAssemblyEnd = a.frags[len(a.frags)-1].end
 		start = f.start
 		end = f.end
-		lastEnd = a.frags[len(a.frags)-1].end
 	}
 
 	// check if we could complete an assembly with this new Frag
-	circularized := end >= firstStart+targetLength-1
+	circularized := end >= currAssemblyStart+targetLength-1
 
 	// check if this is the first fragment annealing to itself
 	selfAnnealing := f.uniqueID == a.frags[0].uniqueID
@@ -55,8 +55,8 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (asse
 
 	// calc the number of synthesis fragments needed to get to this next Frag
 	synths := last.synthDist(f)
-	if features && start > lastEnd {
-		synths = start - lastEnd - 1
+	if features && start > currAssemblyEnd {
+		synths = start - currAssemblyEnd - 1
 	}
 
 	newCount := a.len() + synths
@@ -64,7 +64,7 @@ func (a *assembly) add(f *Frag, maxCount, targetLength int, features bool) (asse
 		newCount++
 	}
 
-	assemblyEnd := lastEnd
+	assemblyEnd := currAssemblyEnd
 	if newCount > maxCount || (end-assemblyEnd < f.conf.PcrMinLength && !features) {
 		return assembly{}, false, false
 	}
@@ -113,7 +113,7 @@ func (a *assembly) len() int {
 	return len(a.frags) + a.synths
 }
 
-// fill traverses frags in an assembly and adds primers or makes syntheic fragments where necessary.
+// fill traverses frags in an assembly and adds primers or makes synthetic fragments where necessary.
 // It can fail. For example, a PCR Frag may have off-targets in the parent plasmid.
 func (a *assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 	// check for and error out if there are duplicate ends between fragments,
@@ -145,7 +145,7 @@ func (a *assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 		origFrags = append(origFrags, f.copy())
 	}
 
-	frags := []*Frag{}
+	pcrFrags := []*Frag{}
 
 	// fill in primers. let each Frag create primers for itself that
 	// will span it to the last and next fragments (if reachable)
@@ -170,30 +170,28 @@ func (a *assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 		}
 
 		// accumulate the prepared fragment
-		frags = append(frags, f)
+		pcrFrags = append(pcrFrags, f)
 	}
 
 	// second loop to fill in gaps between fragments that need to be filled via synthesis
-	fragsWithSynth := []*Frag{}
-	for i, f := range frags {
+	pcrAndSynthFrags := []*Frag{}
+	for i, f := range pcrFrags {
 		if f.Seq != "" {
-			fragsWithSynth = append(fragsWithSynth, f)
+			pcrAndSynthFrags = append(pcrAndSynthFrags, f)
 		}
 
 		// add synthesized fragments between this Frag and the next (if necessary)
-		next := nextFragment(frags, i, target, conf)
+		next := nextFragment(pcrFrags, i, target, conf)
 		if synthedFrags := f.synthTo(next, target); synthedFrags != nil {
-			fragsWithSynth = append(fragsWithSynth, synthedFrags...)
+			pcrAndSynthFrags = append(pcrAndSynthFrags, synthedFrags...)
 		}
 	}
-	frags = fragsWithSynth
-
 	// validate that fragments will anneal to one another
-	if err := validateJunctions(frags, conf); err != nil {
+	if err := validateJunctions(pcrAndSynthFrags, conf); err != nil {
 		return nil, err
 	}
 
-	return frags, nil
+	return pcrAndSynthFrags, nil
 }
 
 // nextFragment returns the fragment that's one beyond the one passed.
@@ -265,7 +263,7 @@ func duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup str
 //	  foreach otherFragment that fragment overlaps with + reachSynthCount more:
 //		   foreach assembly on fragment:
 //	      add otherFragment to the assembly to create a new assembly, store on otherFragment
-func createAssemblies(frags []*Frag, target string, targetLength int, features bool, conf *config.Config) (assemblies []assembly) {
+func createAssemblies(frags []*Frag, target string, targetLength int, features bool, conf *config.Config) (finalAssemblies []assembly) {
 	// sort by start index again
 	sort.Slice(frags, func(i, j int) bool {
 		return frags[i].start < frags[j].start
@@ -304,7 +302,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 				}
 
 				if circularized { // we've circularized a plasmid, it's ready for filling
-					assemblies = append(assemblies, newAssembly)
+					finalAssemblies = append(finalAssemblies, newAssembly)
 				} else {
 					// add to the other fragment's list of assemblies
 					frags[j].assemblies = append(frags[j].assemblies, newAssembly)
@@ -318,14 +316,14 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	mockStart := &Frag{start: conf.FragmentsMinHomology, end: conf.FragmentsMinHomology, conf: conf}
 	mockEnd := &Frag{start: len(target), end: len(target), conf: conf}
 	synths := mockStart.synthTo(mockEnd, target)
-	assemblies = append(assemblies, assembly{
+	finalAssemblies = append(finalAssemblies, assembly{
 		frags:  synths,
 		cost:   mockStart.costTo(mockEnd),
 		synths: len(synths),
 	})
-	rlog.Debugw("assemblies made", "count", len(assemblies))
+	rlog.Debugw("assemblies made", "count", len(finalAssemblies))
 
-	return assemblies
+	return finalAssemblies
 }
 
 // groupAssembliesByCount returns a map from the number of fragments in a build
