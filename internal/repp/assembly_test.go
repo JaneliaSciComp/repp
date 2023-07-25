@@ -160,12 +160,12 @@ func Test_assembly_add(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &assembly{
+			a := assembly{
 				frags:  tt.fields.frags,
 				cost:   tt.fields.cost,
 				synths: tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := a.add(tt.args.n, 5, sl, false)
+			gotNewAssembly, gotCreated, gotComplete := createNewAssembly(a, tt.args.n, 5, sl, false)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}

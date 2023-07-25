@@ -83,9 +83,6 @@ type Frag struct {
 	// end of the frag's last covered feature
 	featureEnd int
 
-	// assemblies that span from this Frag to the end of the plasmid
-	assemblies []assembly
-
 	// build configuration
 	conf *config.Config
 }

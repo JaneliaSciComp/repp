@@ -13,11 +13,10 @@ func Test_Frag_distTo(t *testing.T) {
 	c := config.New()
 
 	type fields struct {
-		ID         string
-		uniqueID   string
-		start      int
-		end        int
-		assemblies []assembly
+		ID       string
+		uniqueID string
+		start    int
+		end      int
 	}
 	type args struct {
 		other *Frag
@@ -31,20 +30,18 @@ func Test_Frag_distTo(t *testing.T) {
 		{
 			"negative distance with overlap",
 			fields{
-				ID:         "1",
-				uniqueID:   "1",
-				start:      0,
-				end:        40,
-				assemblies: []assembly{},
+				ID:       "1",
+				uniqueID: "1",
+				start:    0,
+				end:      40,
 			},
 			args{
 				other: &Frag{
-					ID:         "2",
-					uniqueID:   "2",
-					start:      20,
-					end:        60,
-					assemblies: []assembly{},
-					conf:       c,
+					ID:       "2",
+					uniqueID: "2",
+					start:    20,
+					end:      60,
+					conf:     c,
 				},
 			},
 			-20,
@@ -67,12 +64,11 @@ func Test_Frag_distTo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &Frag{
-				ID:         tt.fields.ID,
-				uniqueID:   tt.fields.uniqueID,
-				start:      tt.fields.start,
-				end:        tt.fields.end,
-				assemblies: tt.fields.assemblies,
-				conf:       c,
+				ID:       tt.fields.ID,
+				uniqueID: tt.fields.uniqueID,
+				start:    tt.fields.start,
+				end:      tt.fields.end,
+				conf:     c,
 			}
 			if gotBpDist := n.distTo(tt.args.other); gotBpDist != tt.wantBpDist {
 				t.Errorf("Frag.distTo() = %v, want %v", gotBpDist, tt.wantBpDist)
@@ -88,11 +84,10 @@ func Test_Frag_synthDist(t *testing.T) {
 	c.SyntheticMaxLength = 100
 
 	type fields struct {
-		ID         string
-		uniqueID   string
-		start      int
-		end        int
-		assemblies []assembly
+		ID       string
+		uniqueID string
+		start    int
+		end      int
 	}
 	type args struct {
 		other *Frag
@@ -137,12 +132,11 @@ func Test_Frag_synthDist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &Frag{
-				ID:         tt.fields.ID,
-				uniqueID:   tt.fields.uniqueID,
-				start:      tt.fields.start,
-				end:        tt.fields.end,
-				assemblies: tt.fields.assemblies,
-				conf:       c,
+				ID:       tt.fields.ID,
+				uniqueID: tt.fields.uniqueID,
+				start:    tt.fields.start,
+				end:      tt.fields.end,
+				conf:     c,
 			}
 			if gotSynthCount := n.synthDist(tt.args.other); gotSynthCount != tt.wantSynthCount {
 				t.Errorf("Frag.synthDist() = %v, want %v", gotSynthCount, tt.wantSynthCount)
@@ -180,11 +174,10 @@ func Test_Frag_costTo(t *testing.T) {
 	}
 
 	type fields struct {
-		ID         string
-		uniqueID   string
-		start      int
-		end        int
-		assemblies []assembly
+		ID       string
+		uniqueID string
+		start    int
+		end      int
 	}
 	type args struct {
 		other *Frag
@@ -240,12 +233,11 @@ func Test_Frag_costTo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &Frag{
-				ID:         tt.fields.ID,
-				uniqueID:   tt.fields.uniqueID,
-				start:      tt.fields.start,
-				end:        tt.fields.end,
-				assemblies: tt.fields.assemblies,
-				conf:       c,
+				ID:       tt.fields.ID,
+				uniqueID: tt.fields.uniqueID,
+				start:    tt.fields.start,
+				end:      tt.fields.end,
+				conf:     c,
 			}
 			if gotCost := n.costTo(tt.args.other); math.Abs(gotCost-tt.wantCost) > 0.1 {
 				t.Errorf("Frag.costTo() = %v, want %v", gotCost, tt.wantCost)
@@ -304,11 +296,10 @@ func Test_Frag_reach(t *testing.T) {
 	}
 
 	type fields struct {
-		ID         string
-		uniqueID   string
-		start      int
-		end        int
-		assemblies []assembly
+		ID       string
+		uniqueID string
+		start    int
+		end      int
 	}
 	type args struct {
 		nodes []*Frag
@@ -351,12 +342,11 @@ func Test_Frag_reach(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &Frag{
-				ID:         tt.fields.ID,
-				uniqueID:   tt.fields.uniqueID,
-				start:      tt.fields.start,
-				end:        tt.fields.end,
-				assemblies: tt.fields.assemblies,
-				conf:       c,
+				ID:       tt.fields.ID,
+				uniqueID: tt.fields.uniqueID,
+				start:    tt.fields.start,
+				end:      tt.fields.end,
+				conf:     c,
 			}
 			if gotReachable := n.reach(tt.args.nodes, tt.args.i, false); !reflect.DeepEqual(gotReachable, tt.wantReachable) {
 				t.Errorf("Frag.reach() = %v, want %v", gotReachable, tt.wantReachable)
@@ -462,7 +452,6 @@ func Test_new(t *testing.T) {
 				start:      0,
 				end:        12,
 				matchRatio: 1.0,
-				assemblies: nil,
 				conf:       c,
 			},
 		},
@@ -478,14 +467,13 @@ func Test_new(t *testing.T) {
 
 func Test_Frag_junction(t *testing.T) {
 	type fields struct {
-		ID         string
-		uniqueID   string
-		Seq        string
-		start      int
-		end        int
-		assemblies []assembly
-		primers    []Primer
-		conf       *config.Config
+		ID       string
+		uniqueID string
+		Seq      string
+		start    int
+		end      int
+		primers  []Primer
+		conf     *config.Config
 	}
 	type args struct {
 		other       *Frag
@@ -558,14 +546,13 @@ func Test_Frag_junction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &Frag{
-				ID:         tt.fields.ID,
-				uniqueID:   tt.fields.uniqueID,
-				Seq:        tt.fields.Seq,
-				start:      tt.fields.start,
-				end:        tt.fields.end,
-				assemblies: tt.fields.assemblies,
-				Primers:    tt.fields.primers,
-				conf:       tt.fields.conf,
+				ID:       tt.fields.ID,
+				uniqueID: tt.fields.uniqueID,
+				Seq:      tt.fields.Seq,
+				start:    tt.fields.start,
+				end:      tt.fields.end,
+				Primers:  tt.fields.primers,
+				conf:     tt.fields.conf,
 			}
 			if gotJunction := n.junction(tt.args.other, tt.args.minHomology, tt.args.maxHomology); gotJunction != tt.wantJunction {
 				t.Errorf("Frag.junction() = %v, want %v", gotJunction, tt.wantJunction)
