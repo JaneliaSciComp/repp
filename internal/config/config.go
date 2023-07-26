@@ -328,6 +328,19 @@ func (c *Config) GetPrimer3ConfigDir() string {
 	}
 }
 
+func (c *Config) SetSyntheticFragmentPenalty(penalty int) *Config {
+	c.SyntheticFragmentPenalty = penalty
+	return c
+}
+
+func (c *Config) GetSyntheticFragmentPenalty() int {
+	if c.SyntheticFragmentPenalty > 0 {
+		return c.SyntheticFragmentPenalty
+	} else {
+		return 1
+	}
+}
+
 // SynthFragmentCost returns the cost of synthesizing a linear stretch of DNA
 func (c *Config) SynthFragmentCost(fragLength int) float64 {
 	// by default, we try to synthesize the whole thing in one piece

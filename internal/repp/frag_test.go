@@ -165,6 +165,7 @@ func Test_Frag_costTo(t *testing.T) {
 		3000:  {Fixed: false, Cost: 0.35},
 		30000: {Fixed: false, Cost: 0.6},
 	}
+	c.SyntheticFragmentPenalty = 2
 
 	n1 := &Frag{
 		uniqueID: "1",
@@ -183,10 +184,11 @@ func Test_Frag_costTo(t *testing.T) {
 		other *Frag
 	}
 	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantCost float64
+		name             string
+		fields           fields
+		args             args
+		wantCost         float64
+		wantAdjustedCost float64
 	}{
 		{
 			"just cost of PCR of new Frag if they overlap",
@@ -201,6 +203,7 @@ func Test_Frag_costTo(t *testing.T) {
 					conf:  c,
 				},
 			},
+			1.5,
 			1.5,
 		},
 		{
@@ -217,6 +220,7 @@ func Test_Frag_costTo(t *testing.T) {
 				},
 			},
 			3.5,
+			7,
 		},
 		{
 			"cost to self should just be for PCR",
@@ -227,6 +231,7 @@ func Test_Frag_costTo(t *testing.T) {
 			args{
 				other: n1,
 			},
+			1.5,
 			1.5,
 		},
 	}
@@ -239,8 +244,8 @@ func Test_Frag_costTo(t *testing.T) {
 				end:      tt.fields.end,
 				conf:     c,
 			}
-			if gotCost := n.costTo(tt.args.other); math.Abs(gotCost-tt.wantCost) > 0.1 {
-				t.Errorf("Frag.costTo() = %v, want %v", gotCost, tt.wantCost)
+			if gotCost, gotAdjustedCost := n.costTo(tt.args.other); math.Abs(gotCost-tt.wantCost) > 0.1 || math.Abs(gotAdjustedCost-tt.wantAdjustedCost) > 0.1 {
+				t.Errorf("Frag.costTo()=%v, %v, want cost=%v, adjusted cost=%v", gotCost, gotAdjustedCost, tt.wantCost, tt.wantAdjustedCost)
 			}
 		})
 	}

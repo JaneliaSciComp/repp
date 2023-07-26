@@ -15,34 +15,43 @@ func Test_assembly_add(t *testing.T) {
 	c.PcrMinLength = 0
 	c.SyntheticMaxLength = 100
 	c.SyntheticFragmentCost = map[int]config.SynthCost{
-		100000: {
+		100: {
 			Fixed: true,
-			Cost:  0.0,
+			Cost:  1.0,
 		},
 	}
+	c.SyntheticFragmentPenalty = 2
 
 	sl := 100
 
 	n1 := &Frag{
+		ID:       "1",
 		uniqueID: "1",
+		fragType: pcr,
 		start:    0,
 		end:      50,
 		conf:     c,
 	}
 	n2 := &Frag{
+		ID:       "2",
 		uniqueID: "2",
+		fragType: pcr,
 		start:    20,
 		end:      80,
 		conf:     c,
 	}
 	n3 := &Frag{
+		ID:       "3",
 		uniqueID: "3",
+		fragType: pcr,
 		start:    60,
 		end:      100,
 		conf:     c,
 	}
 	n4 := &Frag{
+		ID:       "1",
 		uniqueID: "1",
+		fragType: pcr,
 		start:    100,
 		end:      150,
 		conf:     c,
@@ -50,12 +59,26 @@ func Test_assembly_add(t *testing.T) {
 
 	// create the frags for testing
 	type fields struct {
-		frags  []*Frag
-		cost   float64
-		synths int
+		frags        []*Frag
+		cost         float64
+		adjustedCost float64
+		synths       int
 	}
 	type args struct {
 		n *Frag
+	}
+
+	createAssemblyFrom := func(fs []*Frag,
+		costFunc func() (float64, float64),
+		synths int) assembly {
+		cost, adjustedCost := costFunc()
+
+		return assembly{
+			frags:        fs,
+			cost:         cost,
+			adjustedCost: adjustedCost,
+			synths:       synths,
+		}
 	}
 	tests := []struct {
 		name            string
@@ -75,29 +98,31 @@ func Test_assembly_add(t *testing.T) {
 			args{
 				n: n2,
 			},
-			assembly{
-				frags:  []*Frag{n1, n2},
-				cost:   n1.costTo(n2),
-				synths: 0,
-			},
+			createAssemblyFrom([]*Frag{n1, n2},
+				func() (float64, float64) {
+					return n1.costTo(n2)
+				},
+				0),
 			true,
 			false,
 		},
 		{
 			"add with synthesis",
 			fields{
-				frags:  []*Frag{n1},
-				cost:   10.0,
-				synths: 0,
+				frags:        []*Frag{n1},
+				cost:         10.0,
+				adjustedCost: 10.0,
+				synths:       0,
 			},
 			args{
 				n: n3,
 			},
-			assembly{
-				frags:  []*Frag{n1, n3},
-				cost:   10.0 + n1.costTo(n3),
-				synths: 1,
-			},
+			createAssemblyFrom([]*Frag{n1, n3},
+				func() (float64, float64) {
+					c, ac := n1.costTo(n3)
+					return 10 + c, 10 + ac
+				},
+				1),
 			true,
 			true,
 		},
@@ -111,35 +136,45 @@ func Test_assembly_add(t *testing.T) {
 			args{
 				n: n4,
 			},
-			assembly{
-				frags:  []*Frag{n1, n2, n3},
-				cost:   10.0,
-				synths: 0,
-			},
+			createAssemblyFrom([]*Frag{n1, n2, n3},
+				func() (float64, float64) {
+					return 10, 0
+				},
+				0),
 			true,
 			true,
 		},
 		{
 			"add with completion requiring synthesis",
 			fields{
-				frags:  []*Frag{n1, n2},
-				cost:   16.4,
-				synths: 0,
+				frags:        []*Frag{n1, n2},
+				cost:         16.4,
+				adjustedCost: 18.4,
+				synths:       0,
 			},
 			args{
 				// a Frag that's too far away for straightforward annealing
 				n: &Frag{
-					uniqueID: n1.uniqueID,
+					ID:       n3.ID,
+					uniqueID: n3.uniqueID,
+					fragType: pcr,
 					start:    n3.start + c.SyntheticMaxLength,
 					end:      n3.end + c.SyntheticMaxLength,
 					conf:     c,
 				},
 			},
-			assembly{
-				frags:  []*Frag{n1, n2},
-				cost:   16.4,
-				synths: 1,
-			},
+			createAssemblyFrom([]*Frag{n1, n2, {
+				ID:       n3.ID,
+				uniqueID: n3.uniqueID,
+				fragType: pcr,
+				start:    n3.start + c.SyntheticMaxLength,
+				end:      n3.end + c.SyntheticMaxLength,
+				conf:     c,
+			}},
+				func() (float64, float64) {
+					return 48.4, 52.4
+				},
+				1),
 			true,
 			true,
 		},
@@ -161,9 +196,10 @@ func Test_assembly_add(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := assembly{
-				frags:  tt.fields.frags,
-				cost:   tt.fields.cost,
-				synths: tt.fields.synths,
+				frags:        tt.fields.frags,
+				cost:         tt.fields.cost,
+				adjustedCost: tt.fields.adjustedCost,
+				synths:       tt.fields.synths,
 			}
 			gotNewAssembly, gotCreated, gotComplete := createNewAssembly(a, tt.args.n, 5, sl, false)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {

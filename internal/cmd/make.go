@@ -95,6 +95,7 @@ func init() {
 	sequenceCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
 	sequenceCmd.Flags().StringP("primers-database", "m", "", "Primers database as a CSV file")
 	sequenceCmd.Flags().StringP("synth-frags-database", "s", "", "Synthesized fragments database as a CSV file")
+	sequenceCmd.Flags().Int("synthetic-frag-factor", 1, "Penalty for synthetic fragments")
 	must(sequenceCmd.MarkFlagRequired("in"))
 
 	makeCmd.AddCommand(fragmentsCmd)
@@ -150,6 +151,12 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 		assemblyInputParams.SetOut(adjustOutput(assemblyInputParams.GetOut(), assemblyInputParams.GetOutputFormat()))
 	}
 
-	repp.Sequence(assemblyInputParams,
-		config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String()))
+	syntheticFragmentFactor, err := cmd.Flags().GetInt("synthetic-frag-factor")
+	if err != nil {
+		log.Printf("Error trying to extract synthetic fragment penalty factor: %v\n", err)
+		syntheticFragmentFactor = 1
+	}
+	config := config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String())
+	config.SetSyntheticFragmentPenalty(syntheticFragmentFactor)
+	repp.Sequence(assemblyInputParams, config)
 }

@@ -23,6 +23,9 @@ type Solution struct {
 	// Cost estimated from the primer and sequence lengths
 	Cost float64 `json:"cost"`
 
+	// Adjusted cost for synthentic fragments
+	AdjustedCost float64 `json:"adjustedCost"`
+
 	// Fragments used to build this solution
 	Fragments []*Frag `json:"fragments"`
 }
@@ -105,11 +108,13 @@ func prepareSolutionsOutput(
 	solutions := []Solution{}
 	for _, assembly := range assemblies {
 		assemblyCost := 0.0
+		assemblyAdjustedCost := 0.0
 		assemblyFragmentIDs := make(map[string]bool)
 		gibson := false // whether it will be assembled via Gibson assembly
 		hasPCR := false // whether there will be a batch PCR
 
 		for _, f := range assembly {
+			var fragCost, fragAdjustedCost float64
 			if f.fragType != linear && f.fragType != circular {
 				gibson = true
 			}
@@ -120,41 +125,50 @@ func prepareSolutionsOutput(
 
 			f.Type = f.fragType.String() // freeze fragment type
 
-			// round to two decimal places
-			if f.Cost, err = roundCost(f.cost(true)); err != nil {
-				return nil, err
-			}
-
 			// if it's already in the assembly, don't count cost twice
 			if _, contained := assemblyFragmentIDs[f.ID]; f.ID != "" && contained {
-				if f.Cost, err = roundCost(f.cost(false)); err != nil {
-					return nil, err // ignore repo procurement costs
-				}
+				fragCost, fragAdjustedCost = f.cost(true)
 			} else {
+				fragCost, fragAdjustedCost = f.cost(false) // do not include procurement costs twice
 				assemblyFragmentIDs[f.ID] = true
+			}
+			// round to two decimal places
+			if f.Cost, err = roundCost(fragCost); err != nil {
+				return nil, err
+			}
+			if f.AdjustedCost, err = roundCost(fragAdjustedCost); err != nil {
+				return nil, err
 			}
 
 			// accumulate assembly cost
 			assemblyCost += f.Cost
+			assemblyAdjustedCost += f.AdjustedCost
 		}
 
 		if gibson {
 			assemblyCost += conf.GibsonAssemblyCost + conf.GibsonAssemblyTimeCost
+			assemblyAdjustedCost += conf.GibsonAssemblyCost + conf.GibsonAssemblyTimeCost
 		}
 
 		if hasPCR {
 			assemblyCost += conf.PcrTimeCost
+			assemblyAdjustedCost += conf.PcrTimeCost
 		}
 
 		solutionCost, err := roundCost(assemblyCost)
 		if err != nil {
 			return nil, err
 		}
+		solutionAdjustedCost, err := roundCost(assemblyAdjustedCost)
+		if err != nil {
+			return nil, err
+		}
 
 		solutions = append(solutions, Solution{
-			Count:     len(assembly),
-			Cost:      solutionCost,
-			Fragments: assembly,
+			Count:        len(assembly),
+			Cost:         solutionCost,
+			AdjustedCost: solutionAdjustedCost,
+			Fragments:    assembly,
 		})
 	}
 

@@ -46,6 +46,9 @@ type Frag struct {
 	// Cost to make the fragment
 	Cost float64 `json:"cost"`
 
+	// Adjusted Cost for synthetic fragments
+	AdjustedCost float64 `json:"adjustedCost"`
+
 	// fragment/plasmid's sequence
 	Seq string `json:"seq,omitempty"`
 
@@ -212,17 +215,22 @@ func (f *Frag) copy() (newFrag *Frag) {
 }
 
 // cost returns the estimated cost of a fragment. Combination of source and preparation
-func (f *Frag) cost(procure bool) (c float64) {
+func (f *Frag) cost(procure bool) (fragCost float64, adjustedFragCost float64) {
 	if procure {
-		c += f.db.Cost
+		fragCost = f.db.Cost
+		adjustedFragCost = f.db.Cost
 	}
 
 	if f.fragType == pcr && f.Primers != nil {
 		// cost of primers plus the cost of a single PCR reaction
-		c += float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PcrBpCost
-		c += f.conf.PcrRxnCost
+		primersCost := float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PcrBpCost
+		pcrFragCost := primersCost + f.conf.PcrRxnCost
+		fragCost += pcrFragCost
+		adjustedFragCost += pcrFragCost
 	} else if f.fragType == synthetic {
-		c += f.conf.SynthFragmentCost(len(f.Seq))
+		synthFragCost := f.conf.SynthFragmentCost(len(f.Seq))
+		fragCost += synthFragCost
+		adjustedFragCost += synthFragCost * float64(f.conf.GetSyntheticFragmentPenalty())
 	}
 
 	return
@@ -279,28 +287,28 @@ func (f *Frag) synthDist(other *Frag) (synthCount int) {
 // the other fragment and divide that by the cost per bp of synthesized DNA
 //
 // This does not add in the cost of procurement which is in assembly.add()
-func (f *Frag) costTo(other *Frag) (cost float64) {
+func (f *Frag) costTo(other *Frag) (cost, adjustedCost float64) {
 	needsPCR := f.fragType == pcr || f.fragType == circular
 	pcrNoHomology := 50.0 * f.conf.PcrBpCost // pcr no homology
 	pcrHomology := (50.0 + float64(f.conf.FragmentsMinHomology)) * f.conf.PcrBpCost
 
 	if other == f {
 		if needsPCR {
-			return pcrNoHomology
+			return pcrNoHomology, pcrNoHomology
 		}
-		return 0
+		return 0, 0
 	}
 
 	if f.couldOverlapViaPCR(other) {
 		if f.overlapsViaHomology(other) {
 			// there's already enough overlap between this Frag and the one being tested
 			// estimating two primers, primer length assumed to be 25bp
-			return pcrNoHomology
+			return pcrNoHomology, pcrNoHomology
 		}
 
 		// we have to create some additional primer sequence to reach the next fragment
 		// estimating here that we'll add half of minHomology to both sides
-		return pcrHomology
+		return pcrHomology, pcrHomology
 	}
 
 	// we need to create a new synthetic fragment to get from this fragment to the next
@@ -312,9 +320,10 @@ func (f *Frag) costTo(other *Frag) (cost float64) {
 
 	// also account for whether this frag will require PCR
 	if needsPCR {
-		return synthCost + pcrNoHomology
+		return synthCost + pcrNoHomology, synthCost*float64(f.conf.GetSyntheticFragmentPenalty()) + pcrNoHomology
+	} else {
+		return synthCost, synthCost * float64(f.conf.GetSyntheticFragmentPenalty())
 	}
-	return synthCost
 }
 
 // reach returns a slice of Frag indexes that overlap with, or are the first synth_count nodes
@@ -633,11 +642,12 @@ func (t fragType) String() string {
 }
 
 // fragsCost returns the total cost of a slice of frags. Just the summation of their costs
-func fragsCost(frags []*Frag) (cost float64) {
+func fragsCost(frags []*Frag) (cost, adjustedCost float64) {
 	for _, f := range frags {
-		cost += f.cost(true)
+		fragCost, penalizedFragCost := f.cost(true)
+		cost += fragCost
+		adjustedCost += penalizedFragCost
 	}
-
 	return
 }
 

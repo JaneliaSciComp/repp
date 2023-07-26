@@ -19,16 +19,14 @@ type assembly struct {
 	cost float64
 
 	// cost adjusted based on synthetic fragments
-	// adjustedCost float64
+	adjustedCost float64
 
 	// total number of synthetic nodes that will be needed to make this
 	synths int
 }
 
 // createNewAssembly Frag to the end of an assembly. Return a new assembly and whether it circularized
-func createNewAssembly(existingAssembly assembly,
-	f *Frag,
-	maxCount, targetLength int,
+func createNewAssembly(existingAssembly assembly, f *Frag, maxCount, targetLength int,
 	features bool) (assembly /*created*/, bool /*circularized*/, bool) {
 
 	first := existingAssembly.firstFrag()
@@ -74,9 +72,10 @@ func createNewAssembly(existingAssembly assembly,
 	}
 
 	// calc the estimated dollar cost of getting to the next Frag
-	annealCost := last.costTo(f)
+	annealCost, adjustedCost := last.costTo(f)
 	if selfAnnealing && synths == 0 {
-		annealCost = 0 // does not cost extra to anneal to the first fragment
+		annealCost = 0   // does not cost extra to anneal to the first fragment
+		adjustedCost = 0 // there are no synth so it is safe to set it to 0
 	}
 
 	// check whether the Frag is already contained in the assembly
@@ -91,9 +90,13 @@ func createNewAssembly(existingAssembly assembly,
 
 	if fragContained {
 		// don't double count the cost of procuring this Frag to the total assembly cost
-		annealCost += f.cost(false)
+		fragCost, adjustedFragCost := f.cost(false)
+		annealCost += fragCost
+		adjustedCost += adjustedFragCost
 	} else {
-		annealCost += f.cost(true)
+		fragCost, adjustedFragCost := f.cost(true)
+		annealCost += fragCost
+		adjustedCost += adjustedFragCost
 	}
 
 	// copy over all the fragments, need to avoid referencing same frags
@@ -106,9 +109,10 @@ func createNewAssembly(existingAssembly assembly,
 	}
 
 	return assembly{
-		frags:  newFrags,
-		cost:   existingAssembly.cost + annealCost,
-		synths: existingAssembly.synths + synths,
+		frags:        newFrags,
+		cost:         existingAssembly.cost + annealCost,
+		adjustedCost: existingAssembly.adjustedCost + adjustedCost,
+		synths:       existingAssembly.synths + synths,
 	}, true, circularized
 }
 
@@ -281,8 +285,8 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		return frags[i].start < frags[j].start
 	})
 
-	// assembliesList[i] holds all assemblies that spun off from frags[i]
-	var assembliesList = make([][]assembly, len(frags))
+	// indexedAssemblies[i] holds all assemblies that are extended starting with the i-th fragment
+	var indexedAssemblies = make([][]assembly, len(frags))
 
 	// create a starting assembly on each Frag including just itself
 	for i, f := range frags {
@@ -298,11 +302,13 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		}
 
 		// create a starting assembly for each fragment containing just it
-		assembliesList[i] = []assembly{
+		cost, adjustedCost := f.costTo(f)
+		indexedAssemblies[i] = []assembly{
 			{
-				frags:  []*Frag{f.copy()}, // just self
-				cost:   f.costTo(f),       // just PCR,
-				synths: 0,                 // no synthetic frags at start
+				frags:        []*Frag{f.copy()}, // just self
+				cost:         cost,              // just PCR,
+				adjustedCost: adjustedCost,
+				synths:       0, // no synthetic frags at start
 			},
 		}
 	}
@@ -311,7 +317,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 
 	for i, f := range frags { // for every Frag in the list of increasing start index frags
 		for _, j := range f.reach(frags, i, features) { // for every overlapping fragment + reach more
-			for _, a := range assembliesList[i] { // for every assembly on the reaching fragment
+			for _, a := range indexedAssemblies[i] { // for every assembly on the reaching fragment
 				newAssembly, created, circularized := createNewAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
 
 				if !created { // if a new assembly wasn't created, move on
@@ -321,8 +327,10 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 				if circularized { // we've circularized a plasmid, it's ready for filling
 					finalAssemblies = append(finalAssemblies, newAssembly)
 				} else {
-					// add to the other fragment's list of assemblies
-					assembliesList[j] = append(assembliesList[j], newAssembly)
+					// the new fragment was created by adding the j-th fragment
+					// so when it's processed it will be extended started with j-th frag
+					// this works because j > i so indexedAssemblies[j] is still in the queue
+					indexedAssemblies[j] = append(indexedAssemblies[j], newAssembly)
 				}
 			}
 		}
@@ -332,11 +340,13 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	// in case all other plasmid designs fail
 	mockStart := &Frag{start: conf.FragmentsMinHomology, end: conf.FragmentsMinHomology, conf: conf}
 	mockEnd := &Frag{start: len(target), end: len(target), conf: conf}
+	cost, adjustedCost := mockStart.costTo(mockEnd)
 	synths := mockStart.synthTo(mockEnd, target)
 	finalAssemblies = append(finalAssemblies, assembly{
-		frags:  synths,
-		cost:   mockStart.costTo(mockEnd),
-		synths: len(synths),
+		frags:        synths,
+		cost:         cost,
+		adjustedCost: adjustedCost,
+		synths:       len(synths),
 	})
 	rlog.Debugw("assemblies made", "count", len(finalAssemblies))
 
@@ -378,7 +388,7 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 
 	for _, count := range counts {
 		for _, assemblyToFill := range countToAssemblies[count] {
-			if assemblyToFill.cost > minCostAssembly {
+			if assemblyToFill.adjustedCost > minCostAssembly {
 				// skip this and the rest with this count, there's another
 				// cheaper option with the same number or fewer fragments (estimated)
 				break
@@ -392,12 +402,12 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 				continue
 			}
 
-			newAssemblyCost := fragsCost(filledFragments)
+			_, adjustedAssemblyCost := fragsCost(filledFragments)
 
-			if newAssemblyCost >= minCostAssembly || len(filledFragments) > conf.FragmentsMaxCount {
+			if adjustedAssemblyCost >= minCostAssembly || len(filledFragments) > conf.FragmentsMaxCount {
 				continue // wasn't actually cheaper, keep trying
 			}
-			minCostAssembly = newAssemblyCost // store this as the new cheapest assembly
+			minCostAssembly = adjustedAssemblyCost // store this as the new cheapest assembly
 
 			// delete all assemblies with more fragments that cost more
 			for filledCount, existingFilledFragments := range filled {
@@ -405,8 +415,8 @@ func fillAssemblies(target string, counts []int, countToAssemblies map[int][]ass
 					continue
 				}
 
-				existingCost := fragsCost(existingFilledFragments)
-				if existingCost >= newAssemblyCost {
+				_, existingAdjustedCost := fragsCost(existingFilledFragments)
+				if existingAdjustedCost >= adjustedAssemblyCost {
 					delete(filled, filledCount)
 				}
 			}
