@@ -19,10 +19,13 @@ else
     RM=rm -rf
 endif
 
-.PHONY: build
-build: fmt lint
+.PHONY: modinstall
+modinstall:
 	go mod tidy
 	go mod vendor
+
+.PHONY: build
+build: modinstall fmt lint
 	go build -o ./bin/$(REPP_EXECUTABLE) ./cmd/repp
 
 .PHONY: install

@@ -244,9 +244,9 @@ func writeCSV(filename, fragmentIDBase string,
 		snumber := si + 1
 		// Write the solution cost and the number of fragments
 		if _, err = fmt.Fprintf(strategyFile,
-			"# Solution %d\n# Fragments:%d, Cost: %f\n",
+			"# Solution %d\n# Fragments:%d\n# Cost: %f, Adjusted Cost: %f\n",
 			snumber,
-			s.Count, s.Cost); err != nil {
+			s.Count, s.Cost, s.AdjustedCost); err != nil {
 			return err
 		}
 		if _, err = fmt.Fprintf(reagentsFile, "# Solution %d\n", snumber); err != nil {

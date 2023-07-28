@@ -60,7 +60,7 @@ func Test_sequence_e2e(t *testing.T) {
 			*testInput,
 		}
 
-		sols := Sequence(testAssemblyParams, cfg)
+		sols := Sequence(testAssemblyParams, 1, cfg)
 
 		if len(sols) < 1 {
 			t.Errorf("no solutions for %s", tt.in)
@@ -119,7 +119,7 @@ func Test_features(t *testing.T) {
 				},
 			}
 
-			sols := Features(testAssemblyParams, tt.args.conf)
+			sols := Features(testAssemblyParams, 1, tt.args.conf)
 
 			if len(sols) < 1 {
 				t.Failed()
@@ -234,7 +234,7 @@ func Test_plasmid_single_plasmid(t *testing.T) {
 		*fs,
 	}
 
-	assemblies := Sequence(testAssemblyParams, c)
+	assemblies := Sequence(testAssemblyParams, 1, c)
 
 	if !strings.Contains(assemblies[0][0].ID, "109049") {
 		t.Fatal("failed to use 109049 to build the plasmid")

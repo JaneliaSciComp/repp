@@ -62,7 +62,7 @@ func SequenceList(
 }
 
 // Sequence is for running an end to end plasmid design using a target sequence.
-func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][]*Frag) {
+func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Config) (solutions [][]*Frag) {
 	start := time.Now()
 	// get registered blast databases
 	dbs, err := assemblyParams.getDBs()
@@ -89,6 +89,7 @@ func Sequence(assemblyParams AssemblyParams, conf *config.Config) (solutions [][
 		assemblyParams.GetIdentity(),
 		backboneFrag,
 		dbs,
+		maxSolutions,
 		conf)
 	if err != nil {
 		rlog.Fatal(err)
@@ -151,6 +152,7 @@ func sequence(
 	identity int,
 	backboneFrag *Frag,
 	dbs []DB,
+	keepNSolutions int,
 	conf *config.Config) (insert, target *Frag, solutions [][]*Frag, err error) {
 
 	// read the target sequence (the first in the slice is used)
@@ -214,11 +216,25 @@ func sequence(
 	// fragment count, be assembled to make the target plasmid
 	assemblies := createAssemblies(frags, target.Seq, len(target.Seq), false, conf)
 
-	// build up a map from fragment count to a sorted list of assemblies with that number
-	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
+	// sort assemblies
+	sort.Slice(assemblies, func(i, j int) bool {
+		return compareAssemblies(assemblies[i], assemblies[j]) <= 0
+	})
 
-	// fill in pareto optimal assembly solutions
-	solutions = fillAssemblies(target.Seq, assemblyCounts, countToAssemblies, conf)
+	var selectedAssemblies []assembly
+	if keepNSolutions > 0 {
+		if keepNSolutions < len(assemblies) {
+			selectedAssemblies = assemblies[:keepNSolutions]
+		} else {
+			selectedAssemblies = assemblies
+		}
+	} else {
+		// only keep the best solution
+		selectedAssemblies = assemblies[:1]
+	}
+
+	// fill in only best assemblies
+	solutions = fillAssemblies(target.Seq, selectedAssemblies, conf)
 
 	return insert, target, solutions, nil
 }

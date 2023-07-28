@@ -641,16 +641,6 @@ func (t fragType) String() string {
 	return []string{"linear", "plasmid", "pcr", "synthetic"}[t]
 }
 
-// fragsCost returns the total cost of a slice of frags. Just the summation of their costs
-func fragsCost(frags []*Frag) (cost, adjustedCost float64) {
-	for _, f := range frags {
-		fragCost, penalizedFragCost := f.cost(true)
-		cost += fragCost
-		adjustedCost += penalizedFragCost
-	}
-	return
-}
-
 // primerHash returns a unique hash for a PCR run
 func primerHash(prev, f, next *Frag) string {
 	return fmt.Sprintf("%s%d%d%d%d", f.uniqueID, prev.end, f.start, f.end, next.start)

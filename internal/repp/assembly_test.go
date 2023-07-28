@@ -201,7 +201,7 @@ func Test_assembly_add(t *testing.T) {
 				adjustedCost: tt.fields.adjustedCost,
 				synths:       tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := createNewAssembly(a, tt.args.n, 5, sl, false)
+			gotNewAssembly, gotCreated, gotComplete := extendAssembly(a, tt.args.n, 5, sl, false)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}
@@ -266,87 +266,6 @@ func Test_assembly_len(t *testing.T) {
 			}
 			if got := a.len(); got != tt.want {
 				t.Errorf("assembly.len() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_countMaps(t *testing.T) {
-	c := config.New()
-	n1 := &Frag{
-		uniqueID: "1",
-		start:    0,
-		end:      50,
-		conf:     c,
-	}
-	n2 := &Frag{
-		uniqueID: "2",
-		start:    20,
-		end:      80,
-		conf:     c,
-	}
-	n3 := &Frag{
-		uniqueID: "3",
-		start:    60,
-		end:      100,
-		conf:     c,
-	}
-
-	a1 := assembly{
-		frags: []*Frag{
-			n1, n1,
-		},
-		cost: 11.0,
-	}
-	a2 := assembly{
-		frags: []*Frag{
-			n1, n2, n1,
-		},
-		cost: 12.5,
-	}
-	a3 := assembly{
-		frags: []*Frag{
-			n2, n3, n2,
-		},
-		cost: 12.0,
-	}
-	a4 := assembly{
-		frags: []*Frag{
-			n1, n2, n3, n1,
-		},
-		cost: 10.0,
-	}
-	a5 := assembly{
-		frags: []*Frag{
-			n2, n3, n1, n2,
-		},
-		cost: 10.5,
-	}
-
-	type args struct {
-		assemblies []assembly
-	}
-	tests := []struct {
-		name          string
-		args          args
-		wantParetoSet map[int][]assembly
-	}{
-		{
-			"gen pSet up to 3",
-			args{
-				assemblies: []assembly{a1, a2, a3, a4, a5},
-			},
-			map[int][]assembly{
-				2: {a1},
-				3: {a3, a2},
-				4: {a4, a5},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if _, gotParetoSet := groupAssembliesByCount(tt.args.assemblies); !reflect.DeepEqual(gotParetoSet, tt.wantParetoSet) {
-				t.Errorf("pareto() = %v, want %v", gotParetoSet, tt.wantParetoSet)
 			}
 		})
 	}

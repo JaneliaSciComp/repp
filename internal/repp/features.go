@@ -19,7 +19,7 @@ type featureMatch struct {
 
 // Features assembles a plasmid with all the Features requested with the 'repp Features [feature ...]' command
 // repp assemble Features p10 promoter, mEGFP, T7 terminator
-func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
+func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Config) [][]*Frag {
 	start := time.Now()
 
 	// get registered blast databases
@@ -74,6 +74,7 @@ func Features(assemblyParams AssemblyParams, conf *config.Config) [][]*Frag {
 		featureMatches,
 		assemblyParams.GetIdentity(),
 		dbs,
+		maxSolutions,
 		conf)
 
 	// write the output file
@@ -226,6 +227,7 @@ func featureSolutions(
 	featureMatches map[string][]featureMatch,
 	identity int,
 	dbs []DB,
+	keepNSolutions int,
 	conf *config.Config) (string, [][]*Frag) {
 	// merge matches into one another if they can combine to cover a range
 	extendedMatches := extendMatches(feats, featureMatches)
@@ -307,11 +309,25 @@ func featureSolutions(
 	// traverse the fragments, accumulate assemblies that span all the features
 	assemblies := createAssemblies(frags, target, len(feats), true, conf)
 
-	// build up a map from fragment count to a sorted list of assemblies with that number
-	assemblyCounts, countToAssemblies := groupAssembliesByCount(assemblies)
+	// sort assemblies
+	sort.Slice(assemblies, func(i, j int) bool {
+		return compareAssemblies(assemblies[i], assemblies[j]) <= 0
+	})
+
+	var selectedAssemblies []assembly
+	if keepNSolutions > 0 {
+		if keepNSolutions < len(assemblies) {
+			selectedAssemblies = assemblies[:keepNSolutions]
+		} else {
+			selectedAssemblies = assemblies
+		}
+	} else {
+		// only keep the best solution
+		selectedAssemblies = assemblies[:1]
+	}
 
 	// fill each assembly and accumulate the pareto optimal solutions
-	solutions := fillAssemblies(target, assemblyCounts, countToAssemblies, conf)
+	solutions := fillAssemblies(target, selectedAssemblies, conf)
 
 	// update the target to the first filled assembly
 	if len(solutions) > 0 {

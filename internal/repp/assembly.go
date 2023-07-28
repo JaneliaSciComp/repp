@@ -2,7 +2,6 @@ package repp
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 
@@ -25,101 +24,12 @@ type assembly struct {
 	synths int
 }
 
-// createNewAssembly Frag to the end of an assembly. Return a new assembly and whether it circularized
-func createNewAssembly(existingAssembly assembly, f *Frag, maxCount, targetLength int,
-	features bool) (assembly /*created*/, bool /*circularized*/, bool) {
-
-	first := existingAssembly.firstFrag()
-	last := existingAssembly.lastFrag()
-
-	var existingAssemblyStart int
-	var existingAssemblyEnd int
-	var start int
-	var end int
-
-	if features {
-		existingAssemblyStart = first.featureStart
-		existingAssemblyEnd = last.featureEnd
-		start = f.featureStart
-		end = f.featureEnd
-	} else {
-		existingAssemblyStart = first.start
-		existingAssemblyEnd = last.end
-		start = f.start
-		end = f.end
-	}
-
-	// check if we could complete an assembly with this new Frag
-	circularized := end >= existingAssemblyStart+targetLength-1
-
-	// check if this is the first fragment annealing to itself
-	selfAnnealing := f.uniqueID == first.uniqueID
-
-	// calc the number of synthesis fragments needed to get to this next Frag
-	synths := last.synthDist(f)
-	if features && start > existingAssemblyEnd {
-		synths = start - existingAssemblyEnd - 1
-	}
-
-	newCount := existingAssembly.len() + synths
-	if !selfAnnealing {
-		newCount++
-	}
-
-	assemblyEnd := existingAssemblyEnd
-	if newCount > maxCount || (end-assemblyEnd < f.conf.PcrMinLength && !features) {
-		return assembly{}, false, false
-	}
-
-	// calc the estimated dollar cost of getting to the next Frag
-	annealCost, adjustedCost := last.costTo(f)
-	if selfAnnealing && synths == 0 {
-		annealCost = 0   // does not cost extra to anneal to the first fragment
-		adjustedCost = 0 // there are no synth so it is safe to set it to 0
-	}
-
-	// check whether the Frag is already contained in the assembly
-	// if so, the cost of procurement is not incurred twice
-	fragContained := false
-	for _, included := range existingAssembly.frags {
-		if included.ID == f.ID && included.fragType == f.fragType {
-			fragContained = true
-			break
-		}
-	}
-
-	if fragContained {
-		// don't double count the cost of procuring this Frag to the total assembly cost
-		fragCost, adjustedFragCost := f.cost(false)
-		annealCost += fragCost
-		adjustedCost += adjustedFragCost
-	} else {
-		fragCost, adjustedFragCost := f.cost(true)
-		annealCost += fragCost
-		adjustedCost += adjustedFragCost
-	}
-
-	// copy over all the fragments, need to avoid referencing same frags
-	newFrags := []*Frag{}
-	for _, frag := range existingAssembly.frags {
-		newFrags = append(newFrags, frag.copy())
-	}
-	if !selfAnnealing {
-		newFrags = append(newFrags, f.copy())
-	}
-
-	return assembly{
-		frags:        newFrags,
-		cost:         existingAssembly.cost + annealCost,
-		adjustedCost: existingAssembly.adjustedCost + adjustedCost,
-		synths:       existingAssembly.synths + synths,
-	}, true, circularized
-}
-
+// get the first fragment of the assembly
 func (a assembly) firstFrag() *Frag {
 	return a.frags[0]
 }
 
+// get the last fragment of the assembly
 func (a assembly) lastFrag() *Frag {
 	return a.frags[len(a.frags)-1]
 }
@@ -210,64 +120,23 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 	return pcrAndSynthFrags, nil
 }
 
-// nextFragment returns the fragment that's one beyond the one passed.
-// The fragments are considered to be part of a "circular" sequence
-// simulated by concatenating the sequence to itself
-// the next fragment after the last from the list is based on the
-// first fragment from the list by adding target sequence length to its start and end
-func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Frag {
-	if i < len(frags)-1 {
-		return frags[i+1]
-	}
-
-	// mock up a next fragment that's to the right of this terminal Frag
-	return &Frag{
-		start: frags[0].start + len(target),
-		end:   frags[0].end + len(target),
-		conf:  conf,
-	}
-}
-
-// prevFragment returns the fragment that's one before the current one.
-// The fragments are considered to be part of a "circular" sequence
-// simulated by concatenating the sequence to itself
-// the prev fragment of the first from the list is based on the
-// last fragment from the list by subtracting the length of the target sequence
-// from its start and end
-func prevFragment(frags []*Frag, i int, target string, conf *config.Config) *Frag {
-	if i > 0 {
-		return frags[i-1]
-	}
-
-	// mock up a next fragment that's to the right of this terminal Frag
-	return &Frag{
-		start: frags[len(frags)-1].start - len(target),
-		end:   frags[len(frags)-1].end - len(target),
-		conf:  conf,
-	}
-}
-
-// duplicates runs through all the nodes in an assembly and checks whether any of
-// them have unintended homology, or "duplicate homology".
-func duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup string) {
-	c := len(frags) // Frag count
-	for i, f := range frags {
-		// check to make sure the fragment doesn't anneal to itself
-		if c > 1 {
-			if selfJ := f.selfJunction(min, max); selfJ != "" && len(selfJ) < len(f.Seq) {
-				return true, f.ID, f.ID, selfJ
-			}
+// compare two assemblies
+func compareAssemblies(a1, a2 assembly) int {
+	if a1.adjustedCost < a2.adjustedCost {
+		return -1
+	} else if a1.adjustedCost == a2.adjustedCost {
+		l1 := a1.len()
+		l2 := a2.len()
+		if l1 < l2 {
+			return -1
+		} else if l1 == l2 {
+			return 0
+		} else {
+			return 1
 		}
-
-		for j := 2; j < c; j++ { // skip next Frag, i+1 is supposed to anneal to i
-			junc := f.junction(frags[(j+i)%c], min, max)
-			if junc != "" {
-				return true, f.ID, frags[(j+i)%c].ID, junc
-			}
-		}
+	} else {
+		return 1
 	}
-
-	return false, "", "", ""
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
@@ -318,7 +187,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	for i, f := range frags { // for every Frag in the list of increasing start index frags
 		for _, j := range f.reach(frags, i, features) { // for every overlapping fragment + reach more
 			for _, a := range indexedAssemblies[i] { // for every assembly on the reaching fragment
-				newAssembly, created, circularized := createNewAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
+				newAssembly, created, circularized := extendAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
 
 				if !created { // if a new assembly wasn't created, move on
 					continue
@@ -353,82 +222,169 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	return finalAssemblies
 }
 
-// groupAssembliesByCount returns a map from the number of fragments in a build
-// to a slice of builds with that number of fragments, sorted by their cost.
-func groupAssembliesByCount(assemblies []assembly) ([]int, map[int][]assembly) {
-	countToAssemblies := make(map[int][]assembly)
-	for _, a := range assemblies {
-		if as, ok := countToAssemblies[a.len()]; ok {
-			countToAssemblies[a.len()] = append(as, a)
-		} else {
-			countToAssemblies[a.len()] = []assembly{a}
+// extendAssembly - extends currentAssembly by add a new Frag to its end.
+// Return the new extended assembly and whether it is circularized
+func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength int,
+	features bool) (assembly /*created*/, bool /*circularized*/, bool) {
+
+	first := currentAssembly.firstFrag()
+	last := currentAssembly.lastFrag()
+
+	var existingAssemblyStart int
+	var existingAssemblyEnd int
+	var start int
+	var end int
+
+	if features {
+		existingAssemblyStart = first.featureStart
+		existingAssemblyEnd = last.featureEnd
+		start = f.featureStart
+		end = f.featureEnd
+	} else {
+		existingAssemblyStart = first.start
+		existingAssemblyEnd = last.end
+		start = f.start
+		end = f.end
+	}
+
+	// check if we could complete an assembly with this new Frag
+	circularized := end >= existingAssemblyStart+targetLength-1
+
+	// check if this is the first fragment annealing to itself
+	selfAnnealing := f.uniqueID == first.uniqueID
+
+	// calc the number of synthesis fragments needed to get to this next Frag
+	synths := last.synthDist(f)
+	if features && start > existingAssemblyEnd {
+		synths = start - existingAssemblyEnd - 1
+	}
+
+	newCount := currentAssembly.len() + synths
+	if !selfAnnealing {
+		newCount++
+	}
+
+	assemblyEnd := existingAssemblyEnd
+	if newCount > maxCount || (end-assemblyEnd < f.conf.PcrMinLength && !features) {
+		return assembly{}, false, false
+	}
+
+	// calc the estimated dollar cost of getting to the next Frag
+	annealCost, adjustedCost := last.costTo(f)
+	if selfAnnealing && synths == 0 {
+		annealCost = 0   // does not cost extra to anneal to the first fragment
+		adjustedCost = 0 // there are no synth so it is safe to set it to 0
+	}
+
+	// check whether the Frag is already contained in the assembly
+	// if so, the cost of procurement is not incurred twice
+	fragContained := false
+	for _, included := range currentAssembly.frags {
+		if included.ID == f.ID && included.fragType == f.fragType {
+			fragContained = true
+			break
 		}
 	}
 
-	// sort the fragment counts of assemblies and the assemblies within each
-	// assembly count, so we're trying the shortest assemblies first, and the cheapest
-	// assembly within each fragment count before the others
-	var counts []int
-	for count := range countToAssemblies {
-		counts = append(counts, count)
-		sort.Slice(countToAssemblies[count], func(i, j int) bool {
-			return countToAssemblies[count][i].cost < countToAssemblies[count][j].cost
-		})
+	if fragContained {
+		// don't double count the cost of procuring this Frag to the total assembly cost
+		fragCost, adjustedFragCost := f.cost(false)
+		annealCost += fragCost
+		adjustedCost += adjustedFragCost
+	} else {
+		fragCost, adjustedFragCost := f.cost(true)
+		annealCost += fragCost
+		adjustedCost += adjustedFragCost
 	}
-	sort.Ints(counts)
 
-	return counts, countToAssemblies
+	// copy over all the fragments, need to avoid referencing same frags
+	newFrags := []*Frag{}
+	for _, frag := range currentAssembly.frags {
+		newFrags = append(newFrags, frag.copy())
+	}
+	if !selfAnnealing {
+		newFrags = append(newFrags, f.copy())
+	}
+
+	return assembly{
+		frags:        newFrags,
+		cost:         currentAssembly.cost + annealCost,
+		adjustedCost: currentAssembly.adjustedCost + adjustedCost,
+		synths:       currentAssembly.synths + synths,
+	}, true, circularized
+}
+
+// nextFragment returns the fragment that's one beyond the one passed.
+// The fragments are considered to be part of a "circular" sequence
+// simulated by concatenating the sequence to itself
+// the next fragment after the last from the list is based on the
+// first fragment from the list by adding target sequence length to its start and end
+func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Frag {
+	if i < len(frags)-1 {
+		return frags[i+1]
+	}
+
+	// mock up a next fragment that's to the right of this terminal Frag
+	return &Frag{
+		start: frags[0].start + len(target),
+		end:   frags[0].end + len(target),
+		conf:  conf,
+	}
 }
 
 // fillAssemblies fills in assemblies and returns the pareto optimal solutions.
-func fillAssemblies(target string, counts []int, countToAssemblies map[int][]assembly, conf *config.Config) (solutions [][]*Frag) {
+func fillAssemblies(target string, assemblies []assembly, conf *config.Config) (solutions [][]*Frag) {
 	// append a fully synthetic solution at first, nothing added should cost more than this (single plasmid)
-	filled := make(map[int][]*Frag)
-	minCostAssembly := math.MaxFloat64
+	filled := make([][]*Frag, len(assemblies))
 
-	for _, count := range counts {
-		for _, assemblyToFill := range countToAssemblies[count] {
-			if assemblyToFill.adjustedCost > minCostAssembly {
-				// skip this and the rest with this count, there's another
-				// cheaper option with the same number or fewer fragments (estimated)
-				break
+	for i, assemblyToFill := range assemblies {
+		filledFragments, err := assemblyToFill.fill(target, conf)
+		if err != nil || filledFragments == nil {
+			rlog.Errorf("Error filling assembly %d\n", i)
+		}
+		filled[i] = filledFragments // if there was an error this will cause a panic
+	}
+	return filled
+}
+
+// prevFragment returns the fragment that's one before the current one.
+// The fragments are considered to be part of a "circular" sequence
+// simulated by concatenating the sequence to itself
+// the prev fragment of the first from the list is based on the
+// last fragment from the list by subtracting the length of the target sequence
+// from its start and end
+func prevFragment(frags []*Frag, i int, target string, conf *config.Config) *Frag {
+	if i > 0 {
+		return frags[i-1]
+	}
+
+	// mock up a next fragment that's to the right of this terminal Frag
+	return &Frag{
+		start: frags[len(frags)-1].start - len(target),
+		end:   frags[len(frags)-1].end - len(target),
+		conf:  conf,
+	}
+}
+
+// duplicates runs through all the nodes in an assembly and checks whether any of
+// them have unintended homology, or "duplicate homology".
+func duplicates(frags []*Frag, min, max int) (isDup bool, first, second, dup string) {
+	c := len(frags) // Frag count
+	for i, f := range frags {
+		// check to make sure the fragment doesn't anneal to itself
+		if c > 1 {
+			if selfJ := f.selfJunction(min, max); selfJ != "" && len(selfJ) < len(f.Seq) {
+				return true, f.ID, f.ID, selfJ
 			}
+		}
 
-			filledFragments, err := assemblyToFill.fill(target, conf)
-			if err != nil || filledFragments == nil {
-				// assemblyToFill.log()
-				// fmt.Println("error", err.Error())
-				// Log.Fatal(err)
-				continue
+		for j := 2; j < c; j++ { // skip next Frag, i+1 is supposed to anneal to i
+			junc := f.junction(frags[(j+i)%c], min, max)
+			if junc != "" {
+				return true, f.ID, frags[(j+i)%c].ID, junc
 			}
-
-			_, adjustedAssemblyCost := fragsCost(filledFragments)
-
-			if adjustedAssemblyCost >= minCostAssembly || len(filledFragments) > conf.FragmentsMaxCount {
-				continue // wasn't actually cheaper, keep trying
-			}
-			minCostAssembly = adjustedAssemblyCost // store this as the new cheapest assembly
-
-			// delete all assemblies with more fragments that cost more
-			for filledCount, existingFilledFragments := range filled {
-				if filledCount < len(filledFragments) {
-					continue
-				}
-
-				_, existingAdjustedCost := fragsCost(existingFilledFragments)
-				if existingAdjustedCost >= adjustedAssemblyCost {
-					delete(filled, filledCount)
-				}
-			}
-
-			// set this is as the new cheapest of this length
-			filled[len(filledFragments)] = filledFragments
 		}
 	}
 
-	for _, frags := range filled {
-		solutions = append(solutions, frags) // flatten
-	}
-
-	return solutions
+	return false, "", "", ""
 }
