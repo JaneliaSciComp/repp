@@ -122,8 +122,6 @@ func prepareSolutionsOutput(
 			if f.fragType == pcr {
 				hasPCR = true
 			}
-			f.relativeStart = f.start % len(targetSeq)
-			f.relativeEnd = f.end % len(targetSeq)
 			f.Type = f.fragType.String() // freeze fragment type
 
 			// if it's already in the assembly, don't count cost twice
