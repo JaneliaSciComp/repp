@@ -184,6 +184,11 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 	return frags
 }
 
+// String display method for a Frag
+func (f Frag) String() string {
+	return fmt.Sprintf("%s[%d,%d]", f.uniqueID, f.start, f.end)
+}
+
 func (f Frag) getPrimerSeq(strand bool) string {
 	if len(f.Primers) > 0 {
 		for _, p := range f.Primers {

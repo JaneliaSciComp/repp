@@ -86,6 +86,11 @@ type blastExec struct {
 	// whether to circularize the queries sequence in the input file
 	circular bool
 
+	// left margin margin for circular genome matches
+	// this is so that we could ignore matches
+	// that could potentially be better if extended with bps from the end
+	matchLeftMargin int
+
 	// the database we're BLASTing against
 	db DB
 
@@ -140,8 +145,6 @@ func (b *blastExec) run() (err error) {
 		"-out", b.out.Name(),
 		"-outfmt", "7 sseqid qstart qend sstart send sseq mismatch gaps stitle",
 		"-perc_identity", fmt.Sprintf("%d", b.identity),
-		// "-culling_limit", "50",
-		// "-max_target_seqs", "5000",
 		"-num_threads", strconv.Itoa(threads),
 	}
 
@@ -263,6 +266,12 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			forward = !forward
 		}
 
+		if b.circular && queryStart < b.matchLeftMargin {
+			// for circular fragments - if this match is at the beginning
+			// there might be a longer match that includes bps from the end
+			continue
+		}
+
 		// filter on titles
 		matchesFilter := false
 		titles += entry
@@ -326,16 +335,17 @@ func (b *blastExec) runAgainst() (err error) {
 
 func (b *blastExec) close() error {
 	var result error
+	// remove temporary blast input and output
 	result = multierr.Append(result, os.Remove(b.in.Name()))
 	result = multierr.Append(result, os.Remove(b.out.Name()))
 	return result
-
 }
 
 // blast the seq against all dbs and acculate matches.
 func blast(
 	name, seq string,
 	circular bool,
+	matchLeftMargin int,
 	dbs []DB,
 	filters []string,
 	identity int,
@@ -353,13 +363,14 @@ func blast(
 		}
 
 		b := &blastExec{
-			name:     name,
-			seq:      seq,
-			circular: circular,
-			db:       db,
-			in:       in,
-			out:      out,
-			identity: identity,
+			name:            name,
+			seq:             seq,
+			circular:        circular,
+			matchLeftMargin: matchLeftMargin,
+			db:              db,
+			in:              in,
+			out:             out,
+			identity:        identity,
 		}
 		defer b.close()
 
@@ -395,7 +406,6 @@ func blast(
 // blastAgainst runs against a pre-made subject database
 func blastAgainst(
 	name, seq, subject string,
-	circular bool,
 	identity int,
 ) (matches []match, err error) {
 	in, err := os.CreateTemp("", "blast-in-*")
@@ -409,13 +419,14 @@ func blastAgainst(
 	}
 
 	b := &blastExec{
-		name:     name,
-		seq:      seq,
-		circular: circular,
-		subject:  subject,
-		in:       in,
-		out:      out,
-		identity: identity,
+		name:            name,
+		seq:             seq,
+		circular:        false,
+		matchLeftMargin: 0,
+		subject:         subject,
+		in:              in,
+		out:             out,
+		identity:        identity,
 	}
 	defer b.close()
 

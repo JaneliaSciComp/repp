@@ -122,14 +122,15 @@ func prepareSolutionsOutput(
 			if f.fragType == pcr {
 				hasPCR = true
 			}
-
+			f.relativeStart = f.start % len(targetSeq)
+			f.relativeEnd = f.end % len(targetSeq)
 			f.Type = f.fragType.String() // freeze fragment type
 
 			// if it's already in the assembly, don't count cost twice
 			if _, contained := assemblyFragmentIDs[f.ID]; f.ID != "" && contained {
-				fragCost, fragAdjustedCost = f.cost(true)
+				fragCost, fragAdjustedCost = f.cost(false)
 			} else {
-				fragCost, fragAdjustedCost = f.cost(false) // do not include procurement costs twice
+				fragCost, fragAdjustedCost = f.cost(true) // do not include procurement costs twice
 				assemblyFragmentIDs[f.ID] = true
 			}
 			// round to two decimal places

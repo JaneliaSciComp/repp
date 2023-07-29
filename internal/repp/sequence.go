@@ -17,6 +17,7 @@ func SequenceList(
 	seq string,
 	filters []string,
 	identity int,
+	leftMargin int,
 	dbNames []string) {
 
 	dbs, err := getRegisteredDBs(dbNames)
@@ -24,7 +25,7 @@ func SequenceList(
 		rlog.Fatal(err)
 	}
 
-	matches, err := blast("find_cmd", seq, true, dbs, filters, identity)
+	matches, err := blast("find_cmd", seq, true, leftMargin, dbs, filters, identity)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -87,6 +88,7 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		assemblyParams.GetIn(),
 		assemblyParams.GetFilters(),
 		assemblyParams.GetIdentity(),
+		assemblyParams.GetLeftMargin(),
 		backboneFrag,
 		dbs,
 		maxSolutions,
@@ -150,6 +152,7 @@ func sequence(
 	input string,
 	filters []string,
 	identity int,
+	leftMargin int,
 	backboneFrag *Frag,
 	dbs []DB,
 	keepNSolutions int,
@@ -180,7 +183,7 @@ func sequence(
 	}
 
 	// get all the matches against the target plasmid
-	matches, err := blast(target.ID, target.Seq, true, dbs, filters, identity)
+	matches, err := blast(target.ID, target.Seq, true, leftMargin, dbs, filters, identity)
 	if err != nil {
 		dbMessage := strings.Join(dbNames(dbs), ", ")
 		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
@@ -232,6 +235,8 @@ func sequence(
 		// only keep the best solution
 		selectedAssemblies = assemblies[:1]
 	}
+
+	rlog.Debugf("Selected %d assemblies: %v", len(selectedAssemblies), selectedAssemblies)
 
 	// fill in only best assemblies
 	solutions = fillAssemblies(target.Seq, selectedAssemblies, conf)

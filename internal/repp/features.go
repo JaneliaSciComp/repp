@@ -190,6 +190,7 @@ func blastFeatures(
 			target[0],
 			targetFeature,
 			false,
+			0,
 			dbs,
 			filters,
 			identity)
@@ -421,7 +422,7 @@ func reblastFeatures(
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blastAgainst(target[0], targetFeature, subjectDB, false, identity)
+		matches, err := blastAgainst(target[0], targetFeature, subjectDB, identity)
 		if err != nil {
 			rlog.Fatal(err)
 		}

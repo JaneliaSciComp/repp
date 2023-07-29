@@ -36,6 +36,9 @@ type AssemblyParams interface {
 	GetIdentity() int
 	SetIdentity(i int)
 
+	GetLeftMargin() int
+	SetLeftMargin(i int)
+
 	GetBackboneName() string
 	SetBackboneName(bn string)
 
@@ -83,6 +86,9 @@ type assemblyParamsImpl struct {
 
 	// percentage identity for finding building fragments in BLAST databases
 	identity int
+
+	// left margin for circular matches
+	leftMargin int
 }
 
 func MkAssemblyParams() AssemblyParams {
@@ -127,6 +133,14 @@ func (ap assemblyParamsImpl) GetIdentity() int {
 
 func (ap *assemblyParamsImpl) SetIdentity(identity int) {
 	ap.identity = identity
+}
+
+func (ap assemblyParamsImpl) GetLeftMargin() int {
+	return ap.leftMargin
+}
+
+func (ap *assemblyParamsImpl) SetLeftMargin(leftMargin int) {
+	ap.leftMargin = leftMargin
 }
 
 func (ap assemblyParamsImpl) GetBackboneName() string {

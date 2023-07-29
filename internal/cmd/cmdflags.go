@@ -56,9 +56,18 @@ func extractIdentity(cmd *cobra.Command, defaultValue int) int {
 	// get identity for blastn searching
 	identity, err := cmd.Flags().GetInt("identity")
 	if err != nil {
-		identity = defaultValue // might be something other than `repp plasmid`
+		identity = defaultValue
 	}
 	return identity
+}
+
+func extractLeftMargin(cmd *cobra.Command, defaultValue int) int {
+	// get left margin for blastn searching
+	leftMargin, err := cmd.Flags().GetInt("left-margin")
+	if err != nil {
+		leftMargin = defaultValue
+	}
+	return leftMargin
 }
 
 func extractDbNames(cmd *cobra.Command) []string {
@@ -126,6 +135,8 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 
 	// get identity for blastn searching
 	params.SetIdentity(extractIdentity(cmd, 100))
+
+	params.SetLeftMargin(extractLeftMargin(cmd, 200))
 
 	params.SetDbNames(extractDbNames(cmd))
 

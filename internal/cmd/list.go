@@ -87,6 +87,7 @@ func init() {
 	sequenceListCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases")
 	sequenceListCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceListCmd.Flags().IntP("identity", "t", 100, "match %-identity threshold (see 'blastn -help')")
+	sequenceListCmd.Flags().Int("left-margin", 100, "left margin for matches at the beginning of a circular genome")
 
 	listCmd.AddCommand(databaseListCmd)
 	listCmd.AddCommand(featureListCmd)
@@ -148,7 +149,8 @@ func runSequenceListCmd(cmd *cobra.Command, args []string) {
 	seq := args[0]
 	filters := extractExcludedValues(cmd)
 	identity := extractIdentity(cmd, 100)
+	leftMargin := extractLeftMargin(cmd, 100)
 	dbNames := extractDbNames(cmd)
 
-	repp.SequenceList(seq, filters, identity, dbNames)
+	repp.SequenceList(seq, filters, identity, leftMargin, dbNames)
 }

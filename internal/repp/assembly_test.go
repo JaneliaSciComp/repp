@@ -1,6 +1,7 @@
 package repp
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -69,15 +70,17 @@ func Test_assembly_add(t *testing.T) {
 	}
 
 	createAssemblyFrom := func(fs []*Frag,
+		selfAnnealing bool,
 		costFunc func() (float64, float64),
 		synths int) assembly {
 		cost, adjustedCost := costFunc()
 
 		return assembly{
-			frags:        fs,
-			cost:         cost,
-			adjustedCost: adjustedCost,
-			synths:       synths,
+			frags:         fs,
+			selfAnnealing: selfAnnealing,
+			cost:          cost,
+			adjustedCost:  adjustedCost,
+			synths:        synths,
 		}
 	}
 	tests := []struct {
@@ -85,8 +88,8 @@ func Test_assembly_add(t *testing.T) {
 		fields          fields
 		args            args
 		wantNewAssembly assembly
-		wantCreated     bool
 		wantComplete    bool
+		wantErr         error
 	}{
 		{
 			"add with overlap",
@@ -99,12 +102,13 @@ func Test_assembly_add(t *testing.T) {
 				n: n2,
 			},
 			createAssemblyFrom([]*Frag{n1, n2},
+				false,
 				func() (float64, float64) {
 					return n1.costTo(n2)
 				},
 				0),
-			true,
 			false,
+			nil,
 		},
 		{
 			"add with synthesis",
@@ -118,13 +122,14 @@ func Test_assembly_add(t *testing.T) {
 				n: n3,
 			},
 			createAssemblyFrom([]*Frag{n1, n3},
+				false,
 				func() (float64, float64) {
 					c, ac := n1.costTo(n3)
 					return 10 + c, 10 + ac
 				},
 				1),
 			true,
-			true,
+			nil,
 		},
 		{
 			"add with completion/circularization",
@@ -137,12 +142,13 @@ func Test_assembly_add(t *testing.T) {
 				n: n4,
 			},
 			createAssemblyFrom([]*Frag{n1, n2, n3},
+				true,
 				func() (float64, float64) {
 					return 10, 0
 				},
 				0),
 			true,
-			true,
+			nil,
 		},
 		{
 			"add with completion requiring synthesis",
@@ -163,20 +169,24 @@ func Test_assembly_add(t *testing.T) {
 					conf:     c,
 				},
 			},
-			createAssemblyFrom([]*Frag{n1, n2, {
-				ID:       n3.ID,
-				uniqueID: n3.uniqueID,
-				fragType: pcr,
-				start:    n3.start + c.SyntheticMaxLength,
-				end:      n3.end + c.SyntheticMaxLength,
-				conf:     c,
-			}},
+			createAssemblyFrom([]*Frag{
+				n1,
+				n2,
+				{
+					ID:       n3.ID,
+					uniqueID: n3.uniqueID,
+					fragType: pcr,
+					start:    n3.start + c.SyntheticMaxLength,
+					end:      n3.end + c.SyntheticMaxLength,
+					conf:     c,
+				}},
+				false,
 				func() (float64, float64) {
 					return 48.4, 52.4
 				},
 				1),
 			true,
-			true,
+			nil,
 		},
 		{
 			"don't exceed fragment limit",
@@ -190,7 +200,7 @@ func Test_assembly_add(t *testing.T) {
 			},
 			assembly{},
 			false,
-			false,
+			fmt.Errorf("it requires too many fragments (6 > 5)"),
 		},
 	}
 	for _, tt := range tests {
@@ -201,15 +211,17 @@ func Test_assembly_add(t *testing.T) {
 				adjustedCost: tt.fields.adjustedCost,
 				synths:       tt.fields.synths,
 			}
-			gotNewAssembly, gotCreated, gotComplete := extendAssembly(a, tt.args.n, 5, sl, false)
+			gotNewAssembly, gotComplete, gotErr := extendAssembly(a, tt.args.n, 5, sl, false)
 			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}
-			if gotCreated != tt.wantCreated {
-				t.Errorf("assembly.add() gotCreated = %v, want %v", gotCreated, tt.wantCreated)
-			}
 			if gotComplete != tt.wantComplete {
 				t.Errorf("assembly.add() gotComplete = %v, want %v", gotComplete, tt.wantComplete)
+			}
+			if gotErr == nil && tt.wantErr != nil ||
+				gotErr != nil && tt.wantErr == nil ||
+				gotErr != nil && tt.wantErr != nil && gotErr.Error() != tt.wantErr.Error() {
+				t.Errorf("assembly.add() gotComplete = %v, want %v", gotErr, tt.wantErr)
 			}
 		})
 	}

@@ -115,7 +115,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		}
 		features = cleanedFeatures
 	} else {
-		features, err = blast(name, seq, false, dbs, filters, identity)
+		features, err = blast(name, seq, false, 0, dbs, filters, identity)
 		handleErr(err)
 	}
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/config"
+	"golang.org/x/exp/maps"
 )
 
 // assembly is a slice of nodes ordered by the nodes
@@ -13,6 +14,9 @@ import (
 type assembly struct {
 	// frags, ordered by distance from the "end" of the plasmid
 	frags []*Frag
+
+	// self annealed - last and first fragment are identical
+	selfAnnealing bool
 
 	// estimated cost of making this assembly
 	cost float64
@@ -22,6 +26,32 @@ type assembly struct {
 
 	// total number of synthetic nodes that will be needed to make this
 	synths int
+}
+
+// String display method for an assembly
+func (a assembly) String() string {
+	res := ""
+	for i, f := range a.frags {
+		if i > 0 {
+			res = res + " -> " + f.String()
+		} else {
+			if a.selfAnnealing {
+				res = "(+)" + f.String()
+			} else {
+				res = f.String()
+			}
+		}
+	}
+	return fmt.Sprintf("%s (n=%d, c=%f, ac=%f)", res, a.len(), a.cost, a.adjustedCost)
+}
+
+// return assembly ID based on fragment IDs
+func (a assembly) assemblyID() string {
+	fragIDs := map[string]int8{}
+	for _, f := range a.frags {
+		fragIDs[f.uniqueID] = 1
+	}
+	return fmt.Sprintf("%v", fragIDs)
 }
 
 // get the first fragment of the assembly
@@ -122,21 +152,7 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 
 // compare two assemblies
 func compareAssemblies(a1, a2 assembly) int {
-	if a1.adjustedCost < a2.adjustedCost {
-		return -1
-	} else if a1.adjustedCost == a2.adjustedCost {
-		l1 := a1.len()
-		l2 := a2.len()
-		if l1 < l2 {
-			return -1
-		} else if l1 == l2 {
-			return 0
-		} else {
-			return 1
-		}
-	} else {
-		return 1
-	}
+	return int(a1.adjustedCost - a2.adjustedCost)
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
@@ -154,7 +170,8 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		return frags[i].start < frags[j].start
 	})
 
-	// indexedAssemblies[i] holds all assemblies that are extended starting with the i-th fragment
+	// indexedAssemblies[i] holds all assemblies that are extended
+	// from the i-th element of frags
 	var indexedAssemblies = make([][]assembly, len(frags))
 
 	// create a starting assembly on each Frag including just itself
@@ -171,7 +188,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		}
 
 		// create a starting assembly for each fragment containing just it
-		cost, adjustedCost := f.costTo(f)
+		cost, adjustedCost := f.cost(true)
 		indexedAssemblies[i] = []assembly{
 			{
 				frags:        []*Frag{f.copy()}, // just self
@@ -182,19 +199,26 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		}
 	}
 
-	finalAssemblies := []assembly{}
+	finalAssemblies := map[string]assembly{}
 
 	for i, f := range frags { // for every Frag in the list of increasing start index frags
 		for _, j := range f.reach(frags, i, features) { // for every overlapping fragment + reach more
 			for _, a := range indexedAssemblies[i] { // for every assembly on the reaching fragment
-				newAssembly, created, circularized := extendAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
-
-				if !created { // if a new assembly wasn't created, move on
+				rlog.Debugf("Trying to extend %v with %v", a, frags[j])
+				newAssembly, circularized, err := extendAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
+				if err != nil { // if a new assembly wasn't created, move on
+					rlog.Debugf("%v could not be extended with %v because %v", a, frags[j], err)
 					continue
 				}
 
 				if circularized { // we've circularized a plasmid, it's ready for filling
-					finalAssemblies = append(finalAssemblies, newAssembly)
+					rlog.Debugf("Adding final assembly: %v", newAssembly)
+					newAssemblyID := newAssembly.assemblyID()
+					if _, exists := finalAssemblies[newAssemblyID]; !exists {
+						finalAssemblies[newAssemblyID] = newAssembly
+					} else {
+						rlog.Debugf("%v already found", newAssembly)
+					}
 				} else {
 					// the new fragment was created by adding the j-th fragment
 					// so when it's processed it will be extended started with j-th frag
@@ -207,56 +231,71 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 
 	// create a fully synthetic plasmid from just synthetic fragments
 	// in case all other plasmid designs fail
-	mockStart := &Frag{start: conf.FragmentsMinHomology, end: conf.FragmentsMinHomology, conf: conf}
-	mockEnd := &Frag{start: len(target), end: len(target), conf: conf}
+	mockStart := &Frag{
+		uniqueID: "mockStart",
+		start:    conf.FragmentsMinHomology,
+		end:      conf.FragmentsMinHomology,
+		conf:     conf,
+	}
+	mockEnd := &Frag{
+		uniqueID: "mockEnd",
+		start:    len(target),
+		end:      len(target),
+		conf:     conf,
+	}
 	cost, adjustedCost := mockStart.costTo(mockEnd)
 	synths := mockStart.synthTo(mockEnd, target)
-	finalAssemblies = append(finalAssemblies, assembly{
+	mockSynthAssembly := assembly{
 		frags:        synths,
 		cost:         cost,
 		adjustedCost: adjustedCost,
 		synths:       len(synths),
-	})
+	}
+	if _, mockAssemblyFound := finalAssemblies[mockSynthAssembly.assemblyID()]; mockAssemblyFound {
+		rlog.Errorf("Found an assembly similar to the mock synthesized assembly: %v", mockSynthAssembly)
+	} else {
+		finalAssemblies[mockSynthAssembly.assemblyID()] = mockSynthAssembly
+	}
 	rlog.Debugw("assemblies made", "count", len(finalAssemblies))
 
-	return finalAssemblies
+	return maps.Values(finalAssemblies)
 }
 
 // extendAssembly - extends currentAssembly by add a new Frag to its end.
-// Return the new extended assembly and whether it is circularized
+// Return the new extended assembly and whether it is complete
 func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength int,
-	features bool) (assembly /*created*/, bool /*circularized*/, bool) {
+	features bool) (assembly, bool, error) {
 
 	first := currentAssembly.firstFrag()
 	last := currentAssembly.lastFrag()
 
-	var existingAssemblyStart int
-	var existingAssemblyEnd int
+	var currentAssemblyStart int
+	var currentAssemblyEnd int
 	var start int
 	var end int
 
 	if features {
-		existingAssemblyStart = first.featureStart
-		existingAssemblyEnd = last.featureEnd
+		currentAssemblyStart = first.featureStart
+		currentAssemblyEnd = last.featureEnd
 		start = f.featureStart
 		end = f.featureEnd
 	} else {
-		existingAssemblyStart = first.start
-		existingAssemblyEnd = last.end
+		currentAssemblyStart = first.start
+		currentAssemblyEnd = last.end
 		start = f.start
 		end = f.end
 	}
 
 	// check if we could complete an assembly with this new Frag
-	circularized := end >= existingAssemblyStart+targetLength-1
+	complete := end >= currentAssemblyStart+targetLength-1
 
 	// check if this is the first fragment annealing to itself
 	selfAnnealing := f.uniqueID == first.uniqueID
 
 	// calc the number of synthesis fragments needed to get to this next Frag
 	synths := last.synthDist(f)
-	if features && start > existingAssemblyEnd {
-		synths = start - existingAssemblyEnd - 1
+	if features && start > currentAssemblyEnd {
+		synths = start - currentAssemblyEnd - 1
 	}
 
 	newCount := currentAssembly.len() + synths
@@ -264,9 +303,12 @@ func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength in
 		newCount++
 	}
 
-	assemblyEnd := existingAssemblyEnd
-	if newCount > maxCount || (end-assemblyEnd < f.conf.PcrMinLength && !features) {
-		return assembly{}, false, false
+	assemblyEnd := currentAssemblyEnd
+	if newCount > maxCount {
+		return assembly{}, false, fmt.Errorf("it requires too many fragments (%d > %d)", newCount, maxCount)
+	}
+	if end-assemblyEnd < f.conf.PcrMinLength && !features {
+		return assembly{}, false, fmt.Errorf("overlap with last fragment is too short (%d < %d)", end-assemblyEnd, f.conf.PcrMinLength)
 	}
 
 	// calc the estimated dollar cost of getting to the next Frag
@@ -307,11 +349,12 @@ func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength in
 	}
 
 	return assembly{
-		frags:        newFrags,
-		cost:         currentAssembly.cost + annealCost,
-		adjustedCost: currentAssembly.adjustedCost + adjustedCost,
-		synths:       currentAssembly.synths + synths,
-	}, true, circularized
+		frags:         newFrags,
+		selfAnnealing: selfAnnealing,
+		cost:          currentAssembly.cost + annealCost,
+		adjustedCost:  currentAssembly.adjustedCost + adjustedCost,
+		synths:        currentAssembly.synths + synths,
+	}, complete, nil
 }
 
 // nextFragment returns the fragment that's one beyond the one passed.
@@ -340,7 +383,7 @@ func fillAssemblies(target string, assemblies []assembly, conf *config.Config) (
 	for i, assemblyToFill := range assemblies {
 		filledFragments, err := assemblyToFill.fill(target, conf)
 		if err != nil || filledFragments == nil {
-			rlog.Errorf("Error filling assembly %d\n", i)
+			rlog.Errorf("Error filling assembly %d: %v\n", i, err)
 		}
 		filled[i] = filledFragments // if there was an error this will cause a panic
 	}
