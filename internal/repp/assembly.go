@@ -206,19 +206,19 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		for _, j := range f.reach(frags, i, features) { // for every overlapping fragment + reach more
 			for _, a := range indexedAssemblies[i] { // for every assembly on the reaching fragment
 				rlog.Debugf("Trying to extend %v with %v", a, frags[j])
-				newAssembly, circularized, err := extendAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
+				newAssembly, complete, err := extendAssembly(a, frags[j], conf.FragmentsMaxCount, targetLength, features)
 				if err != nil { // if a new assembly wasn't created, move on
 					rlog.Debugf("%v could not be extended with %v because %v", a, frags[j], err)
 					continue
 				}
 
-				if circularized { // we've circularized a plasmid, it's ready for filling
-					rlog.Debugf("Adding final assembly: %v", newAssembly)
+				if complete { // we've circularized a plasmid, it's ready for filling
 					newAssemblyID := newAssembly.assemblyID()
 					if _, exists := finalAssemblies[newAssemblyID]; !exists {
+						rlog.Debugf("Adding final assembly: %v", newAssembly)
 						finalAssemblies[newAssemblyID] = newAssembly
 					} else {
-						rlog.Debugf("%v already found", newAssembly)
+						rlog.Debugf("Discard %v - was already found", newAssembly)
 					}
 				} else {
 					// the new fragment was created by adding the j-th fragment

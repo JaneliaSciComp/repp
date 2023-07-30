@@ -127,6 +127,9 @@ type Config struct {
 	// to allow Primer3 to look for a primer
 	PcrBufferLength int `mapstructure:"pcr-buffer-length"`
 
+	// Minimum primers length used for estimating a pcr fragment cost that does not have primers set yet
+	EstimatedPCRPrimersLength int `mapstructure:"estimated-pcr-primer-length"`
+
 	// minimum length of a synthesized piece of DNA
 	SyntheticMinLength int `mapstructure:"synthetic-min-length"`
 
@@ -364,6 +367,13 @@ func (c *Config) SynthPlasmidCost(insertLength int) float64 {
 	}
 
 	return float64(insertLength) * cost.Cost
+}
+
+func (c *Config) EstimatePCRPrimersLength(defaultValue int) int {
+	if c.EstimatedPCRPrimersLength > 0 {
+		return c.EstimatedPCRPrimersLength
+	}
+	return defaultValue
 }
 
 // synthCost returns the cost of synthesizing a piece of DNA

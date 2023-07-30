@@ -11,7 +11,7 @@ fragments-min-junction-length: 20
 # Maximum homology length between fragments
 fragments-max-junction-length: 120
 
-# Maximum allowable hairpin melting temperature (celcius)
+# Maximum allowable hairpin melting temperature (celsius)
 fragments-max-junction-hairpin: 47.0
 
 # Cost per Gibson assembly reaction
@@ -51,6 +51,10 @@ pcr-primer-max-ectopic-tm: 55.0
 # the "better" the primers may be, but at the cost of a more expensive plasmid
 # (more synthesis)
 pcr-buffer-length: 10
+
+# pcr primer length used for estimating the cost of a PCR fragment
+# that does not have the primers set yet
+estimated-pcr-primer-length: 24
 
 # Minimum length of a synthesized building fragment
 synthetic-min-length: 300

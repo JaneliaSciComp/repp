@@ -232,8 +232,8 @@ func (f *Frag) cost(procure bool) (fragCost float64, adjustedFragCost float64) {
 			// cost of primers plus the cost of a single PCR reaction
 			primersCost = float64(len(f.Primers[0].Seq)+len(f.Primers[1].Seq)) * f.conf.PcrBpCost
 		} else {
-			// estimate the price using min junction length
-			primersCost = 2 * float64(f.conf.FragmentsMinHomology) * f.conf.PcrBpCost
+			// estimate the price using a default of 24bp for primers length estimate
+			primersCost = 2 * float64(f.conf.EstimatePCRPrimersLength(24)) * f.conf.PcrBpCost
 		}
 		pcrFragCost := primersCost + f.conf.PcrRxnCost
 		fragCost += pcrFragCost
