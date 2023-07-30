@@ -152,7 +152,10 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 
 // compare two assemblies
 func compareAssemblies(a1, a2 assembly) int {
-	return int(a1.adjustedCost - a2.adjustedCost)
+	if a1.len() == a2.len() {
+		return int(a1.adjustedCost - a2.adjustedCost)
+	}
+	return a1.len() - a2.len()
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
@@ -179,6 +182,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		// edge case where the Frag spans the entire target plasmid... 100% match
 		// it is the target plasmid. just return that as the assembly
 		if len(f.Seq) >= targetLength && !features {
+			rlog.Infof("Target completelly covered by a single plasmid assembly")
 			return []assembly{
 				{
 					frags:  []*Frag{f.copy()},
@@ -256,7 +260,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	} else {
 		finalAssemblies[mockSynthAssembly.assemblyID()] = mockSynthAssembly
 	}
-	rlog.Debugw("assemblies made", "count", len(finalAssemblies))
+	rlog.Infof("Found a total of %d assemblies", len(finalAssemblies))
 
 	return maps.Values(finalAssemblies)
 }

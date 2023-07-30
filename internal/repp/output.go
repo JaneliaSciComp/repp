@@ -28,6 +28,12 @@ type Solution struct {
 
 	// Fragments used to build this solution
 	Fragments []*Frag `json:"fragments"`
+
+	// number of PCR fragments
+	pcrFragsCount int
+
+	// number of synthentic fragments
+	synthFragsCount int
 }
 
 // Output is a struct containing design results for the assembly.
@@ -112,7 +118,8 @@ func prepareSolutionsOutput(
 		assemblyFragmentIDs := make(map[string]bool)
 		gibson := false // whether it will be assembled via Gibson assembly
 		hasPCR := false // whether there will be a batch PCR
-
+		npcrs := 0
+		nsynths := 0
 		for _, f := range assembly {
 			var fragCost, fragAdjustedCost float64
 			if f.fragType != linear && f.fragType != circular {
@@ -121,6 +128,9 @@ func prepareSolutionsOutput(
 
 			if f.fragType == pcr {
 				hasPCR = true
+				npcrs++
+			} else {
+				nsynths++
 			}
 			f.Type = f.fragType.String() // freeze fragment type
 
@@ -164,15 +174,20 @@ func prepareSolutionsOutput(
 		}
 
 		solutions = append(solutions, Solution{
-			Count:        len(assembly),
-			Cost:         solutionCost,
-			AdjustedCost: solutionAdjustedCost,
-			Fragments:    assembly,
+			Count:           len(assembly),
+			Cost:            solutionCost,
+			AdjustedCost:    solutionAdjustedCost,
+			Fragments:       assembly,
+			pcrFragsCount:   npcrs,
+			synthFragsCount: nsynths,
 		})
 	}
 
 	// sort solutions in increasing fragment count order
 	sort.Slice(solutions, func(i, j int) bool {
+		if solutions[i].Count == solutions[j].Count {
+			return solutions[i].AdjustedCost < solutions[j].AdjustedCost
+		}
 		return solutions[i].Count < solutions[j].Count
 	})
 
@@ -229,6 +244,8 @@ func writeCSV(filename, fragmentIDBase string,
 		"Rev Primer",
 		"Template",
 		"Size",
+		"Start",
+		"End",
 		"Match Pct",
 	})
 	if err != nil {
@@ -243,9 +260,10 @@ func writeCSV(filename, fragmentIDBase string,
 		snumber := si + 1
 		// Write the solution cost and the number of fragments
 		if _, err = fmt.Fprintf(strategyFile,
-			"# Solution %d\n# Fragments:%d\n# Cost: %f, Adjusted Cost: %f\n",
+			"# Solution %d\n# Fragments:%d (%d - pcr, %d - synth)\n# Cost: %f, Adjusted Cost: %f\n",
 			snumber,
-			s.Count, s.Cost, s.AdjustedCost); err != nil {
+			s.Count, s.pcrFragsCount, s.synthFragsCount,
+			s.Cost, s.AdjustedCost); err != nil {
 			return err
 		}
 		if _, err = fmt.Fprintf(reagentsFile, "# Solution %d\n", snumber); err != nil {
@@ -325,6 +343,8 @@ func writeCSV(filename, fragmentIDBase string,
 				revPrimer.getIDOrDefault(false, "N/A"), // rev primer
 				templateID,                             // template
 				strconv.Itoa(pcrSeqSize),
+				strconv.Itoa(f.start),
+				strconv.Itoa(f.end),
 				matchRatio,
 			}); err != nil {
 				return nil

@@ -227,7 +227,7 @@ func sequence(
 	var selectedAssemblies []assembly
 	if keepNSolutions > 0 {
 		if keepNSolutions < len(assemblies) {
-			selectedAssemblies = assemblies[:keepNSolutions]
+			selectedAssemblies = assemblies[0:keepNSolutions]
 		} else {
 			selectedAssemblies = assemblies
 		}
