@@ -244,8 +244,6 @@ func writeCSV(filename, fragmentIDBase string,
 		"Rev Primer",
 		"Template",
 		"Size",
-		"Start",
-		"End",
 		"Match Pct",
 	})
 	if err != nil {
@@ -343,8 +341,6 @@ func writeCSV(filename, fragmentIDBase string,
 				revPrimer.getIDOrDefault(false, "N/A"), // rev primer
 				templateID,                             // template
 				strconv.Itoa(pcrSeqSize),
-				strconv.Itoa(f.start),
-				strconv.Itoa(f.end),
 				matchRatio,
 			}); err != nil {
 				return nil
