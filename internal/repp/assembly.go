@@ -45,8 +45,8 @@ func (a assembly) String() string {
 	return fmt.Sprintf("%s (n=%d, c=%f, ac=%f)", res, a.len(), a.cost, a.adjustedCost)
 }
 
-// return assembly ID based on fragment IDs
-func (a assembly) assemblyID() string {
+// return assembly hash based on fragment IDs
+func (a assembly) assemblyHash() string {
 	fragIDs := map[string]int8{}
 	for _, f := range a.frags {
 		fragIDs[f.uniqueID] = 1
@@ -213,7 +213,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 				}
 
 				if complete { // we've circularized a plasmid, it's ready for filling
-					newAssemblyID := newAssembly.assemblyID()
+					newAssemblyID := newAssembly.assemblyHash()
 					if _, exists := finalAssemblies[newAssemblyID]; !exists {
 						rlog.Debugf("Adding final assembly: %v", newAssembly)
 						finalAssemblies[newAssemblyID] = newAssembly
@@ -252,10 +252,10 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		adjustedCost: adjustedCost,
 		synths:       len(synths),
 	}
-	if _, mockAssemblyFound := finalAssemblies[mockSynthAssembly.assemblyID()]; mockAssemblyFound {
+	if _, mockAssemblyFound := finalAssemblies[mockSynthAssembly.assemblyHash()]; mockAssemblyFound {
 		rlog.Errorf("Found an assembly similar to the mock synthesized assembly: %v", mockSynthAssembly)
 	} else {
-		finalAssemblies[mockSynthAssembly.assemblyID()] = mockSynthAssembly
+		finalAssemblies[mockSynthAssembly.assemblyHash()] = mockSynthAssembly
 	}
 	rlog.Infof("Found a total of %d assemblies", len(finalAssemblies))
 
