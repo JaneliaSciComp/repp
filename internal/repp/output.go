@@ -245,6 +245,10 @@ func writeCSV(filename, fragmentIDBase string,
 		"Template",
 		"Size",
 		"Match Pct",
+		"GC%",
+		"Min 50 GC%",
+		"Max 50 GC%",
+		"Homopolymer",
 	})
 	if err != nil {
 		return nil
@@ -316,6 +320,10 @@ func writeCSV(filename, fragmentIDBase string,
 			var templateID string
 			var matchRatio string
 			var pcrSeqSize int
+			var gcContentCol string
+			var min50GCContentCol string
+			var max50GCContentCol string
+			var homopolymerCol string
 			if f.fragType == synthetic {
 				synthReagent := searchOligoDBs(synthSeq, updatedSynthFragsDBs)
 				if !synthReagent.hasID() {
@@ -329,11 +337,20 @@ func writeCSV(filename, fragmentIDBase string,
 				matchRatio = "N/A"
 				pcrSeqSize = len(f.Seq)
 				reagents = append(reagents, synthReagent)
+				synthFragScores := synthSeqQualityChecks(f.Seq)
+				gcContentCol = fmt.Sprintf("%3.1f", synthFragScores.gcContent*100)
+				min50GCContentCol = fmt.Sprintf("%3.1f", synthFragScores.min50WindowGCContent*100)
+				max50GCContentCol = fmt.Sprintf("%3.1f", synthFragScores.max50WindowGCContent*100)
+				homopolymerCol = strconv.Itoa(synthFragScores.longestHomopolymer)
 			} else {
 				templateID = fragmentBase(f.ID)
 				matchRatio = fmt.Sprintf("%d", int(f.matchRatio*100))
 				// for PCR fragments display the length including the overhanging primers
 				pcrSeqSize = len(f.PCRSeq)
+				gcContentCol = "N/A"
+				min50GCContentCol = "N/A"
+				max50GCContentCol = "N/A"
+				homopolymerCol = "N/A"
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,
@@ -342,6 +359,10 @@ func writeCSV(filename, fragmentIDBase string,
 				templateID,                             // template
 				strconv.Itoa(pcrSeqSize),
 				matchRatio,
+				gcContentCol,
+				min50GCContentCol,
+				max50GCContentCol,
+				homopolymerCol,
 			}); err != nil {
 				return nil
 			}
