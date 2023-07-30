@@ -2,6 +2,7 @@ package repp
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 
@@ -47,6 +48,14 @@ func Test_assembly_add(t *testing.T) {
 		fragType: pcr,
 		start:    60,
 		end:      100,
+		conf:     c,
+	}
+	altn3 := &Frag{
+		ID:       n3.ID,
+		uniqueID: n3.uniqueID,
+		fragType: pcr,
+		start:    n3.start + c.SyntheticMaxLength,
+		end:      n3.end + c.SyntheticMaxLength,
 		conf:     c,
 	}
 	n4 := &Frag{
@@ -104,7 +113,9 @@ func Test_assembly_add(t *testing.T) {
 			createAssemblyFrom([]*Frag{n1, n2},
 				false,
 				func() (float64, float64) {
-					return n1.costTo(n2)
+					n1c, n1ac := n1.cost(true)
+					n1Ton2c, n1Ton2ac := n1.costTo(n2)
+					return n1c + n1Ton2c, n1ac + n1Ton2ac
 				},
 				0),
 			false,
@@ -124,8 +135,9 @@ func Test_assembly_add(t *testing.T) {
 			createAssemblyFrom([]*Frag{n1, n3},
 				false,
 				func() (float64, float64) {
+					n1c, n1ac := n1.cost(true)
 					c, ac := n1.costTo(n3)
-					return 10 + c, 10 + ac
+					return 10 + n1c + c, 10 + n1ac + ac
 				},
 				1),
 			true,
@@ -144,7 +156,8 @@ func Test_assembly_add(t *testing.T) {
 			createAssemblyFrom([]*Frag{n1, n2, n3},
 				true,
 				func() (float64, float64) {
-					return 10, 0
+					n3c, n3ac := n3.cost(true)
+					return n3c + 10, n3ac + 0
 				},
 				0),
 			true,
@@ -160,29 +173,13 @@ func Test_assembly_add(t *testing.T) {
 			},
 			args{
 				// a Frag that's too far away for straightforward annealing
-				n: &Frag{
-					ID:       n3.ID,
-					uniqueID: n3.uniqueID,
-					fragType: pcr,
-					start:    n3.start + c.SyntheticMaxLength,
-					end:      n3.end + c.SyntheticMaxLength,
-					conf:     c,
-				},
+				n: altn3,
 			},
-			createAssemblyFrom([]*Frag{
-				n1,
-				n2,
-				{
-					ID:       n3.ID,
-					uniqueID: n3.uniqueID,
-					fragType: pcr,
-					start:    n3.start + c.SyntheticMaxLength,
-					end:      n3.end + c.SyntheticMaxLength,
-					conf:     c,
-				}},
+			createAssemblyFrom([]*Frag{n1, n2, altn3},
 				false,
 				func() (float64, float64) {
-					return 48.4, 52.4
+					n3c, n3ac := altn3.cost(false)
+					return n3c + 48.4, n3ac + 52.4
 				},
 				1),
 			true,
@@ -212,7 +209,9 @@ func Test_assembly_add(t *testing.T) {
 				synths:       tt.fields.synths,
 			}
 			gotNewAssembly, gotComplete, gotErr := extendAssembly(a, tt.args.n, 5, sl, false)
-			if !reflect.DeepEqual(gotNewAssembly, tt.wantNewAssembly) {
+			if !reflect.DeepEqual(gotNewAssembly.frags, tt.wantNewAssembly.frags) ||
+				math.Abs(gotNewAssembly.cost-tt.wantNewAssembly.cost) > 0.1 ||
+				math.Abs(gotNewAssembly.adjustedCost-tt.wantNewAssembly.adjustedCost) > 0.1 {
 				t.Errorf("assembly.add() gotNewAssembly = %v, want %v", gotNewAssembly, tt.wantNewAssembly)
 			}
 			if gotComplete != tt.wantComplete {

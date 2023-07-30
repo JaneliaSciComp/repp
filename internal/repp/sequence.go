@@ -236,7 +236,7 @@ func sequence(
 		selectedAssemblies = assemblies[:1]
 	}
 
-	rlog.Debugf("Selected %d assemblies: %v", len(selectedAssemblies), selectedAssemblies)
+	rlog.Infof("Selected %d assemblies out of %d", len(selectedAssemblies), len(assemblies))
 
 	// fill in only best assemblies
 	solutions = fillAssemblies(target.Seq, selectedAssemblies, conf)

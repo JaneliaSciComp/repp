@@ -152,10 +152,7 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 
 // compare two assemblies
 func compareAssemblies(a1, a2 assembly) int {
-	if a1.len() == a2.len() {
-		return int(a1.adjustedCost - a2.adjustedCost)
-	}
-	return a1.len() - a2.len()
+	return int(a1.adjustedCost - a2.adjustedCost)
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
