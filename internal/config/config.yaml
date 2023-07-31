@@ -63,7 +63,7 @@ synthetic-min-length: 300
 synthetic-max-length: 1800
 
 # Penalty for synthetic fragments
-synthetic-fragment-penalty: 1
+synthetic-fragment-factor: 1
 
 # Cost of synthesis (step-function)
 # the key here is the upper limit on the synthesis to that range
