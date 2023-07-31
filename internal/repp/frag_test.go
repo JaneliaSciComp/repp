@@ -165,7 +165,7 @@ func Test_Frag_costTo(t *testing.T) {
 		3000:  {Fixed: false, Cost: 0.35},
 		30000: {Fixed: false, Cost: 0.6},
 	}
-	c.SyntheticFragmentPenalty = 2
+	c.SyntheticFragmentFactor = 2
 
 	n1 := &Frag{
 		uniqueID: "1",

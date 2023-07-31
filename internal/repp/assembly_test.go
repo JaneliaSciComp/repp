@@ -22,7 +22,7 @@ func Test_assembly_add(t *testing.T) {
 			Cost:  1.0,
 		},
 	}
-	c.SyntheticFragmentPenalty = 2
+	c.SyntheticFragmentFactor = 2
 
 	sl := 100
 

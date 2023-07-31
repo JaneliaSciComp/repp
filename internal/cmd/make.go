@@ -133,7 +133,7 @@ func runFragmentsCmd(cmd *cobra.Command, args []string) {
 	}
 
 	config := config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String())
-	config.SetSyntheticFragmentPenalty(syntheticFragmentFactor)
+	config.SetSyntheticFragmentFactor(syntheticFragmentFactor)
 
 	repp.AssembleFragments(fragmentsInputParams, config)
 }
@@ -157,7 +157,7 @@ func runFeaturesCmd(cmd *cobra.Command, args []string) {
 	}
 
 	config := config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String())
-	config.SetSyntheticFragmentPenalty(syntheticFragmentFactor)
+	config.SetSyntheticFragmentFactor(syntheticFragmentFactor)
 
 	repp.Features(featuresInputParams, maxKeptSolutions, config)
 }
@@ -191,6 +191,6 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 	}
 
 	config := config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String())
-	config.SetSyntheticFragmentPenalty(syntheticFragmentFactor)
+	config.SetSyntheticFragmentFactor(syntheticFragmentFactor)
 	repp.Sequence(assemblyInputParams, maxKeptSolutions, config)
 }

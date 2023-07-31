@@ -241,7 +241,7 @@ func (f *Frag) cost(procure bool) (fragCost float64, adjustedFragCost float64) {
 	} else if f.fragType == synthetic {
 		synthFragCost := f.conf.SynthFragmentCost(len(f.Seq))
 		fragCost += synthFragCost
-		adjustedFragCost += synthFragCost * float64(f.conf.GetSyntheticFragmentPenalty())
+		adjustedFragCost += synthFragCost * float64(f.conf.GetSyntheticFragmentFactor())
 	}
 
 	return
@@ -331,9 +331,9 @@ func (f *Frag) costTo(other *Frag) (cost, adjustedCost float64) {
 
 	// also account for whether this frag will require PCR
 	if needsPCR {
-		return synthCost + pcrNoHomology, synthCost*float64(f.conf.GetSyntheticFragmentPenalty()) + pcrNoHomology
+		return synthCost + pcrNoHomology, synthCost*float64(f.conf.GetSyntheticFragmentFactor()) + pcrNoHomology
 	} else {
-		return synthCost, synthCost * float64(f.conf.GetSyntheticFragmentPenalty())
+		return synthCost, synthCost * float64(f.conf.GetSyntheticFragmentFactor())
 	}
 }
 

@@ -137,7 +137,7 @@ type Config struct {
 	SyntheticMaxLength int `mapstructure:"synthetic-max-length"`
 
 	// configurable penalty for synthetic fragments
-	SyntheticFragmentPenalty int `mapstructure:"synthetic-fragment-penalty"`
+	SyntheticFragmentFactor int `mapstructure:"synthetic-fragment-factor"`
 
 	// user provided path to primer3 config dir
 	p3ConfigDir string
@@ -331,14 +331,14 @@ func (c *Config) GetPrimer3ConfigDir() string {
 	}
 }
 
-func (c *Config) SetSyntheticFragmentPenalty(penalty int) *Config {
-	c.SyntheticFragmentPenalty = penalty
+func (c *Config) SetSyntheticFragmentFactor(value int) *Config {
+	c.SyntheticFragmentFactor = value
 	return c
 }
 
-func (c *Config) GetSyntheticFragmentPenalty() int {
-	if c.SyntheticFragmentPenalty > 0 {
-		return c.SyntheticFragmentPenalty
+func (c *Config) GetSyntheticFragmentFactor() int {
+	if c.SyntheticFragmentFactor > 0 {
+		return c.SyntheticFragmentFactor
 	} else {
 		return 1
 	}
