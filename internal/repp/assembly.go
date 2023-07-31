@@ -378,15 +378,13 @@ func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Fra
 
 // fillAssemblies fills in assemblies and returns the pareto optimal solutions.
 func fillAssemblies(target string, assemblies []assembly, conf *config.Config) (solutions [][]*Frag) {
-	// append a fully synthetic solution at first, nothing added should cost more than this (single plasmid)
 	filled := make([][]*Frag, len(assemblies))
-
-	for i, assemblyToFill := range assemblies {
-		filledFragments, err := assemblyToFill.fill(target, conf)
+	for ai, a := range assemblies {
+		filledFragments, err := a.fill(target, conf)
 		if err != nil || filledFragments == nil {
-			rlog.Errorf("Error filling assembly %d: %v\n", i, err)
+			rlog.Errorf("Error filling assembly %d: %v\n", ai, err)
 		}
-		filled[i] = filledFragments // if there was an error this will cause a panic
+		filled[ai] = filledFragments
 	}
 	return filled
 }

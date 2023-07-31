@@ -36,8 +36,6 @@ type windowGCScore struct {
 }
 
 func (a *windowGCScore) nextBp(bp rune, pos int) {
-	prevWindowSeq := a.windowSeq
-	prevWindowGCCount := a.windowGCCount
 	if bp == 'C' || bp == 'G' {
 		a.windowGCCount++
 	}
@@ -45,11 +43,12 @@ func (a *windowGCScore) nextBp(bp rune, pos int) {
 		a.windowSeq[pos] = bp
 		a.windowGCCountBoundary = a.windowGCCount
 	} else {
+		prevWindowSeq := a.windowSeq
 		a.windowSeq = append(prevWindowSeq[1:], bp)
 		if prevWindowSeq[0] == 'C' || prevWindowSeq[0] == 'G' {
 			a.windowGCCount--
 		}
-		if a.boundaryCmp(a.windowGCCount, prevWindowGCCount) {
+		if a.boundaryCmp(a.windowGCCount, a.windowGCCountBoundary) {
 			a.windowGCCountBoundary = a.windowGCCount
 		}
 	}

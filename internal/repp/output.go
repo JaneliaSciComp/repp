@@ -246,8 +246,8 @@ func writeCSV(filename, fragmentIDBase string,
 		"Size",
 		"Match Pct",
 		"GC%",
-		"Min 50 GC%",
-		"Max 50 GC%",
+		"50 low GC%",
+		"50 high GC%",
 		"Homopolymer",
 	})
 	if err != nil {
