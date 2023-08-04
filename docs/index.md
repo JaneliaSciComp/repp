@@ -53,7 +53,7 @@ repp --help
 
 Note: `repp` depends on:
 
-- [`Go >= 1.18.0`](https://go.dev/doc/install) for compilation
+- [`Go >= 1.20.0`](https://go.dev/doc/install) for compilation
 - [BLAST+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) for sequence alignment
 - [Primer3](https://github.com/primer3-org/primer3) for hairpin detection and off-target primer-binding detection
 
