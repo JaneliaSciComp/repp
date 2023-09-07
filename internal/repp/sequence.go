@@ -97,8 +97,8 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		rlog.Fatal(err)
 	}
 
-	primersDB := readOligos(assemblyParams.GetPrimersDBName(), primerIDPrefix, false)
-	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBName(), synthFragIDPrefix, true)
+	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), primerIDPrefix, false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), synthFragIDPrefix, true)
 
 	// write the results to a file
 	elapsed := time.Since(start)

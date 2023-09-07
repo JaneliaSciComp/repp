@@ -2,14 +2,10 @@ package cmd
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
-	"go.uber.org/multierr"
-	"golang.org/x/exp/maps"
 )
 
 // addCmd is for piecing together a list of input fragments into a plasmid
@@ -97,72 +93,14 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 		prefixSeqIDs = false
 	}
 
-	seqFiles := collectSequenceFiles(args)
+	seqFiles, err := repp.CollectFiles(args)
+	if err != nil {
+		log.Fatalf("Errors encountered collection sequence files from %v: %v", args, err)
+	}
 
 	if err = repp.AddDatabase(dbName, seqFiles, cost, prefixSeqIDs); err != nil {
 		log.Fatal("Error creating database", dbName, err)
 	}
-}
-
-func collectSequenceFiles(args []string) []string {
-	var allErrs error
-	allSeqFiles := map[string]string{}
-
-	for _, seqLocation := range args {
-		seqFiles, err := collectSequenceFilesFromLocation(seqLocation)
-		if err != nil {
-			allErrs = multierr.Append(allErrs, err)
-		} else {
-			for _, f := range seqFiles {
-				allSeqFiles[f] = f
-			}
-		}
-	}
-
-	if allErrs != nil {
-		if len(allSeqFiles) == 0 {
-			// if no file was found stop here
-			log.Fatalln("Errors encountered while accessing files from ", args, allErrs)
-		} else {
-			// continue even if not all arguments were valid files
-			log.Println("Errors encountered while accessing files from ", args, allErrs)
-		}
-	}
-
-	return maps.Values(allSeqFiles)
-}
-
-func collectSequenceFilesFromLocation(seqLocation string) (seqFiles []string, err error) {
-	if seqLocation != "" {
-		seqLocationInfo, statErr := os.Stat(seqLocation)
-		if statErr != nil {
-			// some error occurred - I don't care what type of error
-			return seqFiles, statErr
-		}
-		if seqLocationInfo.IsDir() {
-			// collect files from sequence dir
-			seqDirContent, dirErr := os.ReadDir(seqLocation)
-			if dirErr != nil {
-				return seqFiles, dirErr
-			}
-			for _, f := range seqDirContent {
-				if !f.IsDir() {
-					seqLocationPath, fpErr := filepath.Abs(filepath.Join(seqLocation, f.Name()))
-					if fpErr != nil {
-						return seqFiles, fpErr
-					}
-					seqFiles = append(seqFiles, seqLocationPath)
-				}
-			}
-		} else if !seqLocationInfo.IsDir() {
-			seqLocationPath, fpErr := filepath.Abs(seqLocation)
-			if fpErr != nil {
-				return seqFiles, fpErr
-			}
-			seqFiles = append(seqFiles, seqLocationPath)
-		}
-	}
-	return seqFiles, nil
 }
 
 func runFeaturesAddCmd(cmd *cobra.Command, args []string) {

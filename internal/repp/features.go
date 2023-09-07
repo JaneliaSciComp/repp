@@ -84,8 +84,8 @@ func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 	}
 
 	// do not use the oligos manifest
-	primersDB := readOligos(assemblyParams.GetPrimersDBName(), primerIDPrefix, false)
-	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBName(), synthFragIDPrefix, true)
+	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), primerIDPrefix, false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), synthFragIDPrefix, true)
 
 	if _, err := writeResult(
 		assemblyParams.GetOut(),

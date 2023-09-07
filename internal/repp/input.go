@@ -42,11 +42,11 @@ type AssemblyParams interface {
 	GetBackboneName() string
 	SetBackboneName(bn string)
 
-	GetPrimersDBName() string
-	SetPrimersDBName(dbName string)
+	GetPrimersDBLocations() []string
+	SetPrimersDBLocations(dbLocations []string)
 
-	GetSynthFragsDBName() string
-	SetSynthFragsDBName(dbName string)
+	GetSynthFragsDBLocations() []string
+	SetSynthFragsDBLocations(dbLocations []string)
 
 	getDBs() ([]DB, error)
 	SetDbNames(dbNames []string)
@@ -73,10 +73,10 @@ type assemblyParamsImpl struct {
 	backboneName string
 
 	// primers manifest
-	primersManifest string
+	primersDBs []string
 
 	// synthetic fragments manifest
-	synthFragsManifest string
+	synthFragsDBs []string
 
 	// list of enzimes
 	enzymeNames []string
@@ -151,20 +151,20 @@ func (ap *assemblyParamsImpl) SetBackboneName(backboneName string) {
 	ap.backboneName = backboneName
 }
 
-func (ap assemblyParamsImpl) GetPrimersDBName() string {
-	return ap.primersManifest
+func (ap assemblyParamsImpl) GetPrimersDBLocations() []string {
+	return ap.primersDBs
 }
 
-func (ap *assemblyParamsImpl) SetPrimersDBName(manifest string) {
-	ap.primersManifest = manifest
+func (ap *assemblyParamsImpl) SetPrimersDBLocations(dbLocations []string) {
+	ap.primersDBs = dbLocations
 }
 
-func (ap assemblyParamsImpl) GetSynthFragsDBName() string {
-	return ap.synthFragsManifest
+func (ap assemblyParamsImpl) GetSynthFragsDBLocations() []string {
+	return ap.synthFragsDBs
 }
 
-func (ap *assemblyParamsImpl) SetSynthFragsDBName(manifest string) {
-	ap.synthFragsManifest = manifest
+func (ap *assemblyParamsImpl) SetSynthFragsDBLocations(dbLocations []string) {
+	ap.synthFragsDBs = dbLocations
 }
 
 func (ap assemblyParamsImpl) getDBs() (dbs []DB, err error) {

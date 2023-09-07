@@ -61,8 +61,8 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 
 	target, solution := fragments(frags, conf)
 
-	primersDB := readOligos(assemblyParams.GetPrimersDBName(), primerIDPrefix, false)
-	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBName(), synthFragIDPrefix, true)
+	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), primerIDPrefix, false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), synthFragIDPrefix, true)
 
 	// write the single list of fragments as a possible solution to the output file
 	if _, err := writeResult(

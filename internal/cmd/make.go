@@ -98,8 +98,8 @@ func init() {
 	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	sequenceCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
 	sequenceCmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
-	sequenceCmd.Flags().StringP("primers-database", "m", "", "Primers database as a CSV file")
-	sequenceCmd.Flags().StringP("synth-frags-database", "s", "", "Synthesized fragments database as a CSV file")
+	sequenceCmd.Flags().StringP("primers-databases", "m", "", "Comma separated list of CSV primers database files")
+	sequenceCmd.Flags().StringP("synth-frags-databases", "s", "", "Comma separated list of CSV synthetic fragments database files")
 	sequenceCmd.Flags().Int("synthetic-frag-factor", 1, "Penalty for synthetic fragments")
 	sequenceCmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
 

@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"go.uber.org/multierr"
 )
 
 type oligo struct {
@@ -129,27 +131,47 @@ func searchOligoDBs(seq string, oligoDBs []*oligosDB) oligo {
 	return oligo{seq: seq}
 }
 
-func readOligos(manifest, basePrefix string, synthOligos bool) (oligos *oligosDB) {
+func readOligos(dbLocations []string, basePrefix string, synthOligos bool) (oligos *oligosDB) {
 	oligos = newOligosDB(basePrefix, synthOligos)
 
-	if manifest == "" {
+	oligosFnames, collectFilesErr := CollectFiles(dbLocations)
+	if collectFilesErr != nil {
+		rlog.Warnf("Errors trying to collect oligo filenames from: %v", dbLocations)
 		return
 	}
 
-	f, err := os.Open(manifest)
+	var allErrs error
+	for _, fn := range oligosFnames {
+		if fn == "" {
+			continue
+		}
+		oligosReadErr := readOligosFromFile(fn, oligos)
+		if oligosReadErr != nil {
+			allErrs = multierr.Append(allErrs, oligosReadErr)
+		}
+	}
+
+	if allErrs != nil {
+		rlog.Warnf("Errors trying to read oligos: %v", allErrs)
+	}
+	return
+}
+
+func readOligosFromFile(oligosCSVFilename string, oligos *oligosDB) error {
+	f, err := os.Open(oligosCSVFilename)
 	if err != nil {
-		rlog.Warnf("Error opening oligos manifest %s: %v", manifest, err)
-		return
+		rlog.Warnf("Error opening oligos manifest %s: %v", oligosCSVFilename, err)
+		return err
 	}
 	defer f.Close()
 
 	manifestReader := csv.NewReader(f)
 
 	if err = readOligosFromCSV(manifestReader, oligos); err != nil {
-		rlog.Warnf("Error parsing oligos manifest %s: %v", manifest, err)
+		rlog.Warnf("Error parsing oligos manifest %s: %v", oligosCSVFilename, err)
 	}
 
-	return
+	return nil
 }
 
 func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {

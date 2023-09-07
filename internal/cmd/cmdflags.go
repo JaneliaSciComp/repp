@@ -101,15 +101,15 @@ func extractOutputFormat(cmd *cobra.Command) string {
 	}
 }
 
-func extractOligosDatabase(cmd *cobra.Command, argname string) string {
-	manifest, err := cmd.Flags().GetString(argname)
+func extractOligosDatabases(cmd *cobra.Command, argname string) []string {
+	dbNames, err := cmd.Flags().GetString(argname)
 	if err != nil {
 		if helperr := cmd.Help(); helperr != nil {
 			log.Fatal(helperr)
 		}
-		log.Printf("failed to parse fragments database arg: %v", err)
+		log.Fatalf("failed to parse %s arg: %v", argname, err)
 	}
-	return manifest
+	return splitStringOn(dbNames, []rune{' ', ','})
 }
 
 func extractCommonParams(cmd *cobra.Command, args []string, params repp.AssemblyParams) {
@@ -149,10 +149,10 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 	params.SetEnzymeNames(splitStringOn(enzymeNames, []rune{' ', ','}))
 
 	// extract primers dbname (CSV file)
-	params.SetPrimersDBName(extractOligosDatabase(cmd, "primers-database"))
+	params.SetPrimersDBLocations(extractOligosDatabases(cmd, "primers-databases"))
 
 	// extract synthesized fragments dbname (CSV file)
-	params.SetSynthFragsDBName(extractOligosDatabase(cmd, "synth-frags-database"))
+	params.SetSynthFragsDBLocations(extractOligosDatabases(cmd, "synth-frags-databases"))
 }
 
 // guessOutput gets an outpath path from an input path (if no output path is
