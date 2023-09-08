@@ -3,6 +3,7 @@ package repp
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"go.uber.org/multierr"
 	"golang.org/x/exp/maps"
@@ -10,10 +11,23 @@ import (
 
 func CollectFiles(locations []string) ([]string, error) {
 	var allErrs error
-	allFiles := map[string]string{}
+	var expandedLocations []string
 
-	for _, location := range locations {
-		files, err := collectFilesFromPathLocation(location)
+	for _, l := range locations {
+		if strings.TrimSpace(l) == "" {
+			continue
+		}
+		paths, err := filepath.Glob(l)
+		if err != nil {
+			rlog.Infof("Error expanding %s: %v", l, err)
+			continue
+		}
+		expandedLocations = append(expandedLocations, paths...)
+	}
+
+	allFiles := map[string]string{}
+	for _, l := range expandedLocations {
+		files, err := collectFilesFromPathLocation(l)
 		if err != nil {
 			allErrs = multierr.Append(allErrs, err)
 		} else {
