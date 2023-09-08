@@ -240,6 +240,7 @@ func sequence(
 
 	// fill in only best assemblies
 	solutions = fillAssemblies(target.Seq, selectedAssemblies, conf)
+	rlog.Infof("Finished filling %d selected assemblies", len(solutions))
 
 	return insert, target, solutions, nil
 }

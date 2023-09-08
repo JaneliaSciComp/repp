@@ -133,7 +133,6 @@ func searchOligoDBs(seq string, oligoDBs []*oligosDB) oligo {
 
 func readOligos(dbLocations []string, basePrefix string, synthOligos bool) (oligos *oligosDB) {
 	oligos = newOligosDB(basePrefix, synthOligos)
-
 	oligosFnames, collectFilesErr := CollectFiles(dbLocations)
 	if collectFilesErr != nil {
 		rlog.Warnf("Errors trying to collect oligo filenames from: %v", dbLocations)
