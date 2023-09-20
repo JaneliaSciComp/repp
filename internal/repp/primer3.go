@@ -318,12 +318,12 @@ func (p *primer3) parse(target string) (err error) {
 
 	// read in a single primer from the output string file
 	// side is either "LEFT" or "RIGHT"
-	parsePrimer := func(side string) Primer {
-		seq := results[fmt.Sprintf("PRIMER_%s_0_SEQUENCE", side)]
-		tm := results[fmt.Sprintf("PRIMER_%s_0_TM", side)]
-		gc := results[fmt.Sprintf("PRIMER_%s_0_GC_PERCENT", side)]
-		penalty := results[fmt.Sprintf("PRIMER_%s_0_PENALTY", side)]
-		pairPenalty := results["PRIMER_PAIR_0_PENALTY"]
+	parsePrimer := func(side string, index int) Primer {
+		seq := results[fmt.Sprintf("PRIMER_%s_%d_SEQUENCE", side, index)]
+		tm := results[fmt.Sprintf("PRIMER_%s_%d_TM", side, index)]
+		gc := results[fmt.Sprintf("PRIMER_%s_%d_GC_PERCENT", side, index)]
+		penalty := results[fmt.Sprintf("PRIMER_%s_%d_PENALTY", side, index)]
+		pairPenalty := results[fmt.Sprintf("PRIMER_PAIR_%d_PENALTY", index)]
 
 		tmfloat, _ := strconv.ParseFloat(tm, 64)
 		gcfloat, _ := strconv.ParseFloat(gc, 64)
@@ -353,8 +353,8 @@ func (p *primer3) parse(target string) (err error) {
 	}
 
 	p.f.Primers = []Primer{
-		parsePrimer("LEFT"),
-		parsePrimer("RIGHT"),
+		parsePrimer("LEFT", 0),
+		parsePrimer("RIGHT", 0),
 	}
 
 	return

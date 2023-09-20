@@ -224,23 +224,37 @@ func sequence(
 		return compareAssemblies(assemblies[i], assemblies[j]) <= 0
 	})
 
-	var selectedAssemblies []assembly
+	var maxSolutions int
 	if keepNSolutions > 0 {
 		if keepNSolutions < len(assemblies) {
-			selectedAssemblies = assemblies[0:keepNSolutions]
+			maxSolutions = keepNSolutions
 		} else {
-			selectedAssemblies = assemblies
+			maxSolutions = len(assemblies)
 		}
 	} else {
 		// only keep the best solution
-		selectedAssemblies = assemblies[:1]
+		maxSolutions = 1
 	}
 
-	rlog.Infof("Selected %d assemblies out of %d", len(selectedAssemblies), len(assemblies))
+	var finalSolutions [][]*Frag
 
-	// fill in only best assemblies
-	solutions = fillAssemblies(target.Seq, selectedAssemblies, conf)
-	rlog.Infof("Finished filling %d selected assemblies", len(solutions))
+	// try to fill as many solutions as requested (if there are enough assemblies)
+	// so if not all solutions could be filled try other assemblies
+	for searchSolutionFromIndex := 0; len(finalSolutions) < maxSolutions && searchSolutionFromIndex < len(assemblies); searchSolutionFromIndex += maxSolutions {
+		var selectedAssemblies []assembly
+		if searchSolutionFromIndex+maxSolutions-len(finalSolutions) < len(assemblies) {
+			selectedAssemblies = assemblies[searchSolutionFromIndex : searchSolutionFromIndex+maxSolutions-len(finalSolutions)]
+		} else {
+			selectedAssemblies = assemblies[searchSolutionFromIndex:]
+		}
+		rlog.Infof("Selected %d assemblies out of %d from %d",
+			len(selectedAssemblies), len(assemblies)-searchSolutionFromIndex, searchSolutionFromIndex)
 
-	return insert, target, solutions, nil
+		// fill in only best assemblies
+		solutions := fillAssemblies(target.Seq, selectedAssemblies, conf)
+		finalSolutions = append(finalSolutions, solutions...)
+	}
+	rlog.Infof("Finished filling %d selected assemblies", len(finalSolutions))
+
+	return insert, target, finalSolutions, nil
 }

@@ -144,7 +144,7 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 	}
 	// validate that fragments will anneal to one another
 	if err := validateJunctions(pcrAndSynthFrags, conf); err != nil {
-		return nil, err
+		return pcrAndSynthFrags, err
 	}
 
 	return pcrAndSynthFrags, nil
@@ -378,13 +378,14 @@ func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Fra
 
 // fillAssemblies fills in assemblies and returns the pareto optimal solutions.
 func fillAssemblies(target string, assemblies []assembly, conf *config.Config) (solutions [][]*Frag) {
-	filled := make([][]*Frag, len(assemblies))
+	var filled [][]*Frag
 	for ai, a := range assemblies {
 		filledFragments, err := a.fill(target, conf)
-		if err != nil || filledFragments == nil {
+		if err != nil || filledFragments == nil || len(filledFragments) == 0 {
 			rlog.Errorf("Error filling assembly %d: %v\n", ai, err)
+		} else {
+			filled = append(filled, filledFragments)
 		}
-		filled[ai] = filledFragments
 	}
 	return filled
 }
