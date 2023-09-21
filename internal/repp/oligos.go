@@ -12,10 +12,13 @@ import (
 )
 
 type oligo struct {
-	id    string
-	seq   string
-	isNew bool
-	synth bool
+	id            string
+	seq           string
+	isNew         bool
+	synth         bool
+	primingRegion string
+	tm            float64
+	hairpinTh     float64
 }
 
 func (o oligo) isEmpty() bool {

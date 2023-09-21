@@ -162,7 +162,7 @@ func Test_bpToAdd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotBpToAdd := p.bpToAdd(tt.args.left, tt.args.right); gotBpToAdd != tt.wantBpToAdd {
+			if gotBpToAdd := p.bpToAdd(tt.args.left, tt.args.right, c.FragmentsMinHomology); gotBpToAdd != tt.wantBpToAdd {
 				t.Errorf("bpToAdd() = %v, want %v", gotBpToAdd, tt.wantBpToAdd)
 			}
 		})

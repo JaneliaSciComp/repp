@@ -382,7 +382,7 @@ func fillAssemblies(target string, assemblies []assembly, conf *config.Config) (
 	for ai, a := range assemblies {
 		filledFragments, err := a.fill(target, conf)
 		if err != nil || filledFragments == nil || len(filledFragments) == 0 {
-			rlog.Errorf("Error filling assembly %d: %v\n", ai, err)
+			rlog.Warnf("Error filling assembly %d - will try another: %v\n", ai+1, err)
 		} else {
 			filled = append(filled, filledFragments)
 		}

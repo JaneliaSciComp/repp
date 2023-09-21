@@ -120,6 +120,12 @@ type Primer struct {
 
 	// Range that the primer spans on the fragment
 	Range ranged `json:"-"`
+
+	// Original primer sequence returned by primer3 before mutating the primer
+	PrimingRegion string `json:"primingRegion"`
+
+	// Hairpin TH
+	HairpinTh float64 `json:"hairpinTh"`
 }
 
 func fragTypeAsString(ft fragType) string {
@@ -188,15 +194,17 @@ func (f Frag) String() string {
 	return fmt.Sprintf("%s[%d,%d]", f.uniqueID, f.start, f.end)
 }
 
-func (f Frag) getPrimerSeq(strand bool) string {
+func (f Frag) getPrimers() (fwd, rev Primer) {
 	if len(f.Primers) > 0 {
 		for _, p := range f.Primers {
-			if p.Strand == strand {
-				return p.Seq
+			if p.Strand {
+				fwd = p
+			} else {
+				rev = p
 			}
 		}
 	}
-	return ""
+	return
 }
 
 func (f *Frag) getFragSeq() string {

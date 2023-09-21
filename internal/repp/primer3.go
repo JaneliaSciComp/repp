@@ -73,16 +73,16 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minSeqLength, 
 	p.shrink(p.last, p.f, p.next, maxHomology, minSeqLength) // could skip passing as a param, but this is a bit easier to test
 
 	// calc the bps to add on the left and right side of this Frag
-	addLeft = p.bpToAdd(p.last, p.f)
-	addRight = p.bpToAdd(p.f, p.next)
+	addLeft = p.bpToAdd(p.last, p.f, minHomology)
+	addRight = p.bpToAdd(p.f, p.next, minHomology)
 
 	start := p.f.start
 	length := p.f.end - start + 1
 
 	// sizes to make the primers and target size (min, opt, and max)
-	primerMin := 18 // defaults to 18
-	primerOpt := 20
-	primerMax := 30 // defaults to 23
+	primerMin := minPrimerLength // defaults to 18
+	primerOpt := optPrimerLength
+	primerMax := maxPrimerLength // defaults to 23
 
 	// check whether we have wiggle room on the left or right hand sides to move the
 	// primers inward (let primer3 pick better primers)
@@ -151,7 +151,7 @@ func (p *primer3) shrink(last, f, next *Frag, maxHomology int, minLength int) *F
 
 // bpToAdd returns the number of bp to add the end of the left Frag to create a junction
 // with the right Frag
-func (p *primer3) bpToAdd(left, right *Frag) int {
+func (p *primer3) bpToAdd(left, right *Frag, fragsMinHomology int) int {
 	if !left.couldOverlapViaPCR(right) {
 		return 0 // we're going to synthesize there, don't add bp via PCR
 	}
@@ -160,7 +160,6 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 		return 0 // there is already enough overlap via PCR
 	}
 
-	minHomology := left.conf.FragmentsMinHomology
 	bpDist := left.distTo(right) + 1 // if there's a gap
 	if bpDist < 0 {
 		bpDist = 0
@@ -170,7 +169,7 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 	// eg: 5 bp distance leads to 2.5bp + ~10bp additonal
 	// eg: -10bp distance leads to ~0 bp additional:
 	// 		other Frag is responsible for all of it
-	b := math.Ceil(float64(minHomology) / float64(2))
+	b := math.Ceil(float64(fragsMinHomology) / float64(2))
 
 	return bpDist + int(b)
 }
@@ -325,14 +324,16 @@ func (p *primer3) parse(target string) (err error) {
 	parsePrimer := func(side string, index int) Primer {
 		seq := results[fmt.Sprintf("PRIMER_%s_%d_SEQUENCE", side, index)]
 		tm := results[fmt.Sprintf("PRIMER_%s_%d_TM", side, index)]
+		hairpinTh := results[fmt.Sprintf("PRIMER_%s_%d_HAIRPIN_TH", side, index)]
 		gc := results[fmt.Sprintf("PRIMER_%s_%d_GC_PERCENT", side, index)]
 		penalty := results[fmt.Sprintf("PRIMER_%s_%d_PENALTY", side, index)]
 		pairPenalty := results[fmt.Sprintf("PRIMER_PAIR_%d_PENALTY", index)]
 
-		tmfloat, _ := strconv.ParseFloat(tm, 64)
-		gcfloat, _ := strconv.ParseFloat(gc, 64)
-		penaltyfloat, _ := strconv.ParseFloat(penalty, 64)
-		pairfloat, _ := strconv.ParseFloat(pairPenalty, 64)
+		tmValue, _ := strconv.ParseFloat(tm, 64)
+		hairpinThValue, _ := strconv.ParseFloat(hairpinTh, 64)
+		gcValue, _ := strconv.ParseFloat(gc, 64)
+		penaltyValue, _ := strconv.ParseFloat(penalty, 64)
+		pairValue, _ := strconv.ParseFloat(pairPenalty, 64)
 
 		primerRange := results[fmt.Sprintf("PRIMER_%s_0", side)]
 		primerStart, _ := strconv.Atoi(strings.Split(primerRange, ",")[0])
@@ -343,12 +344,14 @@ func (p *primer3) parse(target string) (err error) {
 		}
 
 		return Primer{
-			Seq:         seq,
-			Strand:      side == "LEFT",
-			Tm:          tmfloat,
-			GC:          gcfloat,
-			Penalty:     penaltyfloat,
-			PairPenalty: pairfloat,
+			Seq:           seq,
+			Strand:        side == "LEFT",
+			Tm:            tmValue,
+			GC:            gcValue,
+			Penalty:       penaltyValue,
+			PairPenalty:   pairValue,
+			PrimingRegion: seq,
+			HairpinTh:     hairpinThValue,
 			Range: ranged{
 				start: primerStart,
 				end:   primerEnd,

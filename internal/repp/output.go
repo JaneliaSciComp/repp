@@ -257,6 +257,9 @@ func writeCSV(filename, fragmentIDBase string,
 	err = reagentsCSVWriter.Write([]string{
 		"Reagent ID",
 		"Seq",
+		"Priming Region",
+		"Tm",
+		"Hairpin TH",
 	})
 	for si, s := range out.Solutions {
 		snumber := si + 1
@@ -290,32 +293,38 @@ func writeCSV(filename, fragmentIDBase string,
 
 		for fi, f := range s.Fragments {
 			fnumber := fi + 1
-			var fwdPrimerSeq, revPrimerSeq, synthSeq string
+			var fwdPrimer, revPrimer Primer
+			var synthSeq string
 
 			fID := fmt.Sprintf("%s_%d_%s", fragmentIDBase, fnumber, fragTypeAsString(f.fragType))
-			fwdPrimerSeq = f.getPrimerSeq(true)
-			revPrimerSeq = f.getPrimerSeq(false)
-			if fwdPrimerSeq == "" && revPrimerSeq == "" {
+			fwdPrimer, revPrimer = f.getPrimers()
+			if fwdPrimer.Seq == "" && revPrimer.Seq == "" {
 				synthSeq = f.Seq
 			}
 
-			fwdPrimer := searchOligoDBs(fwdPrimerSeq, updatedPrimerDBs)
-			if !fwdPrimer.isEmpty() {
-				if !fwdPrimer.hasID() {
-					fwdPrimer.assignNewOligoID(existingPrimers.getNewOligoID(newPrimerIndex))
-					newPrimers.addOligo(fwdPrimer)
+			fwdOligo := searchOligoDBs(fwdPrimer.Seq, updatedPrimerDBs)
+			if !fwdOligo.isEmpty() {
+				if !fwdOligo.hasID() {
+					fwdOligo.assignNewOligoID(existingPrimers.getNewOligoID(newPrimerIndex))
+					newPrimers.addOligo(fwdOligo)
 					newPrimerIndex++
 				}
-				reagents = append(reagents, fwdPrimer)
+				fwdOligo.primingRegion = fwdPrimer.PrimingRegion
+				fwdOligo.tm = fwdPrimer.Tm
+				fwdOligo.hairpinTh = fwdPrimer.HairpinTh
+				reagents = append(reagents, fwdOligo)
 			}
-			revPrimer := searchOligoDBs(revPrimerSeq, updatedPrimerDBs)
-			if !revPrimer.isEmpty() {
-				if !revPrimer.hasID() {
-					revPrimer.assignNewOligoID(existingPrimers.getNewOligoID(newPrimerIndex))
-					newPrimers.addOligo(revPrimer)
+			revOligo := searchOligoDBs(revPrimer.Seq, updatedPrimerDBs)
+			if !revOligo.isEmpty() {
+				if !revOligo.hasID() {
+					revOligo.assignNewOligoID(existingPrimers.getNewOligoID(newPrimerIndex))
+					newPrimers.addOligo(revOligo)
 					newPrimerIndex++
 				}
-				reagents = append(reagents, revPrimer)
+				revOligo.primingRegion = revPrimer.PrimingRegion
+				revOligo.tm = revPrimer.Tm
+				revOligo.hairpinTh = revPrimer.HairpinTh
+				reagents = append(reagents, revOligo)
 			}
 			var templateID string
 			var matchRatio string
@@ -354,9 +363,9 @@ func writeCSV(filename, fragmentIDBase string,
 			}
 			if err = strategyCSVWriter.Write([]string{
 				fID,
-				fwdPrimer.getIDOrDefault(false, "N/A"), // fwd primer
-				revPrimer.getIDOrDefault(false, "N/A"), // rev primer
-				templateID,                             // template
+				fwdOligo.getIDOrDefault(false, "N/A"), // fwd primer
+				revOligo.getIDOrDefault(false, "N/A"), // rev primer
+				templateID,                            // template
 				strconv.Itoa(pcrSeqSize),
 				matchRatio,
 				gcContentCol,
@@ -371,7 +380,7 @@ func writeCSV(filename, fragmentIDBase string,
 		sort.Sort(sortedOligosByID(reagents))
 		for _, r := range reagents {
 			reagentID := r.getIDOrDefault(!r.isNew, "N/A") // mark the ID if this reagent already existed in the original manifest
-			err = writeReagent(reagentsCSVWriter, reagentID, r.seq)
+			err = writeReagent(reagentsCSVWriter, reagentID, r)
 			if err != nil {
 				rlog.Errorf("Error writing reagent %s: %v", reagentID, err)
 			}
@@ -408,11 +417,24 @@ func resultFilename(template, suffix string) string {
 	return noExt + "-" + suffix + ext
 }
 
-func writeReagent(csvWriter *csv.Writer, reagentID, reagentSeq string) (err error) {
+func writeReagent(csvWriter *csv.Writer, reagentID string, reagent oligo) (err error) {
 	if reagentID != "" {
+		var primingRegion, tm, hairpinTh string
+		if reagent.primingRegion == "" {
+			primingRegion = "N/A"
+			tm = "N/A"
+			hairpinTh = "N/A"
+		} else {
+			primingRegion = reagent.primingRegion
+			tm = fmt.Sprintf("%.2f", reagent.tm)
+			hairpinTh = fmt.Sprintf("%.2f", reagent.hairpinTh)
+		}
 		err = csvWriter.Write([]string{
 			reagentID,
-			reagentSeq,
+			reagent.seq,
+			primingRegion,
+			tm,
+			hairpinTh,
 		})
 	}
 	return
