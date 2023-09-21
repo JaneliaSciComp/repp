@@ -8,7 +8,8 @@ process REPP_MAKE_PLASMID {
     container { params.repp_container }
     containerOptions { get_runtime_opts([
         parentfile(input_seq, 1),
-        parentfile(params.oligos_manifest, 1),
+        parentfile(params.primers_databases, 1),
+        parentfile(params.synth_frags_databases, 1)
         parentfile(assembly_output, 2),
     ]) }
     cpus { params.make_plasmid_cpus }
@@ -29,8 +30,14 @@ process REPP_MAKE_PLASMID {
     def dbs_arg = db_names
         ? "--dbs ${db_names}"
         : ''
-    def oligos_manifest_arg = params.oligos_manifest
-        ? "-m ${normalized_file_name(params.oligos_manifest)}"
+    def primers_databases_arg = params.primers_databases
+        ? "-m ${normalized_file_name(params.primers_databases)}"
+        : ''
+    def synth_frags_databases_arg = params.synth_frags_databases
+        ? "-s ${params.synth_frags_databases}"
+        : ''
+    def max_solutions_arg = params.max_solutions
+        ? "-n ${params.max_solutions}"
         : ''
     def config_arg = params.config
         ? "--config ${params.config}"
@@ -60,9 +67,11 @@ process REPP_MAKE_PLASMID {
         /go/bin/repp make sequence \
             -i ${normalized_file_name(input_seq)} \
             ${dbs_arg} \
-            ${oligos_manifest_arg} \
+            ${primers_databases_arg} \
+            ${synth_frags_databases_arg} \
             ${output_arg} \
             ${sequence_identity_arg} \
+            ${max_solutions_arg} \
             ${config_arg} \
             ${output_format_arg}
     """

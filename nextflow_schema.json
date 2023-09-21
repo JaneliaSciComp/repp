@@ -89,9 +89,13 @@
           "type": "string",
           "description": "Database searched for creating the plasmid assembly. If not set it will search all available databases."
         },
-        "oligos_manifest": {
+        "primers_databases": {
           "type": "string",
-          "description": "CSV file containing available oligos"
+          "description": "comma separated list of files or dirs containing available primers"
+        },
+        "synth_frags_databases": {
+          "type": "string",
+          "description": "comma separated list of files or dir containing available synthetic fragments"
         },
         "assembly_output": {
           "type": "string",
@@ -126,6 +130,10 @@
           "minimum": 1,
           "maximum": 100,
           "hidden": true
+        },
+        "max_solutions": {
+          "type": "integer",
+          "default": 1
         },
         "config": {
           "type": "string",
