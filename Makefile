@@ -1,4 +1,5 @@
 DOCKER_IMAGE=janeliascicomp/repp
+DOCKER_PLATFORM_ARG=--platform linux/x86_64,linux/arm64
 VERSION=v1.0.0
 
 .PHONY: all
@@ -7,14 +8,7 @@ all: build test
 ifeq ($(OS), Windows_NT)
     REPP_EXECUTABLE=repp.exe
     RM=rd /S /Q
-    PLATFORM_ARG=
 else
-    ARCH := $(shell arch)
-	ifeq ($(ARCH), arm64)
-		PLATFORM_ARG=--platform linux/x86_64
-	else
-		PLATFORM_ARG=
-	endif
     REPP_EXECUTABLE=repp
     RM=rm -rf
 endif
@@ -32,17 +26,14 @@ build: modinstall fmt lint
 install:
 	go install ./cmd/repp
 
-.PHONY: image
-image:
-	docker build ${PLATFORM_ARG} \
+.PHONY: image/multiplatform
+image/multiplatform:
+	docker buildx build ${DOCKER_PLATFORM_ARG} \
 		-t ${DOCKER_IMAGE}:$(VERSION) \
-		-t ${DOCKER_IMAGE}:latest .
+		-t ${DOCKER_IMAGE}:latest \
+		--push .
 
-image/push: image
-	docker push ${DOCKER_IMAGE}:$(VERSION)
-	docker push ${DOCKER_IMAGE}:latest
-
-release: image/push
+release: image/multiplatform
 	gh release create $(VERSION) -t $(VERSION) --generate-notes -d
 
 .PHONY: test
