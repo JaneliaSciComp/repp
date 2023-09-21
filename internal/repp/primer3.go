@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/config"
+	"go.uber.org/multierr"
 )
 
 // primer3 is a utility struct for executing primer3 to create primers on a fragment
@@ -63,10 +64,13 @@ func newPrimer3(last, this, next *Frag, seq string, conf *config.Config) primer3
 // existing homology to begin with (the two nodes should share ~50/50)
 //
 // returning the number of bp that have to be artifically added to the left and right primers
-func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcrBuffer int) (addLeft, addRight int, err error) {
+func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minSeqLength, pcrBuffer,
+	minPrimerLength, maxPrimerLength, optPrimerLength int,
+	maxHairpinMeltTempInCelsius, primerMinTm, primerMaxTm float64,
+) (addLeft, addRight int, err error) {
 	// adjust the Frag's start and end index in the event that there's too much homology
 	// with the neighboring fragment
-	p.shrink(p.last, p.f, p.next, maxHomology, minLength) // could skip passing as a param, but this is a bit easier to test
+	p.shrink(p.last, p.f, p.next, maxHomology, minSeqLength) // could skip passing as a param, but this is a bit easier to test
 
 	// calc the bps to add on the left and right side of this Frag
 	addLeft = p.bpToAdd(p.last, p.f)
@@ -88,7 +92,7 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 	leftBuffer := p.buffer(p.last.distTo(p.f), minHomology, maxEmbedLength, pcrBuffer)
 	rightBuffer := p.buffer(p.f.distTo(p.next), minHomology, maxEmbedLength, pcrBuffer)
 
-	if length-leftBuffer-rightBuffer < p.f.conf.PcrMinLength {
+	if length-leftBuffer-rightBuffer < minSeqLength {
 		leftBuffer = 0
 		rightBuffer = 0
 	}
@@ -104,6 +108,9 @@ func (p *primer3) input(minHomology, maxHomology, maxEmbedLength, minLength, pcr
 		primerMax,
 		leftBuffer,
 		rightBuffer,
+		maxHairpinMeltTempInCelsius,
+		primerMinTm,
+		primerMaxTm,
 	)
 	if err != nil {
 		return 0, 0, err
@@ -196,6 +203,7 @@ func (p *primer3) buffer(dist, minHomology, maxEmbedLength, pcrBuffer int) (buff
 func (p *primer3) settings(
 	seq, p3conf string,
 	start, length, primerMin, primerOpt, primerMax, leftBuffer, rightBuffer int,
+	maxHairpinMeltTempInCelsius, primerMinTm, primerMaxTm float64,
 ) (file []byte, err error) {
 	// see primer3 manual or /vendor/primer3-2.4.0/settings_files/p3_th_settings.txt
 	settings := map[string]string{
@@ -208,11 +216,11 @@ func (p *primer3) settings(
 		"PRIMER_OPT_SIZE":                      strconv.Itoa(primerOpt),
 		"PRIMER_MAX_SIZE":                      strconv.Itoa(primerMax),
 		"PRIMER_EXPLAIN_FLAG":                  "1",
-		"PRIMER_MIN_TM":                        "47.0",                                              // defaults to 57.0
-		"PRIMER_MAX_TM":                        "73.0",                                              // defaults to 63.0
-		"PRIMER_MAX_HAIRPIN_TH":                fmt.Sprintf("%f", p.f.conf.FragmentsMaxHairpinMelt), // defaults to 47.0
-		"PRIMER_MAX_POLY_X":                    "7",                                                 // defaults to 5
-		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0",                                              // defaults to 8.00
+		"PRIMER_MIN_TM":                        fmt.Sprintf("%f", primerMinTm),                 // defaults to 57.0
+		"PRIMER_MAX_TM":                        fmt.Sprintf("%f", primerMaxTm),                 // defaults to 63.0
+		"PRIMER_MAX_HAIRPIN_TH":                fmt.Sprintf("%f", maxHairpinMeltTempInCelsius), // defaults to 47.0
+		"PRIMER_MAX_POLY_X":                    "7",                                            // defaults to 5
+		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0",                                         // defaults to 8.0
 	}
 
 	// if there is room to optimize, we let primer3 pick the best primers available
@@ -285,10 +293,6 @@ func (p *primer3) run() (err error) {
 //
 // target is the target sequence we're building for. We need it to modulo the primer ranges
 func (p *primer3) parse(target string) (err error) {
-	// delete the temporary input and output primer3 files
-	defer os.Remove(p.in.Name())
-	defer os.Remove(p.out.Name())
-
 	fileBytes, err := os.ReadFile(p.out.Name())
 	if err != nil {
 		return
@@ -357,6 +361,13 @@ func (p *primer3) parse(target string) (err error) {
 		parsePrimer("RIGHT", 0),
 	}
 
+	return
+}
+
+func (p *primer3) close() (err error) {
+	// remove temporary input and output
+	err = multierr.Append(err, os.Remove(p.in.Name()))
+	err = multierr.Append(err, os.Remove(p.out.Name()))
 	return
 }
 

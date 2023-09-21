@@ -52,9 +52,29 @@ pcr-primer-max-ectopic-tm: 55.0
 # (more synthesis)
 pcr-buffer-length: 10
 
-# pcr primer length used for estimating the cost of a PCR fragment
-# that does not have the primers set yet
-estimated-pcr-primer-length: 24
+# primer3 min and max primer lengths
+# are also used for estimating 
+# the cost of a PCR fragment before primers are computed
+# by taking the median value between min and max size
+
+# primer3 min primer length
+pcr-min-primer-length: 18
+
+# primer3 max primer length
+pcr-max-primer-length: 30
+
+# primer3 optimum primer length
+pcr-optimum-primer-length: 20
+
+# Min annealing temperature (Tm) used by primer3 to calculate primers
+pcr-primer-min-tm: 57
+
+# Max annealing temperature (Tm) used by primer3 to calculate primers
+pcr-primer-max-tm: 63
+
+# Max allowed difference in primer annealing temperatures (Tm)
+# If <0 the difference is not checked
+pcr-max-fwd-rev-primer-tm-diff: 5
 
 # Minimum length of a synthesized building fragment
 synthetic-min-length: 300

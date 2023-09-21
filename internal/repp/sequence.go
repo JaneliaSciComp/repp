@@ -190,7 +190,7 @@ func sequence(
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(target.Seq), conf.PcrMinLength, 1)
+	matches = cull(matches, len(target.Seq), conf.PcrMinFragLength, 1)
 	rlog.Debugw("culled matches", "remaining", len(matches)/2)
 
 	// map fragment Matches to nodes

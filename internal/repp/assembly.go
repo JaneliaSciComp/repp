@@ -308,8 +308,8 @@ func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength in
 	if newCount > maxCount {
 		return assembly{}, false, fmt.Errorf("it requires too many fragments (%d > %d)", newCount, maxCount)
 	}
-	if end-assemblyEnd < f.conf.PcrMinLength && !features {
-		return assembly{}, false, fmt.Errorf("overlap with last fragment is too short (%d < %d)", end-assemblyEnd, f.conf.PcrMinLength)
+	if end-assemblyEnd < f.conf.PcrMinFragLength && !features {
+		return assembly{}, false, fmt.Errorf("overlap with last fragment is too short (%d < %d)", end-assemblyEnd, f.conf.PcrMinFragLength)
 	}
 
 	// calc the estimated dollar cost of getting to the next Frag

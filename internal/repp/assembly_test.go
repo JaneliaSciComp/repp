@@ -14,7 +14,7 @@ func Test_assembly_add(t *testing.T) {
 
 	c.FragmentsMaxCount = 5
 	c.PcrPrimerMaxEmbedLength = 0
-	c.PcrMinLength = 0
+	c.PcrMinFragLength = 0
 	c.SyntheticMaxLength = 100
 	c.SyntheticFragmentCost = map[int]config.SynthCost{
 		100: {

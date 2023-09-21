@@ -137,7 +137,7 @@ func Test_features(t *testing.T) {
 
 func Test_fragments(t *testing.T) {
 	c := config.New()
-	c.PcrMinLength = 10
+	c.PcrMinFragLength = 10
 	c.FragmentsMinHomology = 8
 	c.FragmentsMaxHomology = 20
 

@@ -111,8 +111,8 @@ type Config struct {
 	// the cost of time for each PCR reaction
 	PcrTimeCost float64 `mapstructure:"pcr-time-cost"`
 
-	// PcrMinLength is the minimum size of a fragment (used to filter BLAST results)
-	PcrMinLength int `mapstructure:"pcr-min-length"`
+	// PcrMinFragLength is the minimum size of a fragment (used to filter BLAST results)
+	PcrMinFragLength int `mapstructure:"pcr-min-length"`
 
 	// the maximum primer3 score allowable
 	PcrPrimerMaxPairPenalty float64 `mapstructure:"pcr-primer-max-pair-penalty"`
@@ -127,8 +127,24 @@ type Config struct {
 	// to allow Primer3 to look for a primer
 	PcrBufferLength int `mapstructure:"pcr-buffer-length"`
 
-	// Minimum primers length used for estimating a pcr fragment cost that does not have primers set yet
-	EstimatedPCRPrimersLength int `mapstructure:"estimated-pcr-primer-length"`
+	// Minimum primers length
+	PcrPrimerMinLength int `mapstructure:"pcr-min-primer-length"`
+
+	// Maximum primers length
+	PcrPrimerMaxLength int `mapstructure:"pcr-max-primer-length"`
+
+	// Optimum primers length
+	PcrPrimerOptimumLength int `mapstructure:"pcr-optimum-primer-length"`
+
+	// Min primer annealing temperature (Tm)
+	PcrPrimerMinTm float64 `mapstructure:"pcr-primer-min-tm"`
+
+	// Max primer annealing temperature (Tm)
+	PcrPrimerMaxTm float64 `mapstructure:"pcr-primer-max-tm"`
+
+	// Max allowed difference in primer annealing temperatures (Tm)
+	// If <0 the difference is not checked
+	PcrMaxFwdRevPrimerTmDiff float64 `mapstructure:"pcr-max-fwd-rev-primer-tm-diff"`
 
 	// minimum length of a synthesized piece of DNA
 	SyntheticMinLength int `mapstructure:"synthetic-min-length"`
@@ -370,8 +386,9 @@ func (c *Config) SynthPlasmidCost(insertLength int) float64 {
 }
 
 func (c *Config) EstimatePCRPrimersLength(defaultValue int) int {
-	if c.EstimatedPCRPrimersLength > 0 {
-		return c.EstimatedPCRPrimersLength
+	medPcrPrimerLength := (c.PcrPrimerMinLength + c.PcrPrimerMaxLength) / 2
+	if medPcrPrimerLength > 0 {
+		return medPcrPrimerLength
 	}
 	return defaultValue
 }

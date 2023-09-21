@@ -3,7 +3,6 @@ package repp
 import (
 	"fmt"
 	"math"
-	"os"
 	"strings"
 
 	"github.com/Lattice-Automation/repp/internal/config"
@@ -173,7 +172,7 @@ func newFrags(matches []match, conf *config.Config) []*Frag {
 		selfJ := f.selfJunction(min, max)
 		if selfJ != "" {
 			f.end -= len(selfJ)
-			if f.end-f.start < conf.PcrMinLength {
+			if f.end-f.start < conf.PcrMinFragLength {
 				continue
 			}
 			f.Seq = f.Seq[:len(f.Seq)-len(selfJ)]
@@ -506,6 +505,7 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	psExec := newPrimer3(prev, f, next, seq, conf)
+	defer psExec.close()
 
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
@@ -514,8 +514,14 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 		conf.FragmentsMinHomology,
 		conf.FragmentsMaxHomology,
 		conf.PcrPrimerMaxEmbedLength,
-		conf.PcrMinLength,
+		conf.PcrMinFragLength,
 		conf.PcrBufferLength,
+		conf.PcrPrimerMinLength,
+		conf.PcrPrimerMaxLength,
+		conf.PcrPrimerOptimumLength,
+		conf.FragmentsMaxHairpinMelt,
+		conf.PcrPrimerMinTm,
+		conf.PcrPrimerMaxTm,
 	)
 	if err != nil {
 		primerErrs[pHash] = err
@@ -537,12 +543,12 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 	mutatePrimers(f, seq, addLeft, addRight)
 
 	// make sure the fragment's length is still long enough for PCR
-	if len(f.PCRSeq) < conf.PcrMinLength {
+	if len(f.PCRSeq) < conf.PcrMinFragLength {
 		err = fmt.Errorf(
 			"failed to execute primer3: %s is %dbp, needs to be > %dbp",
 			f.ID,
 			f.end-f.start,
-			conf.PcrMinLength,
+			conf.PcrMinFragLength,
 		)
 		f.Primers = nil
 		primerErrs[pHash] = err
@@ -557,6 +563,19 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 			conf.PcrPrimerMaxPairPenalty,
 			f.Primers[0],
 			f.Primers[1],
+		)
+		f.Primers = nil
+		primerErrs[pHash] = err
+		return
+	}
+
+	// check the Tm difference
+	if conf.PcrMaxFwdRevPrimerTmDiff > 0 && math.Abs(f.Primers[0].Tm-f.Primers[1].Tm) > conf.PcrMaxFwdRevPrimerTmDiff {
+		err = fmt.Errorf(
+			"the difference in Tm of the 2 primers %f - %f is greater than max allowed: %f",
+			f.Primers[0].Tm,
+			f.Primers[1].Tm,
+			conf.PcrPrimerMaxPairPenalty,
 		)
 		f.Primers = nil
 		primerErrs[pHash] = err
@@ -599,9 +618,6 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	f.fragType = pcr
-
-	os.Remove(psExec.in.Name()) // delete the temporary input and output files
-	os.Remove(psExec.out.Name())
 
 	madePrimers[pHash] = f.Primers
 

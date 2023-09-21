@@ -333,12 +333,11 @@ func (b *blastExec) runAgainst() (err error) {
 	return
 }
 
-func (b *blastExec) close() error {
-	var result error
-	// remove temporary blast input and output
-	result = multierr.Append(result, os.Remove(b.in.Name()))
-	result = multierr.Append(result, os.Remove(b.out.Name()))
-	return result
+func (b *blastExec) close() (err error) {
+	// remove temporary input and output
+	err = multierr.Append(err, os.Remove(b.in.Name()))
+	err = multierr.Append(err, os.Remove(b.out.Name()))
+	return
 }
 
 // blast the seq against all dbs and acculate matches.

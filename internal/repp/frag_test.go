@@ -151,7 +151,7 @@ func Test_Frag_costTo(t *testing.T) {
 	c := config.New()
 	c.FragmentsMinHomology = 20
 	c.FragmentsMaxHomology = 120
-	c.PcrMinLength = 60
+	c.PcrMinFragLength = 60
 	c.PcrPrimerMaxEmbedLength = 20
 	c.PcrBpCost = 0.03
 	c.PcrBufferLength = 20
