@@ -324,13 +324,12 @@ func (p *primer3) parse(target string) (err error) {
 	parsePrimer := func(side string, index int) Primer {
 		seq := results[fmt.Sprintf("PRIMER_%s_%d_SEQUENCE", side, index)]
 		tm := results[fmt.Sprintf("PRIMER_%s_%d_TM", side, index)]
-		hairpinTh := results[fmt.Sprintf("PRIMER_%s_%d_HAIRPIN_TH", side, index)]
 		gc := results[fmt.Sprintf("PRIMER_%s_%d_GC_PERCENT", side, index)]
 		penalty := results[fmt.Sprintf("PRIMER_%s_%d_PENALTY", side, index)]
 		pairPenalty := results[fmt.Sprintf("PRIMER_PAIR_%d_PENALTY", index)]
+		notes := results[fmt.Sprintf("PRIMER_%s_%d_PROBLEMS", side, index)]
 
 		tmValue, _ := strconv.ParseFloat(tm, 64)
-		hairpinThValue, _ := strconv.ParseFloat(hairpinTh, 64)
 		gcValue, _ := strconv.ParseFloat(gc, 64)
 		penaltyValue, _ := strconv.ParseFloat(penalty, 64)
 		pairValue, _ := strconv.ParseFloat(pairPenalty, 64)
@@ -351,11 +350,11 @@ func (p *primer3) parse(target string) (err error) {
 			Penalty:       penaltyValue,
 			PairPenalty:   pairValue,
 			PrimingRegion: seq,
-			HairpinTh:     hairpinThValue,
 			Range: ranged{
 				start: primerStart,
 				end:   primerEnd,
 			},
+			Notes: notes,
 		}
 	}
 

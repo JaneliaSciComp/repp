@@ -124,8 +124,8 @@ type Primer struct {
 	// Original primer sequence returned by primer3 before mutating the primer
 	PrimingRegion string `json:"primingRegion"`
 
-	// Hairpin TH
-	HairpinTh float64 `json:"hairpinTh"`
+	// notes
+	Notes string `json:"notes"`
 }
 
 func fragTypeAsString(ft fragType) string {

@@ -18,7 +18,7 @@ type oligo struct {
 	synth         bool
 	primingRegion string
 	tm            float64
-	hairpinTh     float64
+	notes         string
 }
 
 func (o oligo) isEmpty() bool {

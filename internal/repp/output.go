@@ -259,7 +259,7 @@ func writeCSV(filename, fragmentIDBase string,
 		"Seq",
 		"Priming Region",
 		"Tm",
-		"Hairpin TH",
+		"Notes",
 	})
 	for si, s := range out.Solutions {
 		snumber := si + 1
@@ -311,7 +311,7 @@ func writeCSV(filename, fragmentIDBase string,
 				}
 				fwdOligo.primingRegion = fwdPrimer.PrimingRegion
 				fwdOligo.tm = fwdPrimer.Tm
-				fwdOligo.hairpinTh = fwdPrimer.HairpinTh
+				fwdOligo.notes = fwdPrimer.Notes
 				reagents = append(reagents, fwdOligo)
 			}
 			revOligo := searchOligoDBs(revPrimer.Seq, updatedPrimerDBs)
@@ -323,7 +323,7 @@ func writeCSV(filename, fragmentIDBase string,
 				}
 				revOligo.primingRegion = revPrimer.PrimingRegion
 				revOligo.tm = revPrimer.Tm
-				revOligo.hairpinTh = revPrimer.HairpinTh
+				revOligo.notes = revPrimer.Notes
 				reagents = append(reagents, revOligo)
 			}
 			var templateID string
@@ -379,10 +379,9 @@ func writeCSV(filename, fragmentIDBase string,
 		strategyCSVWriter.Flush()
 		sort.Sort(sortedOligosByID(reagents))
 		for _, r := range reagents {
-			reagentID := r.getIDOrDefault(!r.isNew, "N/A") // mark the ID if this reagent already existed in the original manifest
-			err = writeReagent(reagentsCSVWriter, reagentID, r)
+			err = writeReagent(reagentsCSVWriter, r)
 			if err != nil {
-				rlog.Errorf("Error writing reagent %s: %v", reagentID, err)
+				rlog.Errorf("Error writing reagent %s: %v", r.id, err)
 			}
 		}
 		reagentsCSVWriter.Flush()
@@ -417,24 +416,23 @@ func resultFilename(template, suffix string) string {
 	return noExt + "-" + suffix + ext
 }
 
-func writeReagent(csvWriter *csv.Writer, reagentID string, reagent oligo) (err error) {
+func writeReagent(csvWriter *csv.Writer, reagent oligo) (err error) {
+	reagentID := reagent.getIDOrDefault(!reagent.isNew, "N/A") // mark the ID if this reagent already existed in the original manifest
 	if reagentID != "" {
-		var primingRegion, tm, hairpinTh string
+		var primingRegion, tm string
 		if reagent.primingRegion == "" {
 			primingRegion = "N/A"
 			tm = "N/A"
-			hairpinTh = "N/A"
 		} else {
 			primingRegion = reagent.primingRegion
 			tm = fmt.Sprintf("%.2f", reagent.tm)
-			hairpinTh = fmt.Sprintf("%.2f", reagent.hairpinTh)
 		}
 		err = csvWriter.Write([]string{
 			reagentID,
 			reagent.seq,
 			primingRegion,
 			tm,
-			hairpinTh,
+			reagent.notes,
 		})
 	}
 	return
