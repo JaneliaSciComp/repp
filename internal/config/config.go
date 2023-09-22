@@ -146,6 +146,9 @@ type Config struct {
 	// If <0 the difference is not checked
 	PcrMaxFwdRevPrimerTmDiff float64 `mapstructure:"pcr-max-fwd-rev-primer-tm-diff"`
 
+	// Flag to tell primer3 whether to pick a primer only if all constraints are met
+	PcrPrimerUseStrictConstraints bool `mapstructure:"pcr-use-strict-constraints"`
+
 	// minimum length of a synthesized piece of DNA
 	SyntheticMinLength int `mapstructure:"synthetic-min-length"`
 

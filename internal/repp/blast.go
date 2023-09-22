@@ -190,7 +190,9 @@ func (b *blastExec) run() (err error) {
 	}
 
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
-	blastCmd := exec.Command("blastn", flags...)
+	blastCmd := exec.Command(
+		getExecutable("NCBITOOLS_HOME", "bin", "blastn"),
+		flags...)
 
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
@@ -318,7 +320,7 @@ func (b *blastExec) runAgainst() (err error) {
 	// create the blast command
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
 	blastCmd := exec.Command(
-		"blastn",
+		getExecutable("NCBITOOLS_HOME", "bin", "blastn"),
 		"-task", "blastn",
 		"-query", b.in.Name(),
 		"-subject", b.subject,
@@ -683,7 +685,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 
 	// make a blastdbcmd command (for querying a DB, very different from blastn)
 	queryCmd := exec.Command(
-		"blastdbcmd",
+		getExecutable("NCBITOOLS_HOME", "bin", "blastdbcmd"),
 		"-db", db.Path,
 		"-dbtype", "nucl",
 		"-entry_batch", entryFile.Name(),
@@ -792,7 +794,7 @@ func isMismatch(primer string, m match, c *config.Config) bool {
 	}
 
 	ntthalCmd := exec.Command(
-		"ntthal",
+		getExecutable("PRIMER3_HOME", "bin", "ntthal"),
 		"-a", "END1", // end of primer sequence
 		"-s1", primer,
 		"-s2", ectopic,
@@ -820,7 +822,8 @@ func makeblastdb(fullDbPath string) error {
 	rlog.Infof("Make BlastDB %s\n", fullDbPath)
 	cleanblastdb(fullDbPath, false)
 
-	cmd := exec.Command("makeblastdb",
+	cmd := exec.Command(
+		getExecutable("NCBITOOLS_HOME", "bin", "makeblastdb"),
 		"-dbtype", "nucl",
 		"-in", fullDbPath,
 		"-parse_seqids",

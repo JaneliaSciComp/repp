@@ -2,7 +2,6 @@ package repp
 
 import (
 	"math"
-	"os"
 	"reflect"
 	"testing"
 
@@ -10,33 +9,29 @@ import (
 )
 
 func Test_primer3_shrink(t *testing.T) {
-	type fields struct {
-		n      *Frag
-		last   *Frag
-		next   *Frag
-		seq    string
-		in     *os.File
-		out    *os.File
-		p3Path string
-		p3Conf string
-	}
 	type args struct {
-		last        *Frag
-		n           *Frag
-		next        *Frag
-		maxHomology int
-		minLength   int
+		seq    string
+		config *config.Config
+		last   *Frag
+		n      *Frag
+		next   *Frag
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *Frag
+		name string
+		args args
+		want *Frag
 	}{
 		{
 			"shrink Frag with an excessive amount of homology",
-			fields{}, // not relevant, nothing used from primer3
 			args{
+				seq: "", // not important here
+				config: func() *config.Config {
+					c := config.New()
+					c.FragmentsMaxHomology = 10 // much less than normal
+					c.PcrMinFragLength = 20
+					c.PcrPrimerUseStrictConstraints = false
+					return c
+				}(),
 				last: &Frag{
 					start: 0,
 					end:   100,
@@ -50,8 +45,6 @@ func Test_primer3_shrink(t *testing.T) {
 					start: 250,
 					end:   500,
 				},
-				maxHomology: 10, // much less than normal,
-				minLength:   20,
 			},
 			&Frag{
 				Seq:   "GGGGGAACGCTGAAGATCTCTTCTTCTCATGACTGAACTCGCGAGGGTCGTGATGTCGGTTCCTTCAAAGGTTAAAGAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATTTAGCGGCTGGCGTCTTGAATCCTCGGTCCCCCTTGTCTTTCCAGATTAATCCATTTCCCTCATTCACGAGCTTACCAAGTCAACATTGGTATATGAAT",
@@ -62,17 +55,8 @@ func Test_primer3_shrink(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &primer3{
-				f:              tt.fields.n,
-				last:           tt.fields.last,
-				next:           tt.fields.next,
-				seq:            tt.fields.seq,
-				in:             tt.fields.in,
-				out:            tt.fields.out,
-				primer3Path:    tt.fields.p3Path,
-				primer3ConfDir: tt.fields.p3Conf,
-			}
-			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next, tt.args.maxHomology, tt.args.minLength); !reflect.DeepEqual(got, tt.want) {
+			p := newPrimer3(tt.args.seq, tt.args.config)
+			if got := p.shrink(tt.args.last, tt.args.n, tt.args.next); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("primer3.shrink() = %v, want %v", got, tt.want)
 			}
 		})
@@ -84,7 +68,9 @@ func Test_bpToAdd(t *testing.T) {
 	c.PcrPrimerMaxEmbedLength = 20
 	c.FragmentsMinHomology = 10
 
-	p := primer3{}
+	p := primer3{
+		config: c,
+	}
 
 	type args struct {
 		left  *Frag
@@ -162,7 +148,7 @@ func Test_bpToAdd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotBpToAdd := p.bpToAdd(tt.args.left, tt.args.right, c.FragmentsMinHomology); gotBpToAdd != tt.wantBpToAdd {
+			if gotBpToAdd := p.bpToAdd(tt.args.left, tt.args.right); gotBpToAdd != tt.wantBpToAdd {
 				t.Errorf("bpToAdd() = %v, want %v", gotBpToAdd, tt.wantBpToAdd)
 			}
 		})

@@ -574,6 +574,7 @@ func Test_setPrimers(t *testing.T) {
 	c.FragmentsMaxHomology = 80
 	c.PcrPrimerMaxPairPenalty = 50.0
 	c.PcrPrimerMaxEmbedLength = 10
+	c.PcrPrimerUseStrictConstraints = false
 
 	type args struct {
 		last *Frag

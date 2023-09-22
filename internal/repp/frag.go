@@ -512,25 +512,13 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 		return oldErr
 	}
 
-	psExec := newPrimer3(prev, f, next, seq, conf)
+	psExec := newPrimer3(seq, conf)
 	defer psExec.close()
 
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
 	// to the left and right primers (too large for primer3_core)
-	addLeft, addRight, err := psExec.input(
-		conf.FragmentsMinHomology,
-		conf.FragmentsMaxHomology,
-		conf.PcrPrimerMaxEmbedLength,
-		conf.PcrMinFragLength,
-		conf.PcrBufferLength,
-		conf.PcrPrimerMinLength,
-		conf.PcrPrimerMaxLength,
-		conf.PcrPrimerOptimumLength,
-		conf.FragmentsMaxHairpinMelt,
-		conf.PcrPrimerMinTm,
-		conf.PcrPrimerMaxTm,
-	)
+	addLeft, addRight, err := psExec.input(f, prev, next)
 	if err != nil {
 		primerErrs[pHash] = err
 		return
@@ -541,7 +529,7 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 		return
 	}
 
-	if err = psExec.parse(seq); err != nil {
+	if f.Primers, err = psExec.parse(seq); err != nil {
 		primerErrs[pHash] = err
 		return
 	}

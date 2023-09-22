@@ -120,7 +120,7 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 			// create primers for the Frag and add them to the Frag if it needs them
 			// to anneal to the adjacent fragments
 			if err := f.setPrimers(prev, next, target, conf); err != nil || len(f.Primers) < 2 {
-				return nil, fmt.Errorf("failed to pcr %s: %v", f.ID, err)
+				return nil, err
 			}
 			f.fragType = pcr // is now a pcr type
 		}

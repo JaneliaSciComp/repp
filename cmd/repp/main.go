@@ -16,23 +16,36 @@ func main() {
 }
 
 func checkDependencies() {
-	if _, err := exec.LookPath("blastn"); err != nil {
+	if _, err := exec.LookPath(getExecutable("NCBITOOLS_HOME", "bin", "blastn")); err != nil {
 		log.Fatal(`No blastn found. Is BLAST installed? https://blast.ncbi.nlm.nih.gov/Blast.cgi`)
 	}
 
-	if _, err := exec.LookPath("blastdbcmd"); err != nil {
+	if _, err := exec.LookPath(getExecutable("NCBITOOLS_HOME", "bin", "blastdbcmd")); err != nil {
 		log.Fatal(`No blastdbcmd found. Is BLAST installed? https://blast.ncbi.nlm.nih.gov/Blast.cgi`)
 	}
 
-	if _, err := exec.LookPath("makeblastdb"); err != nil {
+	if _, err := exec.LookPath(getExecutable("NCBITOOLS_HOME", "bin", "makeblastdb")); err != nil {
 		log.Fatal(`No makeblastdb found. Is BLAST installed? https://blast.ncbi.nlm.nih.gov/Blast.cgi`)
 	}
 
-	if _, err := exec.LookPath("primer3_core"); err != nil {
+	if _, err := exec.LookPath(getExecutable("PRIMER3_HOME", "bin", "primer3_core")); err != nil {
 		log.Fatal(`No primer3_core found. Is Primer3 installed? https://primer3.org/manual.html`)
 	}
 
-	if _, err := exec.LookPath("ntthal"); err != nil {
+	if _, err := exec.LookPath(getExecutable("PRIMER3_HOME", "bin", "ntthal")); err != nil {
 		log.Fatal(`No ntthal found. Is Primer3 installed? https://primer3.org/manual.html`)
+	}
+}
+
+func getExecutable(exeHomeEnvVar, binSubDir, exeName string) string {
+	exeHome := os.Getenv(exeHomeEnvVar)
+	if exeHome == "" {
+		// if no home or install dir is set, assume it's in the PATH
+		return exeName
+	}
+	if binSubDir == "" {
+		return exeHome + "/" + exeName
+	} else {
+		return exeHome + "/" + binSubDir + "/" + exeName
 	}
 }
