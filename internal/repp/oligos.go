@@ -160,6 +160,7 @@ func readOligos(dbLocations []string, basePrefix string, synthOligos bool) (olig
 }
 
 func readOligosFromFile(oligosCSVFilename string, oligos *oligosDB) error {
+	rlog.Infof("Read available oligos from %s", oligosCSVFilename)
 	f, err := os.Open(oligosCSVFilename)
 	if err != nil {
 		rlog.Warnf("Error opening oligos manifest %s: %v", oligosCSVFilename, err)
