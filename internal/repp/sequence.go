@@ -247,8 +247,8 @@ func sequence(
 		} else {
 			selectedAssemblies = assemblies[searchSolutionFromIndex:]
 		}
-		rlog.Infof("Try to fill %d assemblies out of %d from %d",
-			len(selectedAssemblies), len(assemblies)-searchSolutionFromIndex, searchSolutionFromIndex)
+		rlog.Infof("Try to fill %d assemblies out of %d",
+			len(selectedAssemblies), len(assemblies)-searchSolutionFromIndex)
 
 		// fill in only best assemblies
 		solutions := fillAssemblies(target.Seq, selectedAssemblies, searchSolutionFromIndex, conf)
