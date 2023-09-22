@@ -247,14 +247,14 @@ func sequence(
 		} else {
 			selectedAssemblies = assemblies[searchSolutionFromIndex:]
 		}
-		rlog.Infof("Selected %d assemblies out of %d from %d",
+		rlog.Infof("Try to fill %d assemblies out of %d from %d",
 			len(selectedAssemblies), len(assemblies)-searchSolutionFromIndex, searchSolutionFromIndex)
 
 		// fill in only best assemblies
-		solutions := fillAssemblies(target.Seq, selectedAssemblies, conf)
+		solutions := fillAssemblies(target.Seq, selectedAssemblies, searchSolutionFromIndex, conf)
 		finalSolutions = append(finalSolutions, solutions...)
 	}
-	rlog.Infof("Finished filling %d selected assemblies", len(finalSolutions))
+	rlog.Infof("Finished filling %d assemblies", len(finalSolutions))
 
 	return insert, target, finalSolutions, nil
 }

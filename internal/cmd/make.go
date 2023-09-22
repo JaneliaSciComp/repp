@@ -73,7 +73,7 @@ func init() {
 	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases by name")
 	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
 	fragmentsCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
-	fragmentsCmd.Flags().Int("synthetic-frag-factor", 1, "Penalty for synthetic fragments")
+	fragmentsCmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
 	must(fragmentsCmd.MarkFlagRequired("in"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
@@ -84,7 +84,7 @@ func init() {
 	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
 	featuresCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
 	featuresCmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
-	featuresCmd.Flags().Int("synthetic-frag-factor", 1, "Penalty for synthetic fragments")
+	featuresCmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
 	featuresCmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
 	must(featuresCmd.MarkFlagRequired("out"))
 
@@ -100,7 +100,7 @@ func init() {
 	sequenceCmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
 	sequenceCmd.Flags().StringP("primers-databases", "m", "", "Comma separated list of CSV primers database files")
 	sequenceCmd.Flags().StringP("synth-frags-databases", "s", "", "Comma separated list of CSV synthetic fragments database files")
-	sequenceCmd.Flags().Int("synthetic-frag-factor", 1, "Penalty for synthetic fragments")
+	sequenceCmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
 	sequenceCmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
 
 	must(sequenceCmd.MarkFlagRequired("in"))
@@ -129,7 +129,7 @@ func runFragmentsCmd(cmd *cobra.Command, args []string) {
 	syntheticFragmentFactor, err := cmd.Flags().GetInt("synthetic-frag-factor")
 	if err != nil {
 		log.Printf("Error trying to extract synthetic fragment penalty factor: %v\n", err)
-		syntheticFragmentFactor = 1
+		syntheticFragmentFactor = 0
 	}
 
 	config := config.New().SetPrimer3ConfigDir(cmd.Flag("primer3-config").Value.String())
@@ -148,7 +148,7 @@ func runFeaturesCmd(cmd *cobra.Command, args []string) {
 	syntheticFragmentFactor, err := cmd.Flags().GetInt("synthetic-frag-factor")
 	if err != nil {
 		log.Printf("Error trying to extract synthetic fragment penalty factor: %v\n", err)
-		syntheticFragmentFactor = 1
+		syntheticFragmentFactor = 0
 	}
 	maxKeptSolutions, err := cmd.Flags().GetInt("max-kept-solutions")
 	if err != nil {
@@ -182,7 +182,7 @@ func runSequenceCmd(cmd *cobra.Command, args []string) {
 	syntheticFragmentFactor, err := cmd.Flags().GetInt("synthetic-frag-factor")
 	if err != nil {
 		log.Printf("Error trying to extract synthetic fragment penalty factor: %v\n", err)
-		syntheticFragmentFactor = 1
+		syntheticFragmentFactor = 0
 	}
 	maxKeptSolutions, err := cmd.Flags().GetInt("max-kept-solutions")
 	if err != nil {

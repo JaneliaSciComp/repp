@@ -76,6 +76,13 @@ pcr-primer-max-tm: 63
 # If <0 the difference is not checked
 pcr-max-fwd-rev-primer-tm-diff: 5
 
+# Max homopolymer length allowed for primer design
+# for 0 uses the default primer3 setting
+pcr-max-homopolymer-length: 7
+
+# Max allowed binding between left and right primers
+pcr-pair-max-binding-score: 13.0
+
 # Flag to tell primer3 whether to pick a primer only if all constraints are met
 # PRIMER_PICK_ANYWAY is set to 0 if this is true
 pcr-use-strict-constraints: true

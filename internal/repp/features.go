@@ -328,7 +328,7 @@ func featureSolutions(
 	}
 
 	// fill each assembly and accumulate the pareto optimal solutions
-	solutions := fillAssemblies(target, selectedAssemblies, conf)
+	solutions := fillAssemblies(target, selectedAssemblies, 0, conf)
 
 	// update the target to the first filled assembly
 	if len(solutions) > 0 {

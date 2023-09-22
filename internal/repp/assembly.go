@@ -377,12 +377,13 @@ func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Fra
 }
 
 // fillAssemblies fills in assemblies and returns the pareto optimal solutions.
-func fillAssemblies(target string, assemblies []assembly, conf *config.Config) (solutions [][]*Frag) {
+func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStart int, conf *config.Config) (solutions [][]*Frag) {
 	var filled [][]*Frag
 	for ai, a := range assemblies {
 		filledFragments, err := a.fill(target, conf)
 		if err != nil || filledFragments == nil || len(filledFragments) == 0 {
-			rlog.Warnf("Error filling assembly %d - will try another: %v\n", ai+1, err)
+			// this error can be pretty verbose so I am only displaying it in debug mode
+			rlog.Debugf("Error filling assembly %d because: %v\n", selectedAssembliesStart+ai+1, err)
 		} else {
 			filled = append(filled, filledFragments)
 		}

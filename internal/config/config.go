@@ -42,22 +42,22 @@ var (
 )
 
 var (
-	// DefaultConfig is the initiate client config that's embedded with repp
+	// embeddedConfigContent is the initiate client config that's embedded with repp
 	// and installed on the first run
 	//go:embed config.yaml
-	DefaultConfig []byte
+	embeddedConfigContent []byte
 
-	// DefaultEnzymes is the JSON file of default enzymes embedded with repp
+	// embeddedEnzymesContent is the JSON file of default enzymes embedded with repp
 	//go:embed enzymes.json
-	DefaultEnzymes []byte
+	embeddedEnzymesContent []byte
 
-	// DefaultFeatures is the JSON file of default features embedded with repp
+	// embeddedFeaturesContent is the JSON file of default features embedded with repp
 	//go:embed features.json
-	DefaultFeatures []byte
+	embeddedFeaturesContent []byte
 
-	// DefaultPrimer3Config is the FS of Primer3, needed to run primer3_core, etc
+	// embeddedPrimer3ThermodynamicParams is the FS of Primer3, needed to run primer3_core, etc
 	//go:embed primer3_config primer3_config/interpretations
-	DefaultPrimer3Config embed.FS
+	embeddedPrimer3ThermodynamicParams embed.FS
 )
 
 // SynthCost contains data of the cost of synthesizing DNA up to a certain
@@ -146,6 +146,12 @@ type Config struct {
 	// If <0 the difference is not checked
 	PcrMaxFwdRevPrimerTmDiff float64 `mapstructure:"pcr-max-fwd-rev-primer-tm-diff"`
 
+	// Max homopolymer length allowed for primer design
+	PcrMaxHomopolymerLength int `mapstructure:"pcr-max-homopolymer-length"`
+
+	// Max allowed binding between left and right primers
+	PcrPairMaxBindingScore float64 `mapstructure:"pcr-pair-max-binding-score"`
+
 	// Flag to tell primer3 whether to pick a primer only if all constraints are met
 	PcrPrimerUseStrictConstraints bool `mapstructure:"pcr-use-strict-constraints"`
 
@@ -223,48 +229,53 @@ func Setup(providedReppDir string) {
 
 	// only copy default config file
 	// if it does not exist
-	if isConfigFileNeeded(defaultConfigPath, true) {
-		if err = os.WriteFile(defaultConfigPath, DefaultConfig, 0644); err != nil {
+	if isConfigFileNeeded(defaultConfigPath) {
+		log.Printf("Copy default config to %s\n", defaultConfigPath)
+		if err = os.WriteFile(defaultConfigPath, embeddedConfigContent, 0644); err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// features DB
-	if isConfigFileNeeded(FeatureDB, true) {
-		if err = os.WriteFile(FeatureDB, DefaultFeatures, 0644); err != nil {
+	if isConfigFileNeeded(FeatureDB) {
+		log.Printf("Copy feature database to %s\n", FeatureDB)
+		if err = os.WriteFile(FeatureDB, embeddedFeaturesContent, 0644); err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// enzymes DB
-	if isConfigFileNeeded(EnzymeDB, true) {
-		if err = os.WriteFile(EnzymeDB, DefaultEnzymes, 0644); err != nil {
+	if isConfigFileNeeded(EnzymeDB) {
+		log.Printf("Copy enzyme database to %s\n", EnzymeDB)
+		if err = os.WriteFile(EnzymeDB, embeddedEnzymesContent, 0644); err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// primer3 config directory
-	if isConfigFileNeeded(defaultPrimer3ConfigDir, true) {
-		copyFromEmbeded(DefaultPrimer3Config, "primer3_config", defaultPrimer3ConfigDir)
+	if isConfigFileNeeded(defaultPrimer3ConfigDir) {
+		log.Printf("Copy primer3 thermodynamic params to %s\n", defaultPrimer3ConfigDir)
+		copyEmbeddedDir(embeddedPrimer3ThermodynamicParams, "primer3_config", defaultPrimer3ConfigDir)
 	}
 }
 
-func isConfigFileNeeded(configFile string, overwritePreference bool) bool {
-	// write the default config file
-	if overwritePreference {
-		return true
-	}
-	_, err := os.Stat(configFile)
+func isConfigFileNeeded(configFile string) bool {
+	configFileInfo, err := os.Stat(configFile)
 	if os.IsNotExist(err) {
 		return true
 	} else if err != nil {
 		log.Fatal(err)
 	}
-	return false
+	currentProgramFileInfo, err := os.Stat(os.Args[0])
+	if err != nil {
+		log.Printf("Error reading current program info: %v", err)
+		return true
+	}
+	return currentProgramFileInfo.ModTime().After(configFileInfo.ModTime())
 }
 
-// copyFrom copies an embedded directory to a local directory recursively
-func copyFromEmbeded(fs embed.FS, from, to string) {
+// copyEmbeddedDir copies an embedded directory to a local directory recursively
+func copyEmbeddedDir(fs embed.FS, from, to string) {
 	if err := os.Mkdir(to, 0755); err != nil && !os.IsExist(err) {
 		log.Fatal(err)
 	}
@@ -276,17 +287,21 @@ func copyFromEmbeded(fs embed.FS, from, to string) {
 
 	for _, entry := range entries {
 		if entry.IsDir() {
-			copyFromEmbeded(fs, path.Join(from, entry.Name()), path.Join(to, entry.Name()))
+			copyEmbeddedDir(fs, path.Join(from, entry.Name()), path.Join(to, entry.Name()))
 			continue
 		}
+		copyEmbeddedFile(fs, path.Join(from, entry.Name()), path.Join(to, entry.Name()))
+	}
+}
 
-		contents, err := fs.ReadFile(path.Join(from, entry.Name()))
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err = os.WriteFile(path.Join(to, entry.Name()), contents, 0644); err != nil {
-			log.Fatal(err)
-		}
+// copyEmbeddedFile copies a single file to a destination
+func copyEmbeddedFile(fs embed.FS, from, to string) {
+	contents, err := fs.ReadFile(from)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = os.WriteFile(to, contents, 0644); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -351,7 +366,9 @@ func (c *Config) GetPrimer3ConfigDir() string {
 }
 
 func (c *Config) SetSyntheticFragmentFactor(value int) *Config {
-	c.SyntheticFragmentFactor = value
+	if value > 0 {
+		c.SyntheticFragmentFactor = value
+	}
 	return c
 }
 

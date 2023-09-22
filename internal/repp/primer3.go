@@ -208,10 +208,13 @@ func (p *primer3) settings(seqID string, start, length, leftBuffer, rightBuffer 
 		"PRIMER_MIN_TM":                        fmt.Sprintf("%f", p.config.PcrPrimerMinTm),          // defaults to 57.0
 		"PRIMER_MAX_TM":                        fmt.Sprintf("%f", p.config.PcrPrimerMaxTm),          // defaults to 63.0
 		"PRIMER_MAX_HAIRPIN_TH":                fmt.Sprintf("%f", p.config.FragmentsMaxHairpinMelt), // defaults to 47.0
-		"PRIMER_MAX_POLY_X":                    "7",                                                 // defaults to 5
-		"PRIMER_PAIR_MAX_COMPL_ANY":            "13.0",                                              // defaults to 8.0
 	}
-
+	if p.config.PcrMaxHomopolymerLength > 0 {
+		settings["PRIMER_MAX_POLY_X"] = fmt.Sprintf("%d", p.config.PcrMaxHomopolymerLength) // defaults to 5
+	}
+	if p.config.PcrPairMaxBindingScore > 0 {
+		settings["PRIMER_PAIR_MAX_COMPL_ANY"] = fmt.Sprintf("%.2f", p.config.PcrPairMaxBindingScore) // defaults to 8.00
+	}
 	// if there is room to optimize, we let primer3 pick the best primers available
 	// with a range on either side of the fragment's start
 	// https://primer3.org/manual.html#SEQUENCE_PRIMER_PAIR_OK_REGION_LIST
