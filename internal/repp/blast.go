@@ -336,6 +336,11 @@ func (b *blastExec) runAgainst() (err error) {
 }
 
 func (b *blastExec) close() (err error) {
+	if os.Getenv("DEBUG_REPP") == "TRUE" {
+		// keep the temporary files
+		rlog.Infof("Blastn input/output: %s, %s", b.in.Name(), b.out.Name())
+		return
+	}
 	// remove temporary input and output
 	err = multierr.Append(err, os.Remove(b.in.Name()))
 	err = multierr.Append(err, os.Remove(b.out.Name()))

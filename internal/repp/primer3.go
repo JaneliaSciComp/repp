@@ -355,6 +355,11 @@ func (p *primer3) parse(target string) (primers []Primer, err error) {
 }
 
 func (p *primer3) close() (err error) {
+	if os.Getenv("DEBUG_REPP") == "TRUE" {
+		// keep the temporary files
+		rlog.Infof("Primer3 input/output: %s, %s", p.in.Name(), p.out.Name())
+		return
+	}
 	// remove temporary input and output
 	if p.in != nil {
 		err = multierr.Append(err, os.Remove(p.in.Name()))
