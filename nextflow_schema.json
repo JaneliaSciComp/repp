@@ -48,8 +48,7 @@
         "repp_repository": {
           "type": "string",
           "default": "$HOME/.repp",
-          "description": "location of the REPP data",
-          "hidden": true
+          "description": "location of the REPP data"
         }
       },
       "required": ["reppcmd"]
