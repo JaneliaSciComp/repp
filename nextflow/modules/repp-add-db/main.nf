@@ -4,15 +4,14 @@ process REPP_ADD_DB {
 
     input:
     tuple val(db_name), path(db_path), val(db_cost)
-    path(repp_repository)
+    tuple path(repp_repo_parent), val(repp_repo_name)
 
     output:
     tuple val(db_name), path(db_path)
 
     script:
-    def repp_repository_env = repp_repository
-        ? "REPP_DATA_DIR=${repp_repository}"
-            : ''
+    def repp_repository="${repp_repo_parent}/${repp_repo_name}"
+    def repp_repository_env = "REPP_DATA_DIR=${repp_repository}"
     """
     repp_repo_fullpath=\$(readlink ${repp_repository})
     echo "Repp repo dir: \${repp_repo_fullpath}"
