@@ -13,7 +13,8 @@ process REPP_ADD_DB {
     def repp_repository="${repp_repo_parent}/${repp_repo_name}"
     def repp_repository_env = "REPP_DATA_DIR=${repp_repository}"
     """
-    repp_repo_fullpath=\$(readlink ${repp_repository})
+    repp_repo_parent_fullpath=\$(readlink ${repp_repo_parent})
+    repp_repo_fullpath="\${repp_repo_parent_fullpath}/${repp_repo_name}"
     echo "Repp repo dir: \${repp_repo_fullpath}"
     mkdir -p \${repp_repo_fullpath}
     ${repp_repository_env} \
