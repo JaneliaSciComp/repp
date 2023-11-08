@@ -10,14 +10,12 @@ process REPP_ADD_DB {
     tuple val(db_name), path(db_path)
 
     script:
-    def mkdir_repp_repo = repp_repository
-        ? "mkdir -p ${repp_repository}"
-        : ''
     def repp_repository_env = repp_repository
         ? "REPP_DATA_DIR=${repp_repository}"
             : ''
     """
-    ${mkdir_repp_repo}
+    repp_repo_fullpath=\$(realpath ${repp_repository})
+    mkdir -p \${repp_repo_fullpath}
     ${repp_repository_env} \
         /go/bin/repp add database --name ${db_name} -c ${db_cost} ${db_path}
     """
