@@ -4,16 +4,17 @@ process REPP_ADD_DB {
 
     input:
     tuple val(db_name), path(db_path), val(db_cost)
+    path(repp_repository)
 
     output:
     tuple val(db_name), path(db_path)
 
     script:
-    def mkdir_repp_repo = params.repp_repository
-        ? "mkdir -p ${params.repp_repository}"
+    def mkdir_repp_repo = repp_repository
+        ? "mkdir -p ${repp_repository}"
         : ''
-    def repp_repository_env = params.repp_repository
-        ? "REPP_DATA_DIR=${params.repp_repository}"
+    def repp_repository_env = repp_repository
+        ? "REPP_DATA_DIR=${repp_repository}"
             : ''
     """
     ${mkdir_repp_repo}
