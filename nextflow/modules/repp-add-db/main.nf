@@ -15,6 +15,7 @@ process REPP_ADD_DB {
             : ''
     """
     repp_repo_fullpath=\$(realpath ${repp_repository})
+    echo "Repp repo dir: \${repp_repo_fullpath}"
     mkdir -p \${repp_repo_fullpath}
     ${repp_repository_env} \
         /go/bin/repp add database --name ${db_name} -c ${db_cost} ${db_path}

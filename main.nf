@@ -25,7 +25,7 @@ workflow {
                     params.dbcost,
                 ]
             ),
-            params.repp_repository
+            params.repp_repository,
         )
     } else if (params.reppcmd == "list-db") {
         REPP_LIST_DB | view
