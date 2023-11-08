@@ -1,5 +1,13 @@
+include {
+    get_runtime_opts;
+    parentfile;
+} from '../../lib/utils'
+
 process REPP_ADD_DB {
     container { params.repp_container }
+    containerOptions { get_runtime_opts([
+        parentfile(repp_repo_parent, 1),
+    ]) }
     label 'process_low'
 
     input:
