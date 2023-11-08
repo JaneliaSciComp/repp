@@ -5,7 +5,10 @@ include {
 
 process REPP_ADD_DB {
     container { params.repp_container }
-    containerOptions { get_runtime_opts([
+    containerOptions { 
+        log.info "!!!!! DB PATH ${db_path}, ${repp_repo_parent}"
+        get_runtime_opts([
+        parentfile(db_path, 1),
         parentfile(repp_repo_parent, 1),
     ]) }
     label 'process_low'
