@@ -14,7 +14,7 @@ process REPP_ADD_DB {
         ? "REPP_DATA_DIR=${repp_repository}"
             : ''
     """
-    repp_repo_fullpath=\$(realpath ${repp_repository})
+    repp_repo_fullpath=\$(readlink ${repp_repository})
     echo "Repp repo dir: \${repp_repo_fullpath}"
     mkdir -p \${repp_repo_fullpath}
     ${repp_repository_env} \
