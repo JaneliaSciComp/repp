@@ -3,16 +3,17 @@ process REPP_ADD_DB {
     label 'process_low'
 
     input:
-    tuple val(db_name), path(db_path), val(db_cost)
+    tuple path(db_path), val(db_name), val(db_cost)
     tuple path(repp_repo_parent), val(repp_repo_name)
 
     output:
-    tuple val(db_name), path(db_path)
+    tuple val(db_name), path(db_path), env(repp_repo_fullpath)
 
     script:
     def repp_repository="${repp_repo_parent}/${repp_repo_name}"
     def repp_repository_env = "REPP_DATA_DIR=${repp_repository}"
     """
+    umask 0002
     repp_repo_parent_fullpath=\$(readlink ${repp_repo_parent})
     repp_repo_fullpath="\${repp_repo_parent_fullpath}/${repp_repo_name}"
     echo "Repp repo dir: \${repp_repo_fullpath}"

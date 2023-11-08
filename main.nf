@@ -22,12 +22,14 @@ workflow {
         REPP_ADD_DB(
             Channel.of(
                 [
-                    params.dbname,
                     params.dbpath,
+                    params.dbname,
                     params.dbcost,
                 ]
             ),
-            [ repp_repo.parent, repp_repo.name ],
+            Channel.of(
+                [ repp_repo.parent, repp_repo.name ]
+            ),
         )
     } else if (params.reppcmd == "list-db") {
         REPP_LIST_DB | view
