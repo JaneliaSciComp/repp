@@ -9,16 +9,18 @@ process REPP_MAKE_PLASMID {
     containerOptions { get_runtime_opts([
         parentfile(input_seq, 1),
         parentfile(params.primers_databases, 1),
-        parentfile(params.synth_frags_databases, 1)
+        parentfile(params.synth_frags_databases, 1),
         parentfile(assembly_output, 2),
     ]) }
-    cpus { params.make_plasmid_cpus }
-    memory { "${params.make_plasmid_mem_gb} GB"}
+    cpus { cpus }
+    memory { "${mem_gb} GB"}
 
     input:
     tuple val(input_seq),
           val(assembly_output),
           val(db_names)
+    val(cpus)
+    val(mem_gb)
 
     output:
     val(input_seq)

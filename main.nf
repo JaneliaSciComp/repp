@@ -36,7 +36,9 @@ workflow {
                     params.assembly_output,
                     params.dbs,
                 ]
-            )
+            ),
+            params.make_plasmid_cpus,
+            params.make_plasmid_mem_gb,
         )
     } else {
         log.error "Invalid command: ${params.reppcmd}"
