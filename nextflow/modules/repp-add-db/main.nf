@@ -6,30 +6,28 @@ include {
 process REPP_ADD_DB {
     container { params.repp_container }
     containerOptions { 
-        log.info "!!!!! DB PATH ${db_path}, ${repp_repo_parent}"
         get_runtime_opts([
-        parentfile(db_path, 1),
-        parentfile(repp_repo_parent, 1),
+        parentfile(repp_repo_dir, 1),
     ]) }
     label 'process_low'
 
     input:
     tuple path(db_path), val(db_name), val(db_cost)
-    tuple path(repp_repo_parent), val(repp_repo_name)
+    tuple val(repp_repo_dir)
 
     output:
-    tuple val(db_name), path(db_path), env(repp_repo_fullpath)
+    tuple val(db_name), path(db_path), val(repp_repo_dir)
 
     script:
-    def repp_repository="${repp_repo_parent}/${repp_repo_name}"
-    def repp_repository_env = "REPP_DATA_DIR=${repp_repository}"
+    def mk_repp_repo = repp_repo_dir
+                        ? "mkdir -p ${repp_repo_dir}"
+                        : ''
+    def repp_repository_env = repp_repo_dir
+                        ? "REPP_DATA_DIR=${repp_repo_dir}"
+                        : ''
     """
     umask 0002
-    repp_repo_parent_fullpath=\$(readlink ${repp_repo_parent})
-    repp_repo_fullpath="\${repp_repo_parent_fullpath}/${repp_repo_name}"
-    echo "Repp repo dir: \${repp_repo_fullpath}"
-    mkdir -p \${repp_repo_fullpath}
-    ${repp_repository_env} \
-        /go/bin/repp add database --name ${db_name} -c ${db_cost} ${db_path}
+    ${mk_repp_repo}
+    ${repp_repository_env} /go/bin/repp add database --name ${db_name} -c ${db_cost} ${db_path}
     """
 }

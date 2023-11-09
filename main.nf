@@ -16,7 +16,6 @@ include {
 
 workflow {
     main:
-    def repp_repo = file(params.repp_repository)
 
     if (params.reppcmd == "add-db") {
         REPP_ADD_DB(
@@ -27,9 +26,7 @@ workflow {
                     params.dbcost,
                 ]
             ),
-            Channel.of(
-                [ repp_repo.parent, repp_repo.name ]
-            ),
+            params.repp_repository,
         )
     } else if (params.reppcmd == "list-db") {
         REPP_LIST_DB | view

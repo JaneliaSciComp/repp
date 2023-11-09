@@ -41,3 +41,6 @@ vendor
 
 .nextflow*
 work
+
+# local stuff that should not be committed
+mydir
