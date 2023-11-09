@@ -29,7 +29,7 @@ process REPP_ADD_DB {
     """
     umask 0002
     ${mk_repp_repo}
-    ${repp_repository_env} \
+
     /go/bin/repp add database \
         ${verbose_arg} \
         ${repp_repo_arg} \
