@@ -7,6 +7,7 @@ include {
 process REPP_MAKE_PLASMID {
     container { params.repp_container }
     containerOptions { get_runtime_opts([
+        parentfile(repp_repo_dir, 1),
         parentfile(assembly_output, 2),
     ]) }
     cpus { cpus }
@@ -16,7 +17,7 @@ process REPP_MAKE_PLASMID {
     tuple path(input_seq),
           val(assembly_output),
           val(db_names)
-    path(repp_repo_dir)
+    val(repp_repo_dir)
     path(primers_databases)
     path(synth_frags_databases)
     val(cpus)
