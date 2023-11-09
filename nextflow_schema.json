@@ -49,6 +49,11 @@
           "type": "string",
           "default": "$HOME/.repp",
           "description": "location of the REPP data"
+        },
+        "verbose": {
+          "type": "boolean",
+          "default": "false",
+          "description": "verbosity"
         }
       },
       "required": ["reppcmd"]
