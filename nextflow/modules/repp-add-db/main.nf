@@ -22,16 +22,17 @@ process REPP_ADD_DB {
     def mk_repp_repo = repp_repo_dir
                         ? "mkdir -p ${repp_repo_dir}"
                         : ''
-    def repp_repository_env = repp_repo_dir
-                        ? "REPP_DATA_DIR=${repp_repo_dir}"
+    def repp_repo_arg = repp_repo_dir
+                        ? "--repp-data-dir ${repp_repo_dir}"
                         : ''
     def verbose_arg = params.verbose ? '--verbose' : ''
     """
     umask 0002
     ${mk_repp_repo}
-    ${repp_repository_env} /go/bin/repp \        
-        add database \
+    ${repp_repository_env} \
+    /go/bin/repp add database \
         ${verbose_arg} \
+        ${repp_repo_arg} \
         --name ${db_name} \
         -c ${db_cost} \
         ${db_path}
