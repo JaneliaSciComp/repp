@@ -339,7 +339,7 @@ func readFasta(path, contents, idNamespace string) (frags []*Frag, err error) {
 	if idNamespace == "" {
 		seqIDNamespace = ""
 	} else {
-		seqIDNamespace = idNamespace + ";"
+		seqIDNamespace = idNamespace + "--"
 	}
 	for i, id := range ids {
 		frags = append(frags, &Frag{
@@ -376,7 +376,7 @@ func readGenbank(path, contents string, parseFeatures bool, idNamespace string) 
 	if idNamespace == "" {
 		seqIDNamespace = ""
 	} else {
-		seqIDNamespace = idNamespace + ";"
+		seqIDNamespace = idNamespace + "--"
 	}
 
 	if parseFeatures {
