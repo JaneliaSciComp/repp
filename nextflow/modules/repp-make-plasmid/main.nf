@@ -7,18 +7,18 @@ include {
 process REPP_MAKE_PLASMID {
     container { params.repp_container }
     containerOptions { get_runtime_opts([
-        parentfile(input_seq, 1),
-        parentfile(params.primers_databases, 1),
-        parentfile(params.synth_frags_databases, 1),
         parentfile(assembly_output, 2),
     ]) }
     cpus { cpus }
     memory { "${mem_gb} GB"}
 
     input:
-    tuple val(input_seq),
+    tuple path(input_seq),
           val(assembly_output),
           val(db_names)
+    path(repp_repo_dir)
+    path(primers_databases)
+    path(synth_frags_databases)
     val(cpus)
     val(mem_gb)
 
@@ -26,9 +26,9 @@ process REPP_MAKE_PLASMID {
     val(input_seq)
 
     script:
-    def repp_repository_env = params.repp_repository
-        ? "REPP_DATA_DIR=${params.repp_repository}"
-            : ''
+    def repp_repo_arg = repp_repo_dir
+                        ? "--repp-data-dir ${repp_repo_dir}"
+                        : ''
     def dbs_arg = db_names
         ? "--dbs ${db_names}"
         : ''
@@ -65,16 +65,16 @@ process REPP_MAKE_PLASMID {
     """
     ${mk_output_dir}
 
-    ${repp_repository_env} \
-        /go/bin/repp make sequence \
-            -i ${normalized_file_name(input_seq)} \
-            ${dbs_arg} \
-            ${primers_databases_arg} \
-            ${synth_frags_databases_arg} \
-            ${output_arg} \
-            ${sequence_identity_arg} \
-            ${max_solutions_arg} \
-            ${config_arg} \
-            ${output_format_arg}
+    /go/bin/repp make sequence \
+        ${repp_repo_arg} \
+        -i ${normalized_file_name(input_seq)} \
+        ${dbs_arg} \
+        ${primers_databases_arg} \
+        ${synth_frags_databases_arg} \
+        ${output_arg} \
+        ${sequence_identity_arg} \
+        ${max_solutions_arg} \
+        ${config_arg} \
+        ${output_format_arg}
     """
 }

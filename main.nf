@@ -39,6 +39,9 @@ workflow {
                     params.dbs,
                 ]
             ),
+            params.repp_repository,
+            params.primers_databases ? params.primers_databases : [],
+            params.synth_frags_databases ? params.synth_frags_databases : [],
             params.make_plasmid_cpus,
             params.make_plasmid_mem_gb,
         )
