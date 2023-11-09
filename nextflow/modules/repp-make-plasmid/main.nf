@@ -7,19 +7,22 @@ include {
 process REPP_MAKE_PLASMID {
     container { params.repp_container }
     containerOptions { get_runtime_opts([
+        parentfile(input_seq, 1),
         parentfile(repp_repo_dir, 1),
+        parentfile(primers_databases, 1),
+        parentfile(synth_frags_databases, 1),
         parentfile(assembly_output, 2),
     ]) }
     cpus { cpus }
     memory { "${mem_gb} GB"}
 
     input:
-    tuple path(input_seq),
+    tuple val(input_seq),
           val(assembly_output),
           val(db_names)
     val(repp_repo_dir)
-    path(primers_databases)
-    path(synth_frags_databases)
+    val(primers_databases)
+    val(synth_frags_databases)
     val(cpus)
     val(mem_gb)
 
