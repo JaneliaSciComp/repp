@@ -38,7 +38,7 @@ release: image/multiplatform
 
 .PHONY: test
 test:
-	go test -timeout 200s ./internal/...
+	go test $(VERBOSE:%=-v) -timeout 200s ./internal/...
 
 .PHONY: docs
 docs:
@@ -54,4 +54,5 @@ lint:
 	golangci-lint run
 
 clean:
+	go clean -cache -testcache
 	$(RM) bin vendor
