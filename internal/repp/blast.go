@@ -57,7 +57,7 @@ type match struct {
 }
 
 // length returns the length of the match on the queried fragment.
-func (m *match) length() int {
+func (m match) length() int {
 	queryLength := m.queryEnd - m.queryStart + 1
 	subjectLength := m.subjectEnd - m.subjectStart + 1
 
@@ -66,6 +66,15 @@ func (m *match) length() int {
 	}
 
 	return subjectLength
+}
+
+func (m match) isValid() bool {
+	return len(m.seq) > 0
+}
+
+func (m match) isAboveIdentityThreshold(th float64) bool {
+	matchRatio := float64(len(m.seq)-(m.mismatching)) / float64(len(m.seq))
+	return matchRatio >= th
 }
 
 // mismatchResults are the results of a seqMismatch check. saved between runs for perf
@@ -202,7 +211,6 @@ func (b *blastExec) run() (err error) {
 	return
 }
 
-// parse reads the output of blastn into matches.
 func (b *blastExec) parse(filters []string) (matches []match, err error) {
 	// read in the results
 	file, err := os.ReadFile(b.out.Name())
@@ -216,103 +224,120 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 
 	// read it into Matches
 	var ms []match
-	for _, line := range strings.Split(fileS, "\n") {
-		// comment lines start with a #
-		if strings.HasPrefix(line, "#") {
-			continue
+	for li, line := range strings.Split(fileS, "\n") {
+		m, err := b.parseLine(li, line, fullQuery, filters)
+		if err != nil {
+			return ms, err
 		}
-
-		// split on white space
-		cols := strings.Fields(line)
-		if len(cols) < 6 {
-			continue
+		// check if match is valid and if it is above identityThreshold
+		if m.isValid() && m.isAboveIdentityThreshold(identityThreshold) {
+			// create and append the new match
+			ms = append(ms, m)
 		}
-
-		entry := strings.Replace(cols[0], ">", "", -1)
-		queryStart, _ := strconv.Atoi(cols[1])
-		queryEnd, _ := strconv.Atoi(cols[2])
-		subjectStart, _ := strconv.Atoi(cols[3])
-		subjectEnd, _ := strconv.Atoi(cols[4])
-		seq := cols[5]                          // subject sequence
-		mismatching, _ := strconv.Atoi(cols[6]) // mismatch count
-		gaps, _ := strconv.Atoi(cols[7])        // gap count
-		titles := cols[8]                       // salltitles, eg: "fwd-terminator-2011"
-		forward := true
-
-		// check whether the mismatch ratio is less than the set limit
-		matchRatio := float64(len(seq)-(mismatching+gaps)) / float64(len(seq))
-		if matchRatio < identityThreshold {
-			continue
-		}
-
-		seq = strings.Replace(seq, "-", "", -1) // remove gap markers
-		queryStart--                            // convert from 1-based to 0-based
-		queryEnd--
-		subjectStart--
-		subjectEnd--
-
-		// bug where titles are being included in the entry
-		entryCols := strings.Fields(entry)
-		if len(entryCols) > 1 {
-			entry = entryCols[0]
-			titles = entryCols[1] + titles
-		}
-
-		// flip if blast is reading right to left
-		if queryStart > queryEnd {
-			queryStart, queryEnd = queryEnd, queryStart
-			forward = !forward
-		}
-		if subjectStart > subjectEnd {
-			subjectStart, subjectEnd = subjectEnd, subjectStart
-			forward = !forward
-		}
-
-		if b.circular && queryStart < b.matchLeftMargin {
-			// for circular fragments - if this match is at the beginning
-			// there might be a longer match that includes bps from the end
-			continue
-		}
-
-		// filter on titles
-		matchesFilter := false
-		titles += entry
-		titles = strings.ToUpper(titles)
-		for _, f := range filters {
-			if strings.Contains(titles, f) {
-				matchesFilter = true
-				break
-			}
-		}
-		if matchesFilter {
-			continue // has been filtered out because of the "exclude" CLI flag
-		}
-
-		// get a unique identifier to distinguish this match/fragment from the others
-		uniqueID := entry + "-" + strconv.Itoa(queryStart%len(b.seq))
-
-		// gather the query sequence
-		querySeq := fullQuery[queryStart : queryEnd+1]
-
-		// create and append the new match
-		ms = append(ms, match{
-			entry:        entry,
-			uniqueID:     uniqueID,
-			querySeq:     querySeq,
-			queryStart:   queryStart,
-			queryEnd:     queryEnd,
-			seq:          seq,
-			subjectStart: subjectStart,
-			subjectEnd:   subjectEnd,
-			circular:     strings.Contains(entry+titles, "CIRCULAR"),
-			mismatching:  mismatching + gaps,
-			db:           b.db,
-			title:        titles,
-			forward:      forward,
-		})
 	}
 
 	return ms, nil
+}
+
+// parse reads the output of blastn into matches.
+func (b *blastExec) parseLine(lineIndex int, line, inputQuerySeq string, filters []string) (m match, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			rlog.Errorf("Error parsing blast result %s - line %d: %s %v",
+				b.out.Name(), lineIndex, line)
+			err = r.(error)
+		}
+	}()
+	// comment lines start with a #
+	if strings.HasPrefix(line, "#") {
+		return
+	}
+
+	// split on TABs only
+	cols := strings.Split(line, "\t")
+	if len(cols) < 6 {
+		return
+	}
+	entry := strings.Replace(cols[0], ">", "", -1)
+	queryStart, _ := strconv.Atoi(cols[1])
+	queryEnd, _ := strconv.Atoi(cols[2])
+	subjectStart, _ := strconv.Atoi(cols[3])
+	subjectEnd, _ := strconv.Atoi(cols[4])
+	subjectSeq := cols[5]                   // subject sequence
+	mismatching, _ := strconv.Atoi(cols[6]) // mismatch count
+	gaps, _ := strconv.Atoi(cols[7])        // gap count
+	titles := cols[8]                       // salltitles, eg: "fwd-terminator-2011"
+	forward := true
+	if subjectSeq == "" {
+		// subject sequence column is actually empty so there cannot be any match
+		return
+	}
+	subjectSeq = strings.Replace(subjectSeq, "-", "", -1) // remove gap markers
+	queryStart--                                          // convert from 1-based to 0-based
+	queryEnd--
+	subjectStart--
+	subjectEnd--
+
+	// bug where titles are being included in the entry
+	entryCols := strings.Fields(entry)
+	if len(entryCols) > 1 {
+		entry = entryCols[0]
+		titles = entryCols[1] + titles
+	}
+
+	// flip if blast is reading right to left
+	if queryStart > queryEnd {
+		queryStart, queryEnd = queryEnd, queryStart
+		forward = !forward
+	}
+	if subjectStart > subjectEnd {
+		subjectStart, subjectEnd = subjectEnd, subjectStart
+		forward = !forward
+	}
+
+	if b.circular && queryStart < b.matchLeftMargin {
+		// for circular fragments - if this match is at the beginning
+		// there might be a longer match that includes bps from the end
+		return
+	}
+
+	// filter on titles
+	matchesFilter := false
+	titles += entry
+	titles = strings.ToUpper(titles)
+	for _, f := range filters {
+		if strings.Contains(titles, f) {
+			matchesFilter = true
+			break
+		}
+	}
+	if matchesFilter {
+		return // has been filtered out because of the "exclude" CLI flag
+	}
+
+	// get a unique identifier to distinguish this match/fragment from the others
+	uniqueID := entry + "-" + strconv.Itoa(queryStart%len(b.seq))
+
+	// gather the query sequence
+	querySeq := inputQuerySeq[queryStart : queryEnd+1]
+
+	// create and append the new match
+	m = match{
+		entry:        entry,
+		uniqueID:     uniqueID,
+		querySeq:     querySeq,
+		queryStart:   queryStart,
+		queryEnd:     queryEnd,
+		seq:          subjectSeq,
+		subjectStart: subjectStart,
+		subjectEnd:   subjectEnd,
+		circular:     strings.Contains(entry+titles, "CIRCULAR"),
+		mismatching:  mismatching + gaps,
+		db:           b.db,
+		title:        titles,
+		forward:      forward,
+	}
+	return m, nil
 }
 
 // runs blast on the query file against another subject file (rather than blastdb)
