@@ -72,7 +72,7 @@ func (m match) isValid() bool {
 	return len(m.seq) > 0
 }
 
-func (m match) isAboveIdentityThreshold(th float64) bool {
+func (m match) isMatchRatioGEThreshold(th float64) bool {
 	matchRatio := float64(len(m.seq)-(m.mismatching)) / float64(len(m.seq))
 	return matchRatio >= th
 }
@@ -230,7 +230,7 @@ func (b *blastExec) parse(filters []string) (matches []match, err error) {
 			return ms, err
 		}
 		// check if match is valid and if it is above identityThreshold
-		if m.isValid() && m.isAboveIdentityThreshold(identityThreshold) {
+		if m.isValid() && m.isMatchRatioGEThreshold(identityThreshold) {
 			// create and append the new match
 			ms = append(ms, m)
 		}
