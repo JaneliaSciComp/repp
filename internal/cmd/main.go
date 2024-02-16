@@ -1,12 +1,19 @@
 package cmd
 
 import (
+	_ "embed"
+	"fmt"
 	"log"
 
 	"github.com/Lattice-Automation/repp/internal/config"
 	"github.com/Lattice-Automation/repp/internal/repp"
 	"github.com/spf13/cobra"
 )
+
+const releaseNumber = "1.1.0"
+
+//go:embed commit.txt
+var commit string
 
 // RootCmd represents the base command when called without any subcommands.
 var RootCmd = &cobra.Command{
@@ -20,7 +27,7 @@ var RootCmd = &cobra.Command{
 
 		config.Setup(reppDataDir)
 	},
-	Version: "1.0.0",
+	Version: fmt.Sprintf("%s (%.11s)", releaseNumber, commit),
 }
 
 func init() {
