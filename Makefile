@@ -27,9 +27,6 @@ generate-version:
 build: modinstall fmt lint
 	go build -o ./bin/$(REPP_EXECUTABLE) ./cmd/repp
 
-.PHONY: build-release
-build-release: generate-version build
-
 
 .PHONY: install
 install:
