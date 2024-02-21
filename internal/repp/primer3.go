@@ -167,7 +167,7 @@ func (p *primer3) bpToAdd(left, right *Frag) int {
 // dist is positive if there's a gap between the start/end of a fragment and the start/end of
 // the other and negative if they overlap
 func (p *primer3) buffer(dist int) (buffer int) {
-	if dist > p.config.PcrPrimerMaxEmbedLength {
+	if dist > 2*p.config.PcrPrimerMaxEmbedLength-p.config.FragmentsMinHomology {
 		// we'll synthesize because the gap is so large, add 100bp of buffer
 		return p.config.PcrBufferLength
 	}

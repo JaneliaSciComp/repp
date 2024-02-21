@@ -3,6 +3,7 @@ package repp
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -37,7 +38,16 @@ func CollectFiles(locations []string) ([]string, error) {
 		}
 	}
 
-	return maps.Values(allFiles), allErrs
+	// sort the final results
+	allFilePaths := maps.Values(allFiles)
+	fnameCmp := func(fp1, fp2 string) int {
+		fn1 := filepath.Base(fp1)
+		fn2 := filepath.Base(fp2)
+		return strings.Compare(fn1, fn2)
+	}
+	slices.SortFunc(allFilePaths, fnameCmp)
+
+	return allFilePaths, allErrs
 }
 
 func collectFilesFromPathLocation(path string) (files []string, err error) {

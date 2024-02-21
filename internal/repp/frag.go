@@ -264,7 +264,7 @@ func (f *Frag) distTo(other *Frag) (bpDist int) {
 // couldOverlapViaPCR returns whether this Frag could overlap the other Frag
 // through homology created via PCR
 func (f *Frag) couldOverlapViaPCR(other *Frag) bool {
-	return f.distTo(other) <= f.conf.PcrPrimerMaxEmbedLength
+	return f.distTo(other) <= 2*f.conf.PcrPrimerMaxEmbedLength-f.conf.FragmentsMinHomology
 }
 
 // overlapsViaHomology returns whether this Frag already has sufficient overlap with the

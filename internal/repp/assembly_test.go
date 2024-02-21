@@ -157,7 +157,8 @@ func Test_assembly_add(t *testing.T) {
 				true,
 				func() (float64, float64) {
 					n3c, n3ac := n3.cost(true)
-					return n3c + 10, n3ac + 0
+					c, ac := n1.costTo(n3)
+					return 10. + n3c + c, n3ac + ac
 				},
 				0),
 			true,
