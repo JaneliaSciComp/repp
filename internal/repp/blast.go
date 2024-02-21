@@ -132,6 +132,7 @@ func (b *blastExec) input() error {
 		querySeq = b.seq
 	}
 
+	// write the query ID and sequence
 	_, err := b.in.WriteString(fmt.Sprintf(">%s\n%s\n", b.name, querySeq))
 
 	return err

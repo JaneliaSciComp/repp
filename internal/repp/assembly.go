@@ -152,7 +152,11 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 
 // compare two assemblies
 func compareAssemblies(a1, a2 assembly) int {
-	return int(a1.adjustedCost - a2.adjustedCost)
+	costComparisonResult := int(a1.adjustedCost - a2.adjustedCost)
+	if costComparisonResult == 0 {
+		return a1.len()
+	}
+	return len(a1.frags) - len(a2.frags)
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
@@ -224,7 +228,16 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 					// the new fragment was created by adding the j-th fragment
 					// so when it's processed it will be extended started with j-th frag
 					// this works because j > i so indexedAssemblies[j] is still in the queue
-					indexedAssemblies[j] = append(indexedAssemblies[j], newAssembly)
+
+					// before considering it check that it has not already reached the allowed number of fragments
+					if newAssembly.len() < conf.FragmentsMaxCount {
+						indexedAssemblies[j] = append(indexedAssemblies[j], newAssembly)
+					} else {
+						// if a is already at the max length and it's not complete so do not even attempt to extend this anymore
+						rlog.Debugf("Abandon candidate %v because it already reached the max fragments count: %d\n",
+							newAssembly, newAssembly.len())
+						continue
+					}
 				}
 			}
 		}
@@ -306,7 +319,7 @@ func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength in
 
 	assemblyEnd := currentAssemblyEnd
 	if newCount > maxCount {
-		return assembly{}, false, fmt.Errorf("it requires too many fragments (%d > %d)", newCount, maxCount)
+		return assembly{}, false, fmt.Errorf("the resulted assembly has  more fragments than allowed (%d > %d)", newCount, maxCount)
 	}
 	if end-assemblyEnd < f.conf.PcrMinFragLength && !features {
 		return assembly{}, false, fmt.Errorf("overlap with last fragment is too short (%d < %d)", end-assemblyEnd, f.conf.PcrMinFragLength)
@@ -380,6 +393,7 @@ func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Fra
 func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStart int, conf *config.Config) (solutions [][]*Frag) {
 	var filled [][]*Frag
 	for ai, a := range assemblies {
+		rlog.Debugf("Try to fill a[%d]: %v\n", ai, a)
 		filledFragments, err := a.fill(target, conf)
 		if err != nil || filledFragments == nil || len(filledFragments) == 0 {
 			// this error can be pretty verbose so I am only displaying it in debug mode

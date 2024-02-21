@@ -198,7 +198,7 @@ func Test_assembly_add(t *testing.T) {
 			},
 			assembly{},
 			false,
-			fmt.Errorf("it requires too many fragments (6 > 5)"),
+			fmt.Errorf("the resulted assembly has  more fragments than allowed (6 > 5)"),
 		},
 	}
 	for _, tt := range tests {

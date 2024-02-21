@@ -219,6 +219,7 @@ func sequence(
 	// fragment count, be assembled to make the target plasmid
 	assemblies := createAssemblies(frags, target.Seq, len(target.Seq), false, conf)
 
+	rlog.Debugf("Sort %d found assemblies\n", len(assemblies))
 	// sort assemblies
 	sort.Slice(assemblies, func(i, j int) bool {
 		return compareAssemblies(assemblies[i], assemblies[j]) <= 0
@@ -238,21 +239,31 @@ func sequence(
 
 	var finalSolutions [][]*Frag
 
+	rlog.Debugf("Start filling PCR primers for %d assemblies out of %d\n", maxSolutions, len(assemblies))
 	// try to fill as many solutions as requested (if there are enough assemblies)
 	// so if not all solutions could be filled try other assemblies
-	for searchSolutionFromIndex := 0; len(finalSolutions) < maxSolutions && searchSolutionFromIndex < len(assemblies); searchSolutionFromIndex += maxSolutions {
+	for searchSolutionFromIndex := 0; searchSolutionFromIndex < len(assemblies); searchSolutionFromIndex += maxSolutions {
 		var selectedAssemblies []assembly
 		if searchSolutionFromIndex+maxSolutions-len(finalSolutions) < len(assemblies) {
 			selectedAssemblies = assemblies[searchSolutionFromIndex : searchSolutionFromIndex+maxSolutions-len(finalSolutions)]
 		} else {
 			selectedAssemblies = assemblies[searchSolutionFromIndex:]
 		}
-		rlog.Infof("Try to fill %d assemblies out of %d",
-			len(selectedAssemblies), len(assemblies)-searchSolutionFromIndex)
-
-		// fill in only best assemblies
+		// fill in only top best assemblies
 		solutions := fillAssemblies(target.Seq, selectedAssemblies, searchSolutionFromIndex, conf)
 		finalSolutions = append(finalSolutions, solutions...)
+		if len(finalSolutions) >= maxSolutions {
+			break
+		} else {
+			rlog.Infof("Filled %d solutions out of the first %d assemblies\n",
+				len(finalSolutions),
+				searchSolutionFromIndex+len(selectedAssemblies))
+			if searchSolutionFromIndex+len(selectedAssemblies) < len(assemblies) {
+				rlog.Infof("Try to fill remaining %d solutions out of %d found assemblies\n",
+					maxSolutions-len(finalSolutions),
+					len(assemblies)-searchSolutionFromIndex-len(selectedAssemblies))
+			}
+		}
 	}
 	rlog.Infof("Finished filling %d assemblies", len(finalSolutions))
 
