@@ -239,7 +239,7 @@ func sequence(
 
 	var finalSolutions [][]*Frag
 
-	rlog.Debugf("Start filling PCR primers for %d assemblies out of %d\n", maxSolutions, len(assemblies))
+	rlog.Infof("Start filling PCR primers for %d assemblies out of %d\n", maxSolutions, len(assemblies))
 	// try to fill as many solutions as requested (if there are enough assemblies)
 	// so if not all solutions could be filled try other assemblies
 	for searchSolutionFromIndex := 0; searchSolutionFromIndex < len(assemblies); searchSolutionFromIndex += maxSolutions {

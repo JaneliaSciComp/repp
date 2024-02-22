@@ -69,6 +69,17 @@ func (a assembly) len() int {
 	return len(a.frags) + a.synths
 }
 
+// get the count of covered bps
+func (a assembly) coverage() int {
+	bps := 0
+	for _, f := range a.frags {
+		if f.matchRatio > 0 {
+			bps += len(f.Seq)
+		}
+	}
+	return bps
+}
+
 // fill traverses frags in an assembly and adds primers or makes synthetic fragments where necessary.
 // It can fail. For example, a PCR Frag may have off-targets in the parent plasmid.
 func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
@@ -152,11 +163,14 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 
 // compare two assemblies
 func compareAssemblies(a1, a2 assembly) int {
-	costComparisonResult := int(a1.adjustedCost - a2.adjustedCost)
-	if costComparisonResult == 0 {
-		return a1.len()
+	coverageComparisonResult := a1.coverage() - a2.coverage()
+	if coverageComparisonResult == 0 {
+		// for the same coverage - use cost
+		// this should vary based on the distance between fragments
+		return int(a1.adjustedCost - a2.adjustedCost)
 	}
-	return len(a1.frags) - len(a2.frags)
+	// the assembly with higher coverage should be ranked higher
+	return -coverageComparisonResult
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)
@@ -173,7 +187,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 	sort.Slice(frags, func(i, j int) bool {
 		return frags[i].start < frags[j].start
 	})
-
+	rlog.Debugf("Fragments selected to create the assembly: %v\n", frags)
 	// indexedAssemblies[i] holds all assemblies that are extended
 	// from the i-th element of frags
 	var indexedAssemblies = make([][]assembly, len(frags))
