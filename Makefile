@@ -18,15 +18,17 @@ modinstall:
 	go mod tidy
 	go mod vendor
 
-.PHONY: generate-version
-generate-version:
-	git rev-parse HEAD > internal/cmd/commit.txt
+check-everything-committed:
+	git diff-index --quiet HEAD
 
+generate-version: check-everything-committed
+	git rev-parse HEAD > internal/cmd/commit.txt
 
 .PHONY: build
 build: modinstall fmt lint
 	go build -o ./bin/$(REPP_EXECUTABLE) ./cmd/repp
 
+build-release: generate-version build
 
 .PHONY: install
 install:
