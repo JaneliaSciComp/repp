@@ -47,14 +47,22 @@ type DB struct {
 
 // AddDatabase imports one or more sequence files into a BLAST database to the REPP directory.
 func AddDatabase(dbName string, seqFiles []string, cost float64, prefixSeqIDWithFName bool) (err error) {
-	dbSequenceFilepath := path.Join(config.SeqDatabaseDir, dbName)
+	// Each database will be in its own directory because blastdb creates a lot of files for each database
+	dbSequenceDir := path.Join(config.SeqDatabaseDir, dbName)
+
+	if err = os.Mkdir(dbSequenceDir, 0755); err != nil {
+		rlog.Errorf("Error creating database location directory %f\n", dbSequenceDir)
+		return
+	}
+
+	dbSequenceFilepath := path.Join(dbSequenceDir, dbName)
 
 	var dbSeqFile *os.File
 	dbSeqFile, err = os.Create(dbSequenceFilepath)
 
 	if err != nil {
 		rlog.Errorf("Error creating database sequence file %f\n", dbSequenceFilepath)
-		return err
+		return
 	}
 	defer dbSeqFile.Close()
 

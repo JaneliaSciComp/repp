@@ -81,6 +81,17 @@ func extractDbNames(cmd *cobra.Command) []string {
 	return splitStringOn(dbNames, []rune{' ', ','})
 }
 
+func extractEnzymeNames(cmd *cobra.Command) []string {
+	enzymeNames, err := cmd.Flags().GetString("enzymes")
+	if err != nil {
+		if helperr := cmd.Help(); helperr != nil {
+			log.Fatal(helperr)
+		}
+		log.Fatalf("failed to parse enzyme names arg: %v", err)
+	}
+	return splitStringOn(enzymeNames, []rune{' ', ','})
+}
+
 func extractOutputFormat(cmd *cobra.Command) string {
 	outputFormat, err := cmd.Flags().GetString("out-fmt")
 	if err != nil {
@@ -144,9 +155,8 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 	backboneName, _ := cmd.Flags().GetString("backbone")
 	params.SetBackboneName(backboneName)
 
-	// check if they also specified an enzyme
-	enzymeNames, _ := cmd.Flags().GetString("enzymeList")
-	params.SetEnzymeNames(splitStringOn(enzymeNames, []rune{' ', ','}))
+	// check if user specified any enzymes
+	params.SetEnzymeNames(extractEnzymeNames(cmd))
 
 	// extract primers dbname (CSV file)
 	params.SetPrimersDBLocations(extractOligosDatabases(cmd, "primers-databases"))
