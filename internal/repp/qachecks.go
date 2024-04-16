@@ -2,7 +2,6 @@ package repp
 
 import (
 	"fmt"
-	"math"
 )
 
 type seqScores struct {
@@ -15,13 +14,6 @@ type seqScores struct {
 func (s seqScores) String() string {
 	return fmt.Sprintf("gc=%f, hp=%d, min50gc=%f, max50gc=%f",
 		s.gcContent, s.longestHomopolymer, s.min50WindowGCContent, s.max50WindowGCContent)
-}
-
-func (s *seqScores) add(s1 seqScores) {
-	s.gcContent = math.Max(s.gcContent, s1.gcContent)
-	s.longestHomopolymer = int(math.Max(float64(s.longestHomopolymer), float64(s1.longestHomopolymer)))
-	s.min50WindowGCContent = math.Max(s.min50WindowGCContent, s1.min50WindowGCContent)
-	s.max50WindowGCContent = math.Max(s.max50WindowGCContent, s1.max50WindowGCContent)
 }
 
 type scoreAlg interface {

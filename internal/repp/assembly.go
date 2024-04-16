@@ -26,6 +26,8 @@ type assembly struct {
 	// cost adjusted based on synthetic fragments
 	adjustedCost float64
 
+	// number of pcr frags
+	pcrs int
 	// total number of synthetic nodes that will be needed to make this
 	synths int
 }
@@ -206,10 +208,10 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 				{
 					frags:  []*Frag{f.copy()},
 					synths: 0,
+					pcrs:   1,
 				},
 			}
 		}
-
 		// create a starting assembly for each fragment containing just it
 		cost, adjustedCost := f.cost(true)
 		indexedAssemblies[i] = []assembly{
@@ -218,6 +220,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 				cost:         cost,              // just PCR,
 				adjustedCost: adjustedCost,
 				synths:       0, // no synthetic frags at start
+				pcrs:         1,
 			},
 		}
 	}
@@ -282,6 +285,7 @@ func createAssemblies(frags []*Frag, target string, targetLength int, features b
 		cost:         cost,
 		adjustedCost: adjustedCost,
 		synths:       len(synths),
+		pcrs:         0,
 	}
 	if _, mockAssemblyFound := finalAssemblies[mockSynthAssembly.assemblyHash()]; mockAssemblyFound {
 		rlog.Errorf("Found an assembly similar to the mock synthesized assembly: %v", mockSynthAssembly)
@@ -386,6 +390,7 @@ func extendAssembly(currentAssembly assembly, f *Frag, maxCount, targetLength in
 		cost:          currentAssembly.cost + annealCost,
 		adjustedCost:  currentAssembly.adjustedCost + adjustedCost,
 		synths:        currentAssembly.synths + synths,
+		pcrs:          currentAssembly.pcrs + 1,
 	}, complete, nil
 }
 
@@ -408,8 +413,8 @@ func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Fra
 }
 
 // fillAssemblies fills in assemblies and returns the pareto optimal solutions.
-func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStart int, conf *config.Config) (solutions [][]*Frag) {
-	var filled [][]*Frag
+func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStart int, conf *config.Config) (solutions []*assembly) {
+	var filled []*assembly
 	for ai, a := range assemblies {
 		rlog.Debugf("Try to fill a[%d]: %v\n", ai, a)
 		filledFragments, err := a.fill(target, conf)
@@ -417,7 +422,29 @@ func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStar
 			// this error can be pretty verbose so I am only displaying it in debug mode
 			rlog.Debugf("Error filling assembly %d because: %v\n", selectedAssembliesStart+ai+1, err)
 		} else {
-			filled = append(filled, filledFragments)
+			assemblyCost := 0.0
+			assemblyAdjustedCost := 0.0
+			npcrs := 0
+			nsynths := 0
+			for _, f := range filledFragments {
+				if f.fragType == pcr {
+					npcrs++
+				} else {
+					nsynths++
+				}
+				// assume no procurement cost
+				fCost, fAdjustedCost := f.cost(false)
+				assemblyCost += fCost
+				assemblyAdjustedCost += fAdjustedCost
+			}
+			filledAssembly := &assembly{
+				frags:        filledFragments,
+				cost:         assemblyCost,
+				adjustedCost: assemblyAdjustedCost,
+				synths:       nsynths,
+				pcrs:         npcrs,
+			}
+			filled = append(filled, filledAssembly)
 		}
 	}
 	return filled

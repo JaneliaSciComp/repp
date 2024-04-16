@@ -388,13 +388,12 @@ func seqOverlap(s1, s2 string, minHomology, maxHomology int) string {
 	// len(s1) - maxHomology to len(s1) - minHomology
 	// and the start of s2
 	start := len(s1) - maxHomology
-	end := len(s1) - minHomology
-
 	if start < 0 {
 		start = 0
 	}
-	if end < 0 {
-		end = 0
+	end := start + maxHomology - minHomology
+	if end > len(s1) {
+		end = len(s1)
 	}
 
 	// for every possible start index

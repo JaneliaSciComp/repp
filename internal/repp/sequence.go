@@ -84,7 +84,7 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		rlog.Fatal(err)
 	}
 	// build up the assemblies that make the sequence
-	insert, target, solutions, err := sequence(
+	_, target, solutions, err := sequence(
 		assemblyParams.GetIn(),
 		assemblyParams.GetFilters(),
 		assemblyParams.GetIdentity(),
@@ -110,7 +110,6 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		solutions,
 		primersDB,
 		synthFragsDB,
-		len(insert.Seq),
 		elapsed.Seconds(),
 		backboneMeta,
 		conf,
@@ -224,8 +223,10 @@ func sequence(
 	sort.Slice(assemblies, func(i, j int) bool {
 		return assemblies[i].isBetterThan(assemblies[j])
 	})
-	for i, a := range assemblies {
-		fmt.Printf("!!! prelim solutions %d: %v\n", i+1, a)
+	if isVerboseLogging() {
+		for i, a := range assemblies {
+			rlog.Debugf("Prelim solution %d: %v", i+1, a)
+		}
 	}
 	var maxSolutions int
 	if keepNSolutions > 0 {
@@ -238,36 +239,48 @@ func sequence(
 		// only keep the best solution
 		maxSolutions = 1
 	}
+	maxInspectedSolutions := maxSolutions + int(0.2*float32(len(assemblies)))
 
-	var finalSolutions [][]*Frag
+	var filledAssemblies []*assembly
 
 	rlog.Infof("Start filling PCR primers for %d assemblies out of %d\n", maxSolutions, len(assemblies))
 	// try to fill as many solutions as requested (if there are enough assemblies)
 	// so if not all solutions could be filled try other assemblies
-	for searchSolutionFromIndex := 0; searchSolutionFromIndex < len(assemblies); searchSolutionFromIndex += maxSolutions {
+	for searchSolutionFromIndex := 0; searchSolutionFromIndex < len(assemblies); searchSolutionFromIndex += maxInspectedSolutions {
 		var selectedAssemblies []assembly
-		if searchSolutionFromIndex+maxSolutions-len(finalSolutions) < len(assemblies) {
-			selectedAssemblies = assemblies[searchSolutionFromIndex : searchSolutionFromIndex+maxSolutions-len(finalSolutions)]
+		var lastInspectedIndex = searchSolutionFromIndex + maxInspectedSolutions - len(filledAssemblies)
+		if lastInspectedIndex < len(assemblies) {
+			rlog.Infof("Inspecting and filling assemblies from %d to %d", searchSolutionFromIndex, lastInspectedIndex)
+			selectedAssemblies = assemblies[searchSolutionFromIndex:lastInspectedIndex]
 		} else {
+			rlog.Infof("Inspecting and filling assemblies from %d to the end", searchSolutionFromIndex)
 			selectedAssemblies = assemblies[searchSolutionFromIndex:]
 		}
 		// fill in only top best assemblies
 		solutions := fillAssemblies(target.Seq, selectedAssemblies, searchSolutionFromIndex, conf)
-		finalSolutions = append(finalSolutions, solutions...)
-		if len(finalSolutions) >= maxSolutions {
+		filledAssemblies = append(filledAssemblies, solutions...)
+		if len(filledAssemblies) >= maxSolutions {
 			break
 		} else {
 			rlog.Infof("Filled %d solutions out of the first %d assemblies\n",
-				len(finalSolutions),
+				len(filledAssemblies),
 				searchSolutionFromIndex+len(selectedAssemblies))
 			if searchSolutionFromIndex+len(selectedAssemblies) < len(assemblies) {
 				rlog.Infof("Try to fill remaining %d solutions out of %d found assemblies\n",
-					maxSolutions-len(finalSolutions),
+					maxSolutions-len(filledAssemblies),
 					len(assemblies)-searchSolutionFromIndex-len(selectedAssemblies))
 			}
 		}
 	}
-	rlog.Infof("Finished filling %d assemblies", len(finalSolutions))
-
+	// final sort after filling the assemblies
+	// but this time sort by the number of fragments
+	sort.Slice(filledAssemblies, func(i, j int) bool {
+		return filledAssemblies[i].len() < filledAssemblies[j].len()
+	})
+	rlog.Infof("Finished filling %d assemblies", len(filledAssemblies))
+	finalSolutions := make([][]*Frag, maxSolutions)
+	for i := range finalSolutions {
+		finalSolutions[i] = filledAssemblies[i].frags
+	}
 	return insert, target, finalSolutions, nil
 }

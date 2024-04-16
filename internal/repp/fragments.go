@@ -73,7 +73,6 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 		[][]*Frag{solution},
 		primersDB,
 		synthFragsDB,
-		len(target.Seq),
 		0,
 		backboneMeta,
 		conf,

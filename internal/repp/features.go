@@ -95,7 +95,6 @@ func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		solutions,
 		primersDB,
 		synthFragsDB,
-		insertLength,
 		time.Since(start).Seconds(),
 		backboneMeta,
 		conf,
@@ -328,14 +327,22 @@ func featureSolutions(
 	}
 
 	// fill each assembly and accumulate the pareto optimal solutions
-	solutions := fillAssemblies(target, selectedAssemblies, 0, conf)
+	filledAssemblies := fillAssemblies(target, selectedAssemblies, 0, conf)
 
 	// update the target to the first filled assembly
-	if len(solutions) > 0 {
-		target = annealFragments(conf.FragmentsMinHomology, conf.FragmentsMaxHomology, solutions[0])
+	if len(filledAssemblies) > 0 {
+		target = annealFragments(conf.FragmentsMinHomology, conf.FragmentsMaxHomology, filledAssemblies[0].frags)
+	}
+	// final sort after filling the assemblies
+	sort.Slice(filledAssemblies, func(i, j int) bool {
+		return filledAssemblies[i].isBetterThan(*filledAssemblies[j])
+	})
+	finalSolutions := make([][]*Frag, len(filledAssemblies))
+	for i := range finalSolutions {
+		finalSolutions[i] = filledAssemblies[i].frags
 	}
 
-	return target, solutions
+	return target, finalSolutions
 }
 
 // extendMatches groups and extends matches against the subject sequence

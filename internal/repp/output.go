@@ -65,7 +65,6 @@ func writeResult(
 	targetSeq string,
 	assemblies [][]*Frag,
 	primersDB, synthFragsDB *oligosDB,
-	insertSeqLength int,
 	seconds float64,
 	backbone *Backbone,
 	conf *config.Config,
@@ -74,7 +73,6 @@ func writeResult(
 		targetName,
 		targetSeq,
 		assemblies,
-		insertSeqLength,
 		seconds,
 		backbone,
 		conf,
@@ -95,7 +93,6 @@ func prepareSolutionsOutput(
 	targetName,
 	targetSeq string,
 	assemblies [][]*Frag,
-	insertSeqLength int,
 	seconds float64,
 	backbone *Backbone,
 	conf *config.Config,
@@ -185,9 +182,6 @@ func prepareSolutionsOutput(
 
 	// sort solutions in increasing fragment count order
 	sort.Slice(solutions, func(i, j int) bool {
-		if solutions[i].Count == solutions[j].Count {
-			return solutions[i].AdjustedCost < solutions[j].AdjustedCost
-		}
 		return solutions[i].Count < solutions[j].Count
 	})
 

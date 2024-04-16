@@ -38,3 +38,7 @@ var (
 func SetVerboseLogging() {
 	verboseLogging = true
 }
+
+func isVerboseLogging() bool {
+	return verboseLogging
+}
