@@ -222,9 +222,11 @@ func sequence(
 	rlog.Debugf("Sort %d found assemblies\n", len(assemblies))
 	// sort assemblies
 	sort.Slice(assemblies, func(i, j int) bool {
-		return compareAssemblies(assemblies[i], assemblies[j]) <= 0
+		return assemblies[i].isBetterThan(assemblies[j])
 	})
-
+	for i, a := range assemblies {
+		fmt.Printf("!!! prelim solutions %d: %v\n", i+1, a)
+	}
 	var maxSolutions int
 	if keepNSolutions > 0 {
 		if keepNSolutions < len(assemblies) {

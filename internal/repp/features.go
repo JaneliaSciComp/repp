@@ -312,7 +312,7 @@ func featureSolutions(
 
 	// sort assemblies
 	sort.Slice(assemblies, func(i, j int) bool {
-		return compareAssemblies(assemblies[i], assemblies[j]) <= 0
+		return assemblies[i].isBetterThan(assemblies[j])
 	})
 
 	var selectedAssemblies []assembly

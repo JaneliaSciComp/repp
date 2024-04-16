@@ -9,6 +9,8 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+const epsilon float64 = 0.01
+
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target plasmid.
 type assembly struct {
@@ -42,7 +44,9 @@ func (a assembly) String() string {
 			}
 		}
 	}
-	return fmt.Sprintf("%s (n=%d, c=%f, ac=%f)", res, a.len(), a.cost, a.adjustedCost)
+	return fmt.Sprintf("%s (n=%d, nfrags=%d, coverage=%d, c=%f, ac=%f)",
+		res, a.len(), len(a.frags), a.coverage(),
+		a.cost, a.adjustedCost)
 }
 
 // return assembly hash based on fragment IDs
@@ -78,6 +82,18 @@ func (a assembly) coverage() int {
 		}
 	}
 	return bps
+}
+
+func (a assembly) isBetterThan(ref assembly) bool {
+	c1 := a.adjustedCost
+	c2 := ref.adjustedCost
+	if c1 < c2-epsilon {
+		return true
+	} else if c2 < c1-epsilon {
+		return false
+	} else {
+		return a.synths <= ref.synths
+	}
 }
 
 // fill traverses frags in an assembly and adds primers or makes synthetic fragments where necessary.
@@ -159,18 +175,6 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 	}
 
 	return pcrAndSynthFrags, nil
-}
-
-// compare two assemblies
-func compareAssemblies(a1, a2 assembly) int {
-	coverageComparisonResult := a1.coverage() - a2.coverage()
-	if coverageComparisonResult == 0 {
-		// for the same coverage - use cost
-		// this should vary based on the distance between fragments
-		return int(a1.adjustedCost - a2.adjustedCost)
-	}
-	// the assembly with higher coverage should be ranked higher
-	return -coverageComparisonResult
 }
 
 // createAssemblies builds up circular assemblies (unfilled lists of fragments that should be combinable)

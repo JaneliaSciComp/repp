@@ -346,7 +346,7 @@ func writeCSV(filename, fragmentIDBase string,
 				matchRatio = "N/A"
 				pcrSeqSize = len(f.Seq)
 				reagents = append(reagents, synthReagent)
-				synthFragScores := synthSeqQualityChecks(f.Seq)
+				synthFragScores := fragSeqQualityChecks(f.Seq)
 				gcContentCol = fmt.Sprintf("%3.1f", synthFragScores.gcContent*100)
 				min50GCContentCol = fmt.Sprintf("%3.1f", synthFragScores.min50WindowGCContent*100)
 				max50GCContentCol = fmt.Sprintf("%3.1f", synthFragScores.max50WindowGCContent*100)
