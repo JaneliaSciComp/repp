@@ -416,11 +416,12 @@ func nextFragment(frags []*Frag, i int, target string, conf *config.Config) *Fra
 func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStart int, conf *config.Config) (solutions []*assembly) {
 	var filled []*assembly
 	for ai, a := range assemblies {
-		rlog.Debugf("Try to fill a[%d]: %v\n", ai, a)
+		rlog.Debugf("Try to fill a[%d]: %v\n", selectedAssembliesStart+ai+1, a)
 		filledFragments, err := a.fill(target, conf)
 		if err != nil || filledFragments == nil || len(filledFragments) == 0 {
 			// this error can be pretty verbose so I am only displaying it in debug mode
-			rlog.Debugf("Error filling assembly %d because: %v\n", selectedAssembliesStart+ai+1, err)
+			rlog.Debugf("Error filling assembly a[%d]: %v because: %v\n",
+				selectedAssembliesStart+ai+1, a, err)
 		} else {
 			assemblyCost := 0.0
 			assemblyAdjustedCost := 0.0
@@ -444,6 +445,9 @@ func fillAssemblies(target string, assemblies []assembly, selectedAssembliesStar
 				synths:       nsynths,
 				pcrs:         npcrs,
 			}
+			rlog.Debugf("Create filled assembly a[%d]; %v",
+				selectedAssembliesStart+ai+1, filledAssembly)
+
 			filled = append(filled, filledAssembly)
 		}
 	}
