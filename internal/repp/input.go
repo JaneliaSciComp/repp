@@ -211,15 +211,28 @@ func prepareBackbone(
 		return &Frag{}, &Backbone{}, err
 	}
 
-	// try to digest the backbone with the enzyme
-	if len(enzymes) == 0 {
-		return &Frag{},
-			&Backbone{},
-			fmt.Errorf("backbone passed, %s, without an enzyme to digest it", bbName)
-	}
-
-	if f, backbone, err = digest(bbFrag, enzymes); err != nil {
-		return &Frag{}, &Backbone{}, err
+	if len(enzymes) > 0 {
+		// try to digest the backbone with the enzyme
+		if f, backbone, err = digest(bbFrag, enzymes); err != nil {
+			return &Frag{}, &Backbone{}, err
+		}
+	} else {
+		// if no enzyme is specified
+		// the backbone is assumed to be linearized at the origin (position 0)
+		return &Frag{
+				ID:         bbFrag.ID,
+				uniqueID:   "backbone",
+				Seq:        bbFrag.Seq,
+				fragType:   linear,
+				db:         bbFrag.db,
+				matchRatio: bbFrag.matchRatio,
+			},
+			&Backbone{
+				Seq:      bbFrag.Seq,
+				Cutsites: []int{0},
+				Strands:  []bool{true}, // assume fwd
+			},
+			nil
 	}
 
 	return
