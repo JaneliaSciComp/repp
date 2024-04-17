@@ -9,8 +9,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-const epsilon float64 = 0.01
-
 // assembly is a slice of nodes ordered by the nodes
 // distance from the end of the target plasmid.
 type assembly struct {
@@ -87,15 +85,17 @@ func (a assembly) coverage() int {
 }
 
 func (a assembly) isBetterThan(ref assembly) bool {
-	c1 := a.adjustedCost
-	c2 := ref.adjustedCost
-	if c1 < c2-epsilon {
+	if a.len() < ref.len() {
 		return true
-	} else if c2 < c1-epsilon {
+	} else if a.len() > ref.len() {
 		return false
-	} else {
-		return a.synths <= ref.synths
 	}
+	if a.synths < ref.synths {
+		return true
+	} else if a.synths > ref.synths {
+		return false
+	}
+	return a.adjustedCost <= ref.adjustedCost
 }
 
 // fill traverses frags in an assembly and adds primers or makes synthetic fragments where necessary.
