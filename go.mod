@@ -3,6 +3,7 @@ module github.com/Lattice-Automation/repp
 go 1.20
 
 require (
+	github.com/go-test/deep v1.0.7
 	github.com/jinzhu/copier v0.4.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0

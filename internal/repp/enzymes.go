@@ -16,8 +16,12 @@ import (
 type enzyme struct {
 	name         string
 	recog        string
-	seqCutIndex  int
-	compCutIndex int
+	seqCutIndex  int // current strand cut index
+	compCutIndex int // reverse strand cut index - hangover
+}
+
+func (e enzyme) String() string {
+	return fmt.Sprintf("%s:%s:%d:%d", e.name, e.recog, e.seqCutIndex, e.compCutIndex)
 }
 
 // cut is a binding index and the length of the overhang after digestion
@@ -25,6 +29,25 @@ type cut struct {
 	index  int
 	strand bool
 	enzyme enzyme
+}
+
+func (c cut) String() string {
+	var strand string
+	if c.strand {
+		strand = "FWD"
+	} else {
+		strand = "REV"
+	}
+	return fmt.Sprintf("strand: %s, match index=%d, enzyme=%v", strand, c.index, c.enzyme)
+}
+
+func (c cut) getDigestionSites(seqLen int) (cutIndex int) {
+	if c.strand {
+		cutIndex = c.index + c.enzyme.seqCutIndex
+	} else {
+		cutIndex = c.index + len(c.enzyme.recog) - c.enzyme.compCutIndex
+	}
+	return cutIndex % seqLen
 }
 
 // Backbone is for information on a linearized backbone in the output payload
@@ -47,6 +70,12 @@ type Backbone struct {
 
 // parses a recognition sequence into a hangInd, cutInd for overhang calculation.
 func newEnzyme(name, recogSeq string) enzyme {
+	if strings.Count(recogSeq, "^") != 1 || strings.Count(recogSeq, "_") != 1 {
+		return enzyme{
+			"", "", -1, -1,
+		}
+	}
+
 	cutIndex := strings.Index(recogSeq, "^")
 	hangIndex := strings.Index(recogSeq, "_")
 
@@ -56,8 +85,8 @@ func newEnzyme(name, recogSeq string) enzyme {
 		cutIndex--
 	}
 
-	recogSeq = strings.Replace(recogSeq, "^", "", -1)
-	recogSeq = strings.Replace(recogSeq, "_", "", -1)
+	recogSeq = strings.Replace(recogSeq, "^", "", 1)
+	recogSeq = strings.Replace(recogSeq, "_", "", 1)
 
 	return enzyme{
 		name:         name,
@@ -98,21 +127,14 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 		return &Frag{}, &Backbone{}, fmt.Errorf("no %s cutsites found in %s", strings.Join(enzymeNames, ","), frag.ID)
 	}
 
+	rlog.Debugf("Digest site candidates: %v", cuts)
+
 	// only one cutsite
 	if len(cuts) == 1 {
 		cut := cuts[0]
 
-		overhangLength := cut.enzyme.seqCutIndex - cut.enzyme.compCutIndex
-		digestedSeq := ""
-
-		if overhangLength >= 0 {
-			cutIndex := (cut.index + cut.enzyme.seqCutIndex) % len(frag.Seq)
-			digestedSeq = frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
-		} else {
-			bottomIndex := (cut.index + cut.enzyme.seqCutIndex) % len(frag.Seq)
-			topIndex := (cut.index + cut.enzyme.compCutIndex) % len(frag.Seq)
-			digestedSeq = frag.Seq[topIndex:] + frag.Seq[:bottomIndex]
-		}
+		cutIndex := cut.getDigestionSites(len(frag.Seq))
+		digestedSeq := frag.Seq[cutIndex:] + frag.Seq[:cutIndex]
 
 		return &Frag{
 				ID:         frag.ID,
@@ -125,7 +147,7 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 			&Backbone{
 				Seq:      frag.Seq,
 				Enzymes:  []string{cut.enzyme.name},
-				Cutsites: []int{cut.index},
+				Cutsites: []int{cutIndex},
 				Strands:  []bool{cut.strand},
 			},
 			nil
@@ -144,21 +166,19 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 	cut2 := cuts[(largestBand+1)%len(lengths)]
 	doubled := frag.Seq + frag.Seq
 
-	cut1Index := cut1.index + cut1.enzyme.compCutIndex
-	if cut1.enzyme.seqCutIndex-cut1.enzyme.compCutIndex < 0 {
-		cut1Index = cut1.index + cut1.enzyme.seqCutIndex
+	cut1SiteIndex := cut1.getDigestionSites(len(frag.Seq))
+	cut2SiteIndex := cut2.getDigestionSites(len(frag.Seq))
+
+	rlog.Infof("Selected cut1: %v with cut site at (%d) and cut2: %v with cut site at (%d)",
+		cut1, cut1SiteIndex,
+		cut2, cut2SiteIndex,
+	)
+
+	if cut2SiteIndex < cut1SiteIndex {
+		cut2SiteIndex += len(frag.Seq)
 	}
 
-	cut2Index := cut2.index + cut2.enzyme.compCutIndex
-	if cut2.enzyme.seqCutIndex-cut2.enzyme.compCutIndex < 0 {
-		cut2Index = cut2.index + cut2.enzyme.seqCutIndex
-	}
-
-	if cut2Index < cut1Index {
-		cut2Index += len(frag.Seq)
-	}
-
-	digestedSeq := doubled[cut1Index:cut2Index]
+	digestedSeq := doubled[cut1SiteIndex:cut2SiteIndex]
 
 	return &Frag{
 			ID:         frag.ID,
@@ -171,7 +191,7 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 		&Backbone{
 			Seq:      frag.Seq,
 			Enzymes:  []string{cut1.enzyme.name, cut2.enzyme.name},
-			Cutsites: []int{cut1Index, cut2Index},
+			Cutsites: []int{cut1SiteIndex, cut2SiteIndex},
 			Strands:  []bool{cut1.strand, cut2.strand},
 		},
 		nil
@@ -181,8 +201,8 @@ func digest(frag *Frag, enzymes []enzyme) (digested *Frag, backbone *Backbone, e
 // also returns the lengths of each "band" of DNA after digestion. Each band length
 // corresponds to the band formed with the start of the enzyme at the same index in cuts
 func cutsites(seq string, enzymes []enzyme) (cuts []cut, lengths []int) {
-	s := seq
-	rcs := reverseComplement(seq)
+	s := seq + seq
+	rcs := reverseComplement(s)
 
 	for _, enzyme := range enzymes {
 		regexRecognition := recogRegex(enzyme.recog)
@@ -190,17 +210,24 @@ func cutsites(seq string, enzymes []enzyme) (cuts []cut, lengths []int) {
 
 		for _, submatch := range reg.FindAllStringSubmatchIndex(s, -1) {
 			index := submatch[0]
+			if index >= len(seq) {
+				break
+			}
 			cuts = append(cuts, cut{index: index, enzyme: enzyme, strand: true})
 		}
 
 		// if it's a palindrome enzyme, don't scan over it again
-		if reverseComplement(regexRecognition) == regexRecognition {
+		if reverseComplement(enzyme.recog) == enzyme.recog {
 			continue
 		}
 
 		for _, submatch := range reg.FindAllStringSubmatchIndex(rcs, -1) {
-			index := submatch[0]
-			index = len(seq) - index - len(enzyme.recog)
+			revComplementIndex := submatch[0]
+			if revComplementIndex >= len(seq) {
+				break
+			}
+			index := (len(seq) - revComplementIndex - len(enzyme.recog) + len(seq)) % len(seq)
+			fmt.Printf("!!!!!! INDEX IN REV COMPLEMEMNT: %d - %d\n", revComplementIndex, index)
 			cuts = append(cuts, cut{index: index, enzyme: enzyme, strand: false})
 		}
 	}

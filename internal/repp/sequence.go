@@ -84,7 +84,7 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		rlog.Fatal(err)
 	}
 	// build up the assemblies that make the sequence
-	_, target, solutions, err := sequence(
+	target, solutions, err := sequence(
 		assemblyParams.GetIn(),
 		assemblyParams.GetFilters(),
 		assemblyParams.GetIdentity(),
@@ -155,12 +155,12 @@ func sequence(
 	backboneFrag *Frag,
 	dbs []DB,
 	keepNSolutions int,
-	conf *config.Config) (insert, target *Frag, solutions [][]*Frag, err error) {
+	conf *config.Config) (target *Frag, solutions [][]*Frag, err error) {
 
 	// read the target sequence (the first in the slice is used)
 	fragments, err := read(input, false, false)
 	if err != nil {
-		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to read target sequence from %s: %v", input, err)
+		return &Frag{}, nil, fmt.Errorf("failed to read target sequence from %s: %v", input, err)
 	}
 
 	if len(fragments) > 1 {
@@ -173,19 +173,49 @@ func sequence(
 	}
 
 	target = fragments[0]
-	rlog.Debugw("building plasmid", "targetID", target.ID)
+	targetSeqLen := len(target.Seq)
+	rlog.Debugw("building plasmid", "targetID", target.ID, "targetLen", targetSeqLen)
 
-	// if a backbone was specified, add it to the sequence of the target frag
-	insert = target.copy() // store a copy for logging later
+	var bbFragInsert *Frag
 	if backboneFrag.ID != "" {
-		target.Seq += backboneFrag.Seq
+		bbSeqLen := len(backboneFrag.Seq)
+		inputSeq := strings.ToUpper(target.Seq + target.Seq)
+		bbSubSeq, bbSubSeqIndex, bbSubSeqLen := lcsubstr(backboneFrag.Seq, inputSeq)
+		if bbSubSeqIndex != -1 {
+			// add the backbone to the sequence of the target plasmid
+			bbFragInsert = &Frag{
+				ID:         backboneFrag.ID,
+				Seq:        bbSubSeq,
+				uniqueID:   "backbone" + strconv.Itoa(bbSubSeqIndex),
+				start:      bbSubSeqIndex,
+				end:        bbSubSeqIndex + bbSubSeqLen,
+				fragType:   pcr,
+				matchRatio: 1,
+				conf:       conf,
+			}
+		} else {
+			// add the backbone to the sequence of the target plasmid
+			bbFragInsert = &Frag{
+				ID:         backboneFrag.ID,
+				Seq:        backboneFrag.Seq,
+				uniqueID:   "backbone" + strconv.Itoa(targetSeqLen),
+				start:      targetSeqLen,
+				end:        targetSeqLen + bbSeqLen,
+				fragType:   pcr,
+				matchRatio: 1,
+				conf:       conf,
+			}
+			target.Seq += backboneFrag.Seq
+		}
+	} else {
+		bbFragInsert = nil
 	}
 
 	// get all the matches against the target plasmid
 	matches, err := blast(target.ID, target.Seq, true, leftMargin, dbs, filters, identity)
 	if err != nil {
 		dbMessage := strings.Join(dbNames(dbs), ", ")
-		return &Frag{}, &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
+		return &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
 	}
 
 	// keep only "proper" arcs (non-self-contained)
@@ -195,20 +225,12 @@ func sequence(
 	// map fragment Matches to nodes
 	frags := newFrags(matches, conf)
 
-	if backboneFrag.ID != "" {
-		// add the backbone in as fragment (copy twice across zero index)
-		backboneFrag.conf = conf
-		backboneFrag.start = len(insert.Seq)
-		backboneFrag.end = backboneFrag.start + len(backboneFrag.Seq) - 1
-		backboneFrag.uniqueID = "backbone" + strconv.Itoa(backboneFrag.start)
-		frags = append(frags, backboneFrag)
-
-		copiedBB := backboneFrag.copy()
+	if bbFragInsert != nil {
+		copiedBB := bbFragInsert.copy()
 		copiedBB.start += len(target.Seq)
 		copiedBB.end += len(target.Seq)
-		copiedBB.uniqueID = backboneFrag.uniqueID
-		frags = append(frags, copiedBB)
-
+		// add the backbone in as fragment (copy twice across zero index)
+		frags = append(frags, bbFragInsert, copiedBB)
 		sort.Slice(frags, func(i, j int) bool {
 			return frags[i].start < frags[j].start
 		})
@@ -278,9 +300,43 @@ func sequence(
 		return filledAssemblies[i].len() < filledAssemblies[j].len()
 	})
 	rlog.Infof("Finished filling %d assemblies", len(filledAssemblies))
-	finalSolutions := make([][]*Frag, maxSolutions)
+	var nfinalSolutions int
+	if len(filledAssemblies) < maxSolutions {
+		nfinalSolutions = len(filledAssemblies)
+	} else {
+		nfinalSolutions = maxSolutions
+	}
+	finalSolutions := make([][]*Frag, nfinalSolutions)
 	for i := range finalSolutions {
 		finalSolutions[i] = filledAssemblies[i].frags
 	}
-	return insert, target, finalSolutions, nil
+	return target, finalSolutions, nil
+}
+
+func lcsubstr(s1, s2 string) (string, int, int) {
+	lcsuff := make([][]int, len(s1)+1)
+	var mx, s1_end_suff int = 0, 0
+	for i := 0; i <= len(s1); i++ {
+		lcsuff[i] = make([]int, len(s2)+1)
+	}
+
+	for i := 1; i <= len(s1); i++ {
+		for j := 1; j <= len(s2); j++ {
+			if s1[i-1] == s2[j-1] {
+				lcsuff[i][j] = lcsuff[i-1][j-1] + 1
+				if lcsuff[i][j] > mx {
+					mx = lcsuff[i][j]
+					s1_end_suff = i
+				}
+			} else {
+				lcsuff[i][j] = 0
+			}
+		}
+	}
+
+	if mx > 0 {
+		return s1[s1_end_suff-mx : mx], s1_end_suff - mx, mx
+	} else {
+		return "", -1, 0
+	}
 }

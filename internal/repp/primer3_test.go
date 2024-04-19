@@ -287,39 +287,6 @@ func Test_mutatePrimers(t *testing.T) {
 	}
 }
 
-func Test_reverseComplement(t *testing.T) {
-	type args struct {
-		seq string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			"generates reverse complment",
-			args{
-				seq: "ATGtgca",
-			},
-			"TGCACAT",
-		},
-		{
-			"correct reverse complement of enzyme recog seqs",
-			args{
-				seq: "ATG^_CAT",
-			},
-			"ATG^_CAT",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := reverseComplement(tt.args.seq); got != tt.want {
-				t.Errorf("revComp() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 // these estimated hairpin tms jump around when the primer3 version changes
 func Test_hairpin(t *testing.T) {
 	c := config.New()

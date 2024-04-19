@@ -410,30 +410,3 @@ func hairpin(seq string, conf *config.Config) (melt float64) {
 
 	return temp
 }
-
-// reverseComplement returns the reverse complement of a sequence
-func reverseComplement(seq string) string {
-	seq = strings.ToUpper(seq)
-
-	revCompMap := map[rune]byte{
-		'A': 'T',
-		'T': 'A',
-		'G': 'C',
-		'C': 'G',
-		'^': '_',
-		'_': '^',
-	}
-
-	var revCompBuffer bytes.Buffer
-	for _, c := range seq {
-		revCompBuffer.WriteByte(revCompMap[c])
-	}
-
-	revCompBytes := revCompBuffer.Bytes()
-	for i := 0; i < len(revCompBytes)/2; i++ {
-		j := len(revCompBytes) - i - 1
-		revCompBytes[i], revCompBytes[j] = revCompBytes[j], revCompBytes[i]
-	}
-
-	return string(revCompBytes)
-}

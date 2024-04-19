@@ -1,6 +1,7 @@
 package repp
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -164,4 +165,43 @@ func validateJunctions(frags []*Frag, conf *config.Config) error {
 	}
 
 	return nil
+}
+
+// reverseComplement returns the reverse complement of a sequence
+func reverseComplement(seq string) string {
+	seq = strings.ToUpper(seq)
+
+	revCompMap := map[rune]byte{
+		'A': 'T',
+		'T': 'A',
+		'G': 'C',
+		'C': 'G',
+		'^': '_',
+		'_': '^',
+		'M': 'K',
+		'R': 'Y',
+		'W': 'S',
+		'Y': 'R',
+		'S': 'W',
+		'K': 'M',
+		'H': 'D',
+		'D': 'H',
+		'V': 'B',
+		'B': 'V',
+		'N': 'N',
+		'X': 'X',
+	}
+
+	var revCompBuffer bytes.Buffer
+	for _, c := range seq {
+		revCompBuffer.WriteByte(revCompMap[c])
+	}
+
+	revCompBytes := revCompBuffer.Bytes()
+	for i := 0; i < len(revCompBytes)/2; i++ {
+		j := len(revCompBytes) - i - 1
+		revCompBytes[i], revCompBytes[j] = revCompBytes[j], revCompBytes[i]
+	}
+
+	return string(revCompBytes)
 }

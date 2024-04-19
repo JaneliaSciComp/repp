@@ -883,14 +883,19 @@ func cleanblastdb(fullDbPath string, includeDbFile bool) {
 		for _, dbFilename := range dbFileMatches {
 			rlog.Debugf("Delete %s", dbFilename)
 			if err := os.RemoveAll(dbFilename); err != nil {
-				rlog.Debugf("Error: %v", err)
+				rlog.Errorf("Error removing file %s: %v", dbFilename, err)
 			}
 		}
 	}
 	if includeDbFile {
 		rlog.Debugf("Delete %s", fullDbPath)
 		if err := os.Remove(fullDbPath); err != nil {
-			rlog.Debugf("Error: %v", err)
+			rlog.Errorf("Error removing file %s: %v", fullDbPath, err)
+		}
+		dbParentDir := filepath.Dir(fullDbPath)
+		rlog.Debugf("Delete db dir: %s", dbParentDir)
+		if err := os.RemoveAll(dbParentDir); err != nil {
+			rlog.Errorf("Error removing dir: %s %v", dbParentDir, err)
 		}
 	}
 }
