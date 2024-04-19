@@ -155,6 +155,30 @@ func Test_digest(t *testing.T) {
 			false,
 		},
 		{
+			"digest with HpyCH4III",
+			args{
+				&Frag{
+					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				},
+				[]enzyme{
+					{name: "HpyCH4III", recog: "ACNGT", seqCutIndex: 3, compCutIndex: 2},
+				},
+			},
+			&Frag{
+				uniqueID: "backbone",
+				fragType: linear,
+				Seq:      "GTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACT",
+			},
+			&Backbone{
+				Seq:      "ATGAGGTTAGCCAAAAAAGCACGTGAATTCGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCA",
+				Cutsites: []int{58, 153},
+				Strands:  []bool{true, true},
+				Enzymes:  []string{"HpyCH4III", "HpyCH4III"},
+			},
+			false,
+		},
+
+		{
 			"digest in reverse complement sequence, positive overhang",
 			args{
 				&Frag{
@@ -197,6 +221,29 @@ func Test_digest(t *testing.T) {
 				Cutsites: []int{29},
 				Strands:  []bool{false},
 				Enzymes:  []string{"E6"},
+			},
+			false,
+		},
+		{
+			"digest in reverse complement sequence, positive overhang at the end",
+			args{
+				&Frag{
+					Seq: "ATGAGGTTAGCCAAAAAAGCACGTGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAGCTGGG",
+				},
+				[]enzyme{
+					{name: "E7", recog: "CCCAGC", seqCutIndex: 1, compCutIndex: 5},
+				}, // rev comp = GCTGGG
+			},
+			&Frag{
+				uniqueID: "backbone",
+				fragType: linear,
+				Seq:      "CTGGGATGAGGTTAGCCAAAAAAGCACGTGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAG",
+			},
+			&Backbone{
+				Seq:      "ATGAGGTTAGCCAAAAAAGCACGTGGTGGCGCCCACCGACTGTTCCCAAACTGTAGCTCTTCGTTCCGTCAAGGCCCGACTTTCATCGCGGCCCATTCCAGCTGGG",
+				Cutsites: []int{101},
+				Strands:  []bool{false},
+				Enzymes:  []string{"E7"},
 			},
 			false,
 		},
@@ -370,6 +417,19 @@ func Test_newEnzyme(t *testing.T) {
 				recog:        "GAATTC",
 				seqCutIndex:  1,
 				compCutIndex: 5,
+			},
+		},
+		{
+			"HpyCH4III",
+			args{
+				"HpyCH4III",
+				"AC_N^GT",
+			},
+			enzyme{
+				name:         "HpyCH4III",
+				recog:        "ACNGT",
+				seqCutIndex:  3,
+				compCutIndex: 2,
 			},
 		},
 	}
