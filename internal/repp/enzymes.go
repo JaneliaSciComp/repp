@@ -227,7 +227,6 @@ func cutsites(seq string, enzymes []enzyme) (cuts []cut, lengths []int) {
 				break
 			}
 			index := (len(seq) - revComplementIndex - len(enzyme.recog) + len(seq)) % len(seq)
-			fmt.Printf("!!!!!! INDEX IN REV COMPLEMEMNT: %d - %d\n", revComplementIndex, index)
 			cuts = append(cuts, cut{index: index, enzyme: enzyme, strand: false})
 		}
 	}
