@@ -180,32 +180,48 @@ func sequence(
 	if backboneFrag.ID != "" {
 		bbSeqLen := len(backboneFrag.Seq)
 		inputSeq := strings.ToUpper(target.Seq + target.Seq)
-		bbSubSeq, bbSubSeqIndex, bbSubSeqLen := lcsubstr(backboneFrag.Seq, inputSeq)
+		bbSubSeqIndex := strings.Index(inputSeq, backboneFrag.Seq)
 		if bbSubSeqIndex != -1 {
 			// add the backbone to the sequence of the target plasmid
 			bbFragInsert = &Frag{
 				ID:         backboneFrag.ID,
-				Seq:        bbSubSeq,
+				Seq:        backboneFrag.Seq,
 				uniqueID:   "backbone" + strconv.Itoa(bbSubSeqIndex),
 				start:      bbSubSeqIndex,
-				end:        bbSubSeqIndex + bbSubSeqLen,
+				end:        bbSubSeqIndex + bbSeqLen,
 				fragType:   pcr,
 				matchRatio: 1,
 				conf:       conf,
 			}
 		} else {
-			// add the backbone to the sequence of the target plasmid
-			bbFragInsert = &Frag{
-				ID:         backboneFrag.ID,
-				Seq:        backboneFrag.Seq,
-				uniqueID:   "backbone" + strconv.Itoa(targetSeqLen),
-				start:      targetSeqLen,
-				end:        targetSeqLen + bbSeqLen,
-				fragType:   pcr,
-				matchRatio: 1,
-				conf:       conf,
+			revBBSeq := reverseComplement(backboneFrag.Seq)
+			revBBSubSeqIndex := strings.Index(inputSeq, revBBSeq)
+			if revBBSubSeqIndex != -1 {
+				// add the reverse backbone to the sequence of the target plasmid
+				bbFragInsert = &Frag{
+					ID:         backboneFrag.ID,
+					Seq:        revBBSeq,
+					uniqueID:   "backbone" + strconv.Itoa(revBBSubSeqIndex),
+					start:      revBBSubSeqIndex,
+					end:        revBBSubSeqIndex + bbSeqLen,
+					fragType:   pcr,
+					matchRatio: 1,
+					conf:       conf,
+				}
+			} else {
+				// add the backbone to the sequence of the target plasmid
+				bbFragInsert = &Frag{
+					ID:         backboneFrag.ID,
+					Seq:        backboneFrag.Seq,
+					uniqueID:   "backbone" + strconv.Itoa(targetSeqLen),
+					start:      targetSeqLen,
+					end:        targetSeqLen + bbSeqLen,
+					fragType:   pcr,
+					matchRatio: 1,
+					conf:       conf,
+				}
+				target.Seq += backboneFrag.Seq
 			}
-			target.Seq += backboneFrag.Seq
 		}
 	} else {
 		bbFragInsert = nil
@@ -311,32 +327,4 @@ func sequence(
 		finalSolutions[i] = filledAssemblies[i].frags
 	}
 	return target, finalSolutions, nil
-}
-
-func lcsubstr(s1, s2 string) (string, int, int) {
-	lcsuff := make([][]int, len(s1)+1)
-	var mx, s1_end_suff int = 0, 0
-	for i := 0; i <= len(s1); i++ {
-		lcsuff[i] = make([]int, len(s2)+1)
-	}
-
-	for i := 1; i <= len(s1); i++ {
-		for j := 1; j <= len(s2); j++ {
-			if s1[i-1] == s2[j-1] {
-				lcsuff[i][j] = lcsuff[i-1][j-1] + 1
-				if lcsuff[i][j] > mx {
-					mx = lcsuff[i][j]
-					s1_end_suff = i
-				}
-			} else {
-				lcsuff[i][j] = 0
-			}
-		}
-	}
-
-	if mx > 0 {
-		return s1[s1_end_suff-mx : mx], s1_end_suff - mx, mx
-	} else {
-		return "", -1, 0
-	}
 }
