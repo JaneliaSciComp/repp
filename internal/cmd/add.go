@@ -99,7 +99,7 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if err = repp.AddDatabase(dbName, seqFiles, cost, prefixSeqIDs); err != nil {
-		log.Fatal("Error creating database", dbName, err)
+		log.Fatalf("Error creating database %s: %v", dbName, err)
 	}
 }
 

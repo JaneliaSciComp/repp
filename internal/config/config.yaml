@@ -85,7 +85,9 @@ pcr-pair-max-binding-score: 13.0
 
 # Flag to tell primer3 whether to pick a primer only if all constraints are met
 # PRIMER_PICK_ANYWAY is set to 0 if this is true
-pcr-use-strict-constraints: true
+# we set this to false because 
+# from our experience even sub-optimal primers often work just fine
+pcr-use-strict-constraints: false
 
 # Minimum length of a synthesized building fragment
 synthetic-min-length: 300

@@ -50,8 +50,8 @@ func AddDatabase(dbName string, seqFiles []string, cost float64, prefixSeqIDWith
 	// Each database will be in its own directory because blastdb creates a lot of files for each database
 	dbSequenceDir := path.Join(config.SeqDatabaseDir, dbName)
 
-	if err = os.Mkdir(dbSequenceDir, 0755); err != nil {
-		rlog.Errorf("Error creating database location directory %f\n", dbSequenceDir)
+	if err = os.MkdirAll(dbSequenceDir, 0755); err != nil {
+		rlog.Errorf("Error creating database location directory '%s': %v \n", dbSequenceDir, err)
 		return
 	}
 
