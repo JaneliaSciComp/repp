@@ -266,9 +266,16 @@ func isConfigFileNeeded(configFile string) bool {
 	} else if err != nil {
 		log.Fatal(err)
 	}
-	currentProgramFileInfo, err := os.Stat(os.Args[0])
+	// compare executable's timestamp with config's timestamp
+	// in case of any error just return that config is needed
+	exeFullpath, err := os.Executable()
 	if err != nil {
-		log.Printf("Error reading current program info: %v", err)
+		log.Printf("Error reading current program %s full path: %v", os.Args[0], err)
+		return true
+	}
+	currentProgramFileInfo, err := os.Stat(exeFullpath)
+	if err != nil {
+		log.Printf("Error reading current program %s info: %v", exeFullpath, err)
 		return true
 	}
 	return currentProgramFileInfo.ModTime().After(configFileInfo.ModTime())
