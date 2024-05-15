@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -207,7 +208,15 @@ func (b *blastExec) run() (err error) {
 	rlog.Debugf("Run: %v", blastCmd)
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db.Name, err, string(output))
+		version := b.version()
+		var hint string
+		if version != "" {
+			hint = fmt.Sprintf("We know problems exist with BLASTN 2.13.0 - you are currently using %s", version)
+		} else {
+			hint = "We know problems exist with BLASTN 2.13.0"
+		}
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s %s - command was: %v",
+			b.db.Name, err, string(output), hint, blastCmd)
 	}
 
 	return
@@ -356,14 +365,23 @@ func (b *blastExec) runAgainst() (err error) {
 	)
 
 	// execute BLAST and wait on it to finish
+	rlog.Debugf("Run: %v", blastCmd)
 	if output, err := blastCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.subject, err, string(output))
+		version := b.version()
+		var hint string
+		if version != "" {
+			hint = fmt.Sprintf("We know problems exist with BLASTN 2.13.0 - you are currently using %s", version)
+		} else {
+			hint = "We know problems exist with BLASTN 2.13.0"
+		}
+		return fmt.Errorf("failed to execute blastn against %s: %v: %s %s - command was: %v",
+			b.subject, err, string(output), hint, blastCmd)
 	}
 	return
 }
 
 func (b *blastExec) close() (err error) {
-	if os.Getenv("DEBUG_REPP") == "TRUE" {
+	if isEnvDebugSet() {
 		// keep the temporary files
 		rlog.Infof("Blastn input/output: %s, %s", b.in.Name(), b.out.Name())
 		return
@@ -372,6 +390,42 @@ func (b *blastExec) close() (err error) {
 	err = multierr.Append(err, os.Remove(b.in.Name()))
 	err = multierr.Append(err, os.Remove(b.out.Name()))
 	return
+}
+
+// check if environment debug variable is set
+func isEnvDebugSet() bool {
+	var envVar string
+	envVar = os.Getenv("DEBUG_REPP")
+	if envVar == "" {
+		envVar = os.Getenv("REPP_DEBUG")
+	}
+	return strings.EqualFold(envVar, "true") || envVar == "1"
+}
+
+// get ncbi-blast version
+func (b *blastExec) version() string {
+	blastCmd := exec.Command(
+		getExecutable("NCBITOOLS_HOME", "bin", "blastn"),
+		"-version",
+	)
+
+	// execute BLAST and wait on it to finish
+	output, err := blastCmd.CombinedOutput()
+	if err != nil {
+		rlog.Errorf("Error trying to get NCBI BLAST version: %v -> %v", blastCmd, err)
+		return ""
+	}
+
+	sOutputput := string(output)
+	re := regexp.MustCompile(`(?m)^blastn: (.+)\.(.+)\.(.+)$`)
+	versionFields := re.FindAllStringSubmatch(sOutputput, -1)
+	var versionString string
+	for i := range versionFields {
+		versionString = fmt.Sprintf("BLAST %s.%s.%s",
+			versionFields[i][1], versionFields[i][2], versionFields[i][3])
+	}
+
+	return versionString
 }
 
 // blast the seq against all dbs and acculate matches.
