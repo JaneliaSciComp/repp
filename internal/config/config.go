@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
@@ -298,6 +299,10 @@ func copyEmbeddedDir(fs embed.FS, from, to string) {
 			continue
 		}
 		copyEmbeddedFile(fs, path.Join(from, entry.Name()), path.Join(to, entry.Name()))
+	}
+	now := time.Now()
+	if err = os.Chtimes(to, now, now); err != nil {
+		log.Printf("Error updating timestamp for %s: %v", to, err)
 	}
 }
 
