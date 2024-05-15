@@ -204,6 +204,7 @@ func (b *blastExec) run() (err error) {
 		getExecutable("NCBITOOLS_HOME", "bin", "blastn"),
 		flags...)
 
+	rlog.Debugf("Run: %v", blastCmd)
 	// execute BLAST and wait on it to finish
 	if output, err := blastCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to execute blastn against %s: %v: %s", b.db.Name, err, string(output))
