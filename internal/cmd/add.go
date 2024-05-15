@@ -63,7 +63,6 @@ func init() {
 	databaseAddCmd.Flags().Bool("prefixSeqIDs", true, "Prefix sequence IDs with filename")
 
 	must(databaseAddCmd.MarkFlagRequired("name"))
-	must(databaseAddCmd.MarkFlagRequired("cost"))
 
 	addCmd.AddCommand(databaseAddCmd)
 	addCmd.AddCommand(featureAddCmd)
