@@ -213,7 +213,7 @@ func (b *blastExec) run() (err error) {
 		if version != "" {
 			hint = fmt.Sprintf("We know problems exist with BLASTN 2.13.0 - you are currently using %s", version)
 		} else {
-			hint = "We know problems exist with BLASTN 2.13.0"
+			hint = "We know problems exist with BLASTN <=2.13.0"
 		}
 		return fmt.Errorf("failed to execute blastn against %s: %v: %s %s - command was: %v",
 			b.db.Name, err, string(output), hint, blastCmd)
@@ -370,7 +370,7 @@ func (b *blastExec) runAgainst() (err error) {
 		version := b.version()
 		var hint string
 		if version != "" {
-			hint = fmt.Sprintf("We know problems exist with BLASTN 2.13.0 - you are currently using %s", version)
+			hint = fmt.Sprintf("We know problems exist with BLASTN <=2.13.0 - you are currently using %s", version)
 		} else {
 			hint = "We know problems exist with BLASTN 2.13.0"
 		}
