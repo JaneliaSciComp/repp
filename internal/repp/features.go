@@ -285,7 +285,7 @@ func featureSolutions(
 		}
 
 		frag.Seq = (frag.Seq + frag.Seq + frag.Seq)[m.subjectStart : m.subjectEnd+1]
-		if !m.forward {
+		if m.isRevCompMatch() {
 			frag.Seq = reverseComplement(frag.Seq)
 		}
 		frag.conf = conf
@@ -463,18 +463,19 @@ func reblastFeatures(
 
 			if featureIndex > 0 {
 				manualMatch := match{
-					entry:        frag.ID,
-					uniqueID:     fmt.Sprintf("%s%d", frag.ID, featureIndex),
-					querySeq:     targetFeature,
-					queryStart:   i,
-					queryEnd:     i,
-					seq:          targetFeature,
-					subjectStart: featureIndex,
-					subjectEnd:   featureIndex + len(targetFeature),
-					db:           frag.db,
-					title:        target[0],
-					circular:     frag.fragType == circular,
-					forward:      true,
+					entry:               frag.ID,
+					uniqueID:            fmt.Sprintf("%s%d", frag.ID, featureIndex),
+					querySeq:            targetFeature,
+					queryStart:          i,
+					queryEnd:            i,
+					seq:                 targetFeature,
+					subjectStart:        featureIndex,
+					subjectEnd:          featureIndex + len(targetFeature),
+					db:                  frag.db,
+					title:               target[0],
+					circular:            frag.fragType == circular,
+					queryRevCompMatch:   true,
+					subjectRevCompMatch: false,
 				}
 
 				alreadySeen := false

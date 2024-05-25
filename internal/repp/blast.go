@@ -53,8 +53,11 @@ type match struct {
 	// mismatching number of bps in the match (for primer off-targets)
 	mismatching int
 
-	// forward if the match is along the sequence strand versus the reverse complement strand
-	forward bool
+	// queryRevCompMatch if the query match is on the reverse complement sequence
+	queryRevCompMatch bool
+
+	// subjectRevCompMatch if the subject match is on the reverse complement sequence
+	subjectRevCompMatch bool
 }
 
 // String display method
@@ -81,6 +84,14 @@ func (m match) isValid() bool {
 func (m match) isMatchRatioGEThreshold(th float64) bool {
 	matchRatio := float64(len(m.seq)-(m.mismatching)) / float64(len(m.seq))
 	return matchRatio >= th
+}
+
+func (m match) isRevCompMatch() bool {
+	return m.queryRevCompMatch != m.subjectRevCompMatch
+}
+
+func (m match) isFwdMatch() bool {
+	return m.queryRevCompMatch == m.subjectRevCompMatch
 }
 
 // mismatchResults are the results of a seqMismatch check. saved between runs for perf
@@ -291,7 +302,8 @@ func (b *blastExec) parseLine(lineIndex int, line, inputQuerySeq string, filters
 	mismatching, _ := strconv.Atoi(cols[6]) // mismatch count
 	gaps, _ := strconv.Atoi(cols[7])        // gap count
 	titles := cols[8]                       // salltitles, eg: "fwd-terminator-2011"
-	forward := true
+	queryReverseComplementMatch := false
+	subjectReverseComplementMatch := false
 	if subjectSeq == "" {
 		// subject sequence column is actually empty so there cannot be any match
 		return
@@ -312,11 +324,11 @@ func (b *blastExec) parseLine(lineIndex int, line, inputQuerySeq string, filters
 	// flip if blast is reading right to left
 	if queryStart > queryEnd {
 		queryStart, queryEnd = queryEnd, queryStart
-		forward = !forward
+		queryReverseComplementMatch = true
 	}
 	if subjectStart > subjectEnd {
 		subjectStart, subjectEnd = subjectEnd, subjectStart
-		forward = !forward
+		subjectReverseComplementMatch = true
 	}
 
 	if b.circular && queryStart < b.matchLeftMargin {
@@ -347,19 +359,20 @@ func (b *blastExec) parseLine(lineIndex int, line, inputQuerySeq string, filters
 
 	// create and append the new match
 	m = match{
-		entry:        entry,
-		uniqueID:     uniqueID,
-		querySeq:     querySeq,
-		queryStart:   queryStart,
-		queryEnd:     queryEnd,
-		seq:          subjectSeq,
-		subjectStart: subjectStart,
-		subjectEnd:   subjectEnd,
-		circular:     strings.Contains(entry+titles, "CIRCULAR"),
-		mismatching:  mismatching + gaps,
-		db:           b.db,
-		title:        titles,
-		forward:      forward,
+		entry:               entry,
+		uniqueID:            uniqueID,
+		querySeq:            querySeq,
+		queryStart:          queryStart,
+		queryEnd:            queryEnd,
+		seq:                 subjectSeq,
+		subjectStart:        subjectStart,
+		subjectEnd:          subjectEnd,
+		circular:            strings.Contains(entry+titles, "CIRCULAR"),
+		mismatching:         mismatching + gaps,
+		db:                  b.db,
+		title:               titles,
+		queryRevCompMatch:   queryReverseComplementMatch,
+		subjectRevCompMatch: subjectReverseComplementMatch,
 	}
 	return m, nil
 }
@@ -896,7 +909,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 func isMismatch(primer string, m match, c *config.Config) bool {
 	// we want the reverse complement of one to the other
 	ectopic := m.seq
-	if m.forward {
+	if m.isFwdMatch() {
 		ectopic = reverseComplement(ectopic)
 	}
 

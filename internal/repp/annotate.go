@@ -133,7 +133,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		featuresNames := []string{}
 		for _, feature := range features {
 			dir := ""
-			if !feature.forward {
+			if feature.isRevCompMatch() {
 				dir += ":rev"
 			}
 			featuresNames = append(featuresNames, feature.entry+dir)
@@ -146,7 +146,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		fmt.Fprintf(tw, "\nfeatures (%d)\tstart\tend\tdirection\t\n", len(features))
 		for _, feat := range features {
 			dir := "FWD"
-			if !feat.forward {
+			if feat.isRevCompMatch() {
 				dir = "REV"
 			}
 			fmt.Fprintf(tw, "%s\t%d\t%d\t%s\t\n", feat.entry, feat.queryStart+1, feat.queryEnd+1, dir)

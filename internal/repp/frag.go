@@ -76,6 +76,9 @@ type Frag struct {
 	// end of this Frag on the target plasmid
 	end int
 
+	// revCompFlag frag came from the rev complement seq
+	revCompFlag bool
+
 	// match ratio
 	matchRatio float64
 
@@ -90,6 +93,9 @@ type Frag struct {
 
 	// template match end
 	templateEnd int
+
+	// template match was on the reverse complement seq
+	revCompTemplateFlag bool
 
 	// build configuration
 	conf *config.Config
@@ -158,17 +164,19 @@ func newFrag(m match, conf *config.Config) *Frag {
 	seqLength := len(m.seq)
 	matchRatio := float64(seqLength-(m.mismatching)) / float64(seqLength)
 	return &Frag{
-		ID:            m.entry,
-		uniqueID:      m.uniqueID,
-		Seq:           strings.ToUpper(m.seq),
-		start:         m.queryStart,
-		end:           m.queryEnd,
-		templateStart: m.subjectStart,
-		templateEnd:   m.subjectEnd,
-		matchRatio:    matchRatio,
-		db:            m.db,
-		conf:          conf,
-		fragType:      fType,
+		ID:                  m.entry,
+		uniqueID:            m.uniqueID,
+		Seq:                 strings.ToUpper(m.seq),
+		start:               m.queryStart,
+		end:                 m.queryEnd,
+		revCompFlag:         m.queryRevCompMatch,
+		templateStart:       m.subjectStart,
+		templateEnd:         m.subjectEnd,
+		revCompTemplateFlag: m.subjectRevCompMatch,
+		matchRatio:          matchRatio,
+		db:                  m.db,
+		conf:                conf,
+		fragType:            fType,
 	}
 }
 

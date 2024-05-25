@@ -141,8 +141,9 @@ func Test_isMismatch(t *testing.T) {
 			args{
 				sequence: "gtccgcgtcgtcgtcat",
 				match: match{
-					seq:     "atgacgacgacgcggac",
-					forward: false,
+					seq:                 "atgacgacgacgcggac",
+					queryRevCompMatch:   false,
+					subjectRevCompMatch: true,
 				},
 			},
 			true,
@@ -153,8 +154,9 @@ func Test_isMismatch(t *testing.T) {
 			args{
 				sequence: "gtccgcgtcgtcgtcat",
 				match: match{
-					seq:     "acgacgacgac",
-					forward: false,
+					seq:                 "acgacgacgac",
+					queryRevCompMatch:   false,
+					subjectRevCompMatch: true,
 				},
 			},
 			false,
@@ -234,7 +236,8 @@ func Test_parentMismatch(t *testing.T) {
 			gotMatch.title = ""
 			gotMatch.subjectStart = 0
 			gotMatch.subjectEnd = 0
-			gotMatch.forward = false
+			gotMatch.queryRevCompMatch = false
+			gotMatch.subjectRevCompMatch = false
 
 			if !reflect.DeepEqual(gotMatch, tt.wantMatch) {
 				t.Errorf("parentMismatch() gotMatch = %+v, want %+v", gotMatch, tt.wantMatch)

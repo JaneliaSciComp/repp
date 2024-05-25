@@ -377,10 +377,28 @@ func writeCSV(filename, fragmentIDBase string,
 				matchRatio = fmt.Sprintf("%d", int(f.matchRatio*100))
 				// for PCR fragments display the length including the overhanging primers
 				pcrSeqSize = len(f.PCRSeq)
-				fragStart = fmt.Sprintf("%d", f.start)
-				fragEnd = fmt.Sprintf("%d", f.end)
-				templateStart = fmt.Sprintf("%d", f.templateStart)
-				templateEnd = fmt.Sprintf("%d", f.templateEnd)
+				if f.revCompFlag {
+					fragStart = fmt.Sprintf("%d", f.end)
+					if f.start >= len(out.TargetSeq) {
+						fragEnd = fmt.Sprintf("%d(-)", f.start-len(out.TargetSeq))
+					} else {
+						fragEnd = fmt.Sprintf("%d", f.start)
+					}
+				} else {
+					fragStart = fmt.Sprintf("%d", f.start)
+					if f.end >= len(out.TargetSeq) {
+						fragEnd = fmt.Sprintf("%d(+)", f.end-len(out.TargetSeq))
+					} else {
+						fragEnd = fmt.Sprintf("%d", f.end)
+					}
+				}
+				if f.revCompTemplateFlag {
+					templateStart = fmt.Sprintf("%d", f.templateEnd)
+					templateEnd = fmt.Sprintf("%d", f.templateStart)
+				} else {
+					templateStart = fmt.Sprintf("%d", f.templateStart)
+					templateEnd = fmt.Sprintf("%d", f.templateEnd)
+				}
 				gcContentCol = "N/A"
 				min50GCContentCol = "N/A"
 				max50GCContentCol = "N/A"
@@ -579,7 +597,7 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 	for _, m := range feats {
 		cS := ""
 		cE := ""
-		if !m.forward {
+		if m.isRevCompMatch() {
 			cS = "complement("
 			cE = ")"
 		}
