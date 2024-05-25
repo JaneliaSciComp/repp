@@ -193,6 +193,7 @@ func blastFeatures(
 			dbs,
 			filters,
 			identity,
+			conf.UseUngappedAlignment,
 		)
 		if err != nil {
 			rlog.Fatal(err)

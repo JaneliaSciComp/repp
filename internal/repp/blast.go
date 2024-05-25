@@ -123,6 +123,9 @@ type blastExec struct {
 
 	// the expect value of a BLAST query (defaults to 10)
 	evalue int
+
+	// perform an ungapped alignment
+	ungapped bool
 }
 
 // input creates an input query file (FASTA) for blastn.
@@ -203,6 +206,11 @@ func (b *blastExec) run() (err error) {
 		flags = append(flags, "-evalue", "5000")
 	} else if b.identity < 98 {
 		flags = append(flags, "-evalue", "1000")
+	}
+
+	if b.ungapped {
+		flags = append(flags, "-ungapped")
+
 	}
 
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
@@ -441,6 +449,7 @@ func blast(
 	dbs []DB,
 	filters []string,
 	identity int,
+	ungapped bool,
 ) ([]match, error) {
 	matches := []match{}
 	for _, db := range dbs {
@@ -463,6 +472,7 @@ func blast(
 			in:              in,
 			out:             out,
 			identity:        identity,
+			ungapped:        ungapped,
 		}
 		defer b.close()
 

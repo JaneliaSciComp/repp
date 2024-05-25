@@ -25,7 +25,7 @@ func SequenceList(
 		rlog.Fatal(err)
 	}
 
-	matches, err := blast("find_cmd", seq, true, leftMargin, dbs, filters, identity)
+	matches, err := blast("find_cmd", seq, true, leftMargin, dbs, filters, identity, false)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -228,7 +228,16 @@ func sequence(
 	}
 
 	// get all the matches against the target plasmid
-	matches, err := blast(target.ID, target.Seq, true, leftMargin, dbs, filters, identity)
+	matches, err := blast(
+		target.ID,
+		target.Seq,
+		true,
+		leftMargin,
+		dbs,
+		filters,
+		identity,
+		conf.UseUngappedAlignment,
+	)
 	if err != nil {
 		dbMessage := strings.Join(dbNames(dbs), ", ")
 		return &Frag{}, nil, fmt.Errorf("failed to blast %s against the dbs %s: %v", target.ID, dbMessage, err)
