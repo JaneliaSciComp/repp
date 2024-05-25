@@ -125,7 +125,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 
 	sortMatches(features)
 	if toCull {
-		features = cull(features, len(seq), 5, 1)
+		features = cull(features, 5, 1)
 	}
 
 	if namesOnly {

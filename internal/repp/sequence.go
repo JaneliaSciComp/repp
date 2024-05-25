@@ -110,8 +110,8 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		solutions,
 		primersDB,
 		synthFragsDB,
-		elapsed.Seconds(),
 		backboneMeta,
+		elapsed.Seconds(),
 		conf,
 	)
 	if err != nil {
@@ -235,7 +235,7 @@ func sequence(
 	}
 
 	// keep only "proper" arcs (non-self-contained)
-	matches = cull(matches, len(target.Seq), conf.PcrMinFragLength, 1)
+	matches = cull(matches, conf.PcrMinFragLength, 1)
 	rlog.Debugw("culled matches", "remaining", len(matches)/2)
 
 	// map fragment Matches to nodes

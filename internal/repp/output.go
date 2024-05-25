@@ -65,23 +65,23 @@ func writeResult(
 	targetSeq string,
 	assemblies [][]*Frag,
 	primersDB, synthFragsDB *oligosDB,
-	seconds float64,
 	backbone *Backbone,
+	seconds float64,
 	conf *config.Config,
 ) (*Output, error) {
 	out, err := prepareSolutionsOutput(
 		targetName,
 		targetSeq,
 		assemblies,
-		seconds,
 		backbone,
+		seconds,
 		conf,
 	)
 	if err != nil {
 		return nil, err
 	}
 	if format == "CSV" {
-		err = writeCSV(filename, fragmentBase(filename), primersDB, synthFragsDB, out)
+		err = writeCSV(filename, fragmentBase(filename), primersDB, synthFragsDB, conf.IncludeFragLocationInStrategyOutput, out)
 	} else {
 		err = writeJSON(filename, out)
 	}
@@ -93,8 +93,8 @@ func prepareSolutionsOutput(
 	targetName,
 	targetSeq string,
 	assemblies [][]*Frag,
-	seconds float64,
 	backbone *Backbone,
+	seconds float64,
 	conf *config.Config,
 ) (out *Output, err error) {
 	// store save time, using same format as log.Println https://golang.org/pkg/log/#Println
@@ -206,6 +206,7 @@ func prepareSolutionsOutput(
 // one containing the strategy and the other one the reagents
 func writeCSV(filename, fragmentIDBase string,
 	existingPrimers, existingSynthFrags *oligosDB,
+	withFragLocation bool,
 	out *Output) (err error) {
 
 	reagentsFilename := resultFilename(filename, "reagents")
@@ -232,18 +233,39 @@ func writeCSV(filename, fragmentIDBase string,
 
 	reagentsCSVWriter := csv.NewWriter(reagentsFile)
 	// Write the strategy headers
-	err = strategyCSVWriter.Write([]string{
-		"Frag ID",
-		"Fwd Primer",
-		"Rev Primer",
-		"Template",
-		"Size",
-		"Match Pct",
-		"GC%",
-		"50 low GC%",
-		"50 high GC%",
-		"Homopolymer",
-	})
+	var headers []string
+	if withFragLocation {
+		headers = []string{
+			"Frag ID",
+			"Fwd Primer",
+			"Rev Primer",
+			"Template",
+			"Size",
+			"Match Pct",
+			"Frag Start",
+			"Frag End",
+			"Template Start",
+			"Template End",
+			"GC%",
+			"50 low GC%",
+			"50 high GC%",
+			"Homopolymer",
+		}
+	} else {
+		headers = []string{
+			"Frag ID",
+			"Fwd Primer",
+			"Rev Primer",
+			"Template",
+			"Size",
+			"Match Pct",
+			"GC%",
+			"50 low GC%",
+			"50 high GC%",
+			"Homopolymer",
+		}
+	}
+	err = strategyCSVWriter.Write(headers)
 	if err != nil {
 		return nil
 	}
@@ -323,6 +345,7 @@ func writeCSV(filename, fragmentIDBase string,
 			var templateID string
 			var matchRatio string
 			var pcrSeqSize int
+			var fragStart, fragEnd, templateStart, templateEnd string
 			var gcContentCol string
 			var min50GCContentCol string
 			var max50GCContentCol string
@@ -339,6 +362,10 @@ func writeCSV(filename, fragmentIDBase string,
 				templateID = "N/A"
 				matchRatio = "N/A"
 				pcrSeqSize = len(f.Seq)
+				fragStart = fmt.Sprintf("%d", f.start)
+				fragEnd = fmt.Sprintf("%d", f.end)
+				templateStart = "N/A"
+				templateEnd = "N/A"
 				reagents = append(reagents, synthReagent)
 				synthFragScores := fragSeqQualityChecks(f.Seq)
 				gcContentCol = fmt.Sprintf("%3.1f", synthFragScores.gcContent*100)
@@ -350,23 +377,36 @@ func writeCSV(filename, fragmentIDBase string,
 				matchRatio = fmt.Sprintf("%d", int(f.matchRatio*100))
 				// for PCR fragments display the length including the overhanging primers
 				pcrSeqSize = len(f.PCRSeq)
+				fragStart = fmt.Sprintf("%d", f.start)
+				fragEnd = fmt.Sprintf("%d", f.end)
+				templateStart = fmt.Sprintf("%d", f.templateStart)
+				templateEnd = fmt.Sprintf("%d", f.templateEnd)
 				gcContentCol = "N/A"
 				min50GCContentCol = "N/A"
 				max50GCContentCol = "N/A"
 				homopolymerCol = "N/A"
 			}
-			if err = strategyCSVWriter.Write([]string{
-				fID,
-				fwdOligo.getIDOrDefault(false, "N/A"), // fwd primer
-				revOligo.getIDOrDefault(false, "N/A"), // rev primer
-				templateID,                            // template
-				strconv.Itoa(pcrSeqSize),
-				matchRatio,
-				gcContentCol,
-				min50GCContentCol,
-				max50GCContentCol,
-				homopolymerCol,
-			}); err != nil {
+			fieldMapping := map[string]string{
+				"Frag ID":        fID,
+				"Fwd Primer":     fwdOligo.getIDOrDefault(false, "N/A"), // fwd primer
+				"Rev Primer":     revOligo.getIDOrDefault(false, "N/A"), // rev primer
+				"Template":       templateID,                            // template
+				"Size":           strconv.Itoa(pcrSeqSize),
+				"Match Pct":      matchRatio,
+				"Frag Start":     fragStart,
+				"Frag End":       fragEnd,
+				"Template Start": templateStart,
+				"Template End":   templateEnd,
+				"GC%":            gcContentCol,
+				"50 low GC%":     min50GCContentCol,
+				"50 high GC%":    max50GCContentCol,
+				"Homopolymer":    homopolymerCol,
+			}
+			var fields []string
+			for _, h := range headers {
+				fields = append(fields, fieldMapping[h])
+			}
+			if err = strategyCSVWriter.Write(fields); err != nil {
 				return nil
 			}
 		}
@@ -447,7 +487,7 @@ func writeJSON(filename string, out *Output) (err error) {
 }
 
 // writeFragsToFastaFile writes a slice of fragments to a FASTA file
-func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (err error) {
+func writeFragsToFastaFile(frags []*Frag, maxIDLength int, circularize bool, fastaFile *os.File) (err error) {
 	truncID := func(s string) string {
 		if len(s) < maxIDLength {
 			return s
@@ -488,7 +528,7 @@ func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (
 			// no duplicates
 			f := fragsWithFragID[0]
 			rlog.Debugf("Write %s", f.ID)
-			if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", fragID, f.Seq)); ferr != nil {
+			if ferr := writeSeqToFastaFile(fragID, f.Seq, circularize, fastaFile); ferr != nil {
 				rlog.Errorf("Error writing fragment %s\n", f.ID)
 				err = multierr.Append(err, ferr)
 			}
@@ -499,7 +539,8 @@ func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (
 				fragIDPrefix := fragIDComponents(f.ID)[0]
 				fragIDSuffix := f.ID[len(fragIDPrefix):]
 				newFragID := truncID(fmt.Sprintf("%s%s%s", fragIDPrefix, base10ToBase26(i), fragIDSuffix))
-				if _, ferr := fastaFile.WriteString(fmt.Sprintf(">%s\n%s\n", newFragID, f.Seq)); ferr != nil {
+
+				if ferr := writeSeqToFastaFile(newFragID, f.Seq, circularize, fastaFile); ferr != nil {
 					rlog.Errorf("Error writing fragment %s\n", f.ID)
 					err = multierr.Append(err, ferr)
 				}
@@ -507,7 +548,20 @@ func writeFragsToFastaFile(frags []*Frag, maxIDLength int, fastaFile *os.File) (
 		}
 	}
 
-	return
+	return err
+}
+
+func writeSeqToFastaFile(id, seq string, circular bool, fastaFile *os.File) (err error) {
+	var outputSeq, circularAttr string
+	if circular {
+		outputSeq = seq + seq
+		circularAttr = "circular"
+	} else {
+		outputSeq = seq
+		circularAttr = ""
+	}
+	_, err = fastaFile.WriteString(fmt.Sprintf(">%s %s\n%s\n", id, circularAttr, outputSeq))
+	return err
 }
 
 // writeGenbank writes a slice of fragments/features to a genbank output file.

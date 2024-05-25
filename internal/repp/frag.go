@@ -85,6 +85,12 @@ type Frag struct {
 	// end of the frag's last covered feature
 	featureEnd int
 
+	// template match start
+	templateStart int
+
+	// template match end
+	templateEnd int
+
 	// build configuration
 	conf *config.Config
 }
@@ -152,15 +158,17 @@ func newFrag(m match, conf *config.Config) *Frag {
 	seqLength := len(m.seq)
 	matchRatio := float64(seqLength-(m.mismatching)) / float64(seqLength)
 	return &Frag{
-		ID:         m.entry,
-		uniqueID:   m.uniqueID,
-		Seq:        strings.ToUpper(m.seq),
-		start:      m.queryStart,
-		end:        m.queryEnd,
-		matchRatio: matchRatio,
-		db:         m.db,
-		conf:       conf,
-		fragType:   fType,
+		ID:            m.entry,
+		uniqueID:      m.uniqueID,
+		Seq:           strings.ToUpper(m.seq),
+		start:         m.queryStart,
+		end:           m.queryEnd,
+		templateStart: m.subjectStart,
+		templateEnd:   m.subjectEnd,
+		matchRatio:    matchRatio,
+		db:            m.db,
+		conf:          conf,
+		fragType:      fType,
 	}
 }
 

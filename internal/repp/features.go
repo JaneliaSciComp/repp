@@ -95,8 +95,8 @@ func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		solutions,
 		primersDB,
 		synthFragsDB,
-		time.Since(start).Seconds(),
 		backboneMeta,
+		time.Since(start).Seconds(),
 		conf,
 	); err != nil {
 		rlog.Fatal(err)
@@ -192,7 +192,8 @@ func blastFeatures(
 			0,
 			dbs,
 			filters,
-			identity)
+			identity,
+		)
 		if err != nil {
 			rlog.Fatal(err)
 		}
@@ -236,7 +237,7 @@ func featureSolutions(
 	rlog.Debugw("culling fragments", "matched", len(featureMatches), "extended", len(extendedMatches))
 
 	// remove extended matches fully enclosed by others
-	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
+	extendedMatches = cull(extendedMatches, 1, 4)
 
 	// create a subject file from the matches' source fragments
 	subjectDB, frags := subjectDatabase(extendedMatches, dbs)
@@ -249,7 +250,7 @@ func featureSolutions(
 	extendedMatches = extendMatches(feats, featureMatches)
 
 	// remove extended matches fully enclosed by others
-	extendedMatches = cull(extendedMatches, len(feats), 1, 4)
+	extendedMatches = cull(extendedMatches, 1, 4)
 
 	rlog.Debugw("culled matches", "remaining", len(extendedMatches))
 

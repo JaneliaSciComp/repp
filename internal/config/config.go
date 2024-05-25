@@ -165,6 +165,9 @@ type Config struct {
 	// configurable penalty for synthetic fragments
 	SyntheticFragmentFactor int `mapstructure:"synthetic-fragment-factor"`
 
+	// include fragment location in strategy output
+	IncludeFragLocationInStrategyOutput bool `mapstructure:"include-frag-location-in-strategy-output"`
+
 	// user provided path to primer3 config dir
 	p3ConfigDir string
 }
@@ -194,7 +197,7 @@ func initDataPaths(providedReppDir string) (err error) {
 	SeqDatabaseDir = filepath.Join(reppDir, "dbs")
 	SeqDatabaseManifest = filepath.Join(SeqDatabaseDir, "manifest.json")
 
-	return
+	return err
 }
 
 // Setup checks that the REPP data directory exists.

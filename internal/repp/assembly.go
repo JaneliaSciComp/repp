@@ -115,6 +115,7 @@ func (a assembly) fill(target string, conf *config.Config) ([]*Frag, error) {
 		return []*Frag{
 			{
 				ID:         f.ID,
+				uniqueID:   f.uniqueID,
 				Seq:        strings.ToUpper(f.Seq)[0:len(target)], // it may be longer
 				fragType:   circular,
 				matchRatio: f.matchRatio,

@@ -74,8 +74,8 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 		[][]*Frag{solution},
 		primersDB,
 		synthFragsDB,
-		0,
 		backboneMeta,
+		0,
 		conf,
 	); err != nil {
 		rlog.Fatal(err)

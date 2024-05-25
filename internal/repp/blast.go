@@ -57,6 +57,11 @@ type match struct {
 	forward bool
 }
 
+// String display method
+func (m match) String() string {
+	return fmt.Sprintf("%s [%d:%d] -> [%d:%d]", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd)
+}
+
 // length returns the length of the match on the queried fragment.
 func (m match) length() int {
 	queryLength := m.queryEnd - m.queryStart + 1
@@ -547,7 +552,7 @@ func blastAgainst(
 // if limit == 1 the larger of the available fragments
 // will be the better one, since it covers a greater region and will almost
 // always be preferable to the smaller one
-func cull(matches []match, targetLength, minSize, limit int) (culled []match) {
+func cull(matches []match, minSize, limit int) (culled []match) {
 	// remove fragments that are shorter the minimum cut off size
 	// propertize by source because this isn't smart enough to propertize based on
 	// cost as well. Ie we want to avoid propertizing a small fragment enclosed in a larger
@@ -591,6 +596,7 @@ func properize(matches []match, limit int) []match {
 		}
 	}
 
+	rlog.Debugf("%v matches out of %v left after culling", culled, matches)
 	return culled
 }
 
@@ -599,14 +605,19 @@ func properize(matches []match, limit int) []match {
 func sortMatches(matches []match) {
 	sort.Slice(matches, func(i, j int) bool {
 		if matches[i].queryStart != matches[j].queryStart {
+			// the match is lower query start comes first
 			return matches[i].queryStart < matches[j].queryStart
 		} else if matches[i].length() != matches[j].length() {
+			// if two matches start at the same position
+			// the one with a longer match comes first
 			return matches[i].length() > matches[j].length()
 		} else if matches[i].circular && !matches[j].circular {
 			return true
 		} else if !matches[i].circular && matches[j].circular {
 			return false
 		} else if matches[i].mismatching != matches[j].mismatching {
+			// if both matches have the same start, length, "circularity"
+			// the match with fewer mismatches comes first
 			return matches[i].mismatching < matches[j].mismatching
 		}
 		return matches[i].entry > matches[j].entry

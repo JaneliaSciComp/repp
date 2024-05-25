@@ -61,6 +61,7 @@ func init() {
 	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
 	databaseAddCmd.Flags().Float64P("cost", "c", 0.0, "the cost per plasmid procurement (eg order + shipping fee)")
 	databaseAddCmd.Flags().Bool("prefixSeqIDs", true, "Prefix sequence IDs with filename")
+	databaseAddCmd.Flags().Bool("circularizeSequences", false, "Prefix sequence IDs with filename")
 
 	must(databaseAddCmd.MarkFlagRequired("name"))
 
@@ -91,13 +92,18 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 		log.Print("Error encountered reading prefiSeqIDs flag", err)
 		prefixSeqIDs = false
 	}
+	circularizeSequences, err := cmd.Flags().GetBool("circularizeSequences")
+	if err != nil {
+		log.Print("Error encountered reading circularized flag", err)
+		prefixSeqIDs = false
+	}
 
 	seqFiles, err := repp.CollectFiles(args)
 	if err != nil {
 		log.Fatalf("Errors encountered collection sequence files from %v: %v", args, err)
 	}
 
-	if err = repp.AddDatabase(dbName, seqFiles, cost, prefixSeqIDs); err != nil {
+	if err = repp.AddDatabase(dbName, seqFiles, cost, circularizeSequences, prefixSeqIDs); err != nil {
 		log.Fatalf("Error creating database %s: %v", dbName, err)
 	}
 }
