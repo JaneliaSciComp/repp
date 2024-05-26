@@ -103,7 +103,7 @@ func runDatabaseAddCmd(cmd *cobra.Command, args []string) {
 		log.Fatalf("Errors encountered collection sequence files from %v: %v", args, err)
 	}
 
-	if err = repp.AddDatabase(dbName, seqFiles, cost, circularizeSequences, prefixSeqIDs); err != nil {
+	if err = repp.AddDatabase(dbName, seqFiles, circularizeSequences, cost, prefixSeqIDs); err != nil {
 		log.Fatalf("Error creating database %s: %v", dbName, err)
 	}
 }

@@ -46,7 +46,7 @@ type DB struct {
 }
 
 // AddDatabase imports one or more sequence files into a BLAST database to the REPP directory.
-func AddDatabase(dbName string, seqFiles []string, cost float64, prefixSeqIDWithFName, circularize bool) (err error) {
+func AddDatabase(dbName string, seqFiles []string, circularizeSequences bool, cost float64, prefixSeqIDWithFName bool) (err error) {
 	// Each database will be in its own directory because blastdb creates a lot of files for each database
 	dbSequenceDir := path.Join(config.SeqDatabaseDir, dbName)
 
@@ -88,7 +88,7 @@ func AddDatabase(dbName string, seqFiles []string, cost float64, prefixSeqIDWith
 		}
 		if len(dbSeqs) > 0 {
 			// truncate the ID to 50 chars - max ID supported by makeblastdb is 50
-			err = writeFragsToFastaFile(dbSeqs, 50, circularize, dbSeqFile)
+			err = writeFragsToFastaFile(dbSeqs, 50, circularizeSequences, dbSeqFile)
 			if err != nil {
 				rlog.Errorf("Error writing database sequence to %f\n", dbSequenceFilepath)
 				return err
