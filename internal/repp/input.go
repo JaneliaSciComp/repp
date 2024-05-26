@@ -36,6 +36,9 @@ type AssemblyParams interface {
 	GetIdentity() int
 	SetIdentity(i int)
 
+	GetUngapped() bool
+	SetUngapped(b bool)
+
 	GetLeftMargin() int
 	SetLeftMargin(i int)
 
@@ -87,6 +90,9 @@ type assemblyParamsImpl struct {
 	// percentage identity for finding building fragments in BLAST databases
 	identity int
 
+	// ungapped alignment flag
+	ungapped bool
+
 	// left margin for circular matches
 	leftMargin int
 }
@@ -133,6 +139,14 @@ func (ap assemblyParamsImpl) GetIdentity() int {
 
 func (ap *assemblyParamsImpl) SetIdentity(identity int) {
 	ap.identity = identity
+}
+
+func (ap assemblyParamsImpl) GetUngapped() bool {
+	return ap.ungapped
+}
+
+func (ap *assemblyParamsImpl) SetUngapped(ungapped bool) {
+	ap.ungapped = ungapped
 }
 
 func (ap assemblyParamsImpl) GetLeftMargin() int {

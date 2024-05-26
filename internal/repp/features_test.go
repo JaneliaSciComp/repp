@@ -83,6 +83,7 @@ func Test_blastFeatures(t *testing.T) {
 			args{
 				flags: &assemblyParamsImpl{
 					identity: 96.0,
+					ungapped: false,
 				},
 				targetFeatures: [][]string{
 					{"SV40 origin", "ATCCCGCCCCTAACTCCGCCCAGTTCCGCCCATTCTCCGCCCCATGGCTGACTAATTTTTTTTATTTATGCAGAGGCCGAGGCCGCCTCGGCCTCTGAGCTATTCCAGAAGTAGTGAGGAGGCTTTTTTGGAGGCC"},
@@ -99,6 +100,7 @@ func Test_blastFeatures(t *testing.T) {
 			got := blastFeatures(
 				tt.args.flags.GetFilters(),
 				tt.args.flags.GetIdentity(),
+				tt.args.flags.GetUngapped(),
 				dbs,
 				tt.args.targetFeatures,
 				config.New())

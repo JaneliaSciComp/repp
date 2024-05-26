@@ -61,6 +61,11 @@ func extractIdentity(cmd *cobra.Command, defaultValue int) int {
 	return identity
 }
 
+func extractUngapped(cmd *cobra.Command) bool {
+	ungapped, _ := cmd.Flags().GetBool("ungapped")
+	return ungapped
+}
+
 func extractLeftMargin(cmd *cobra.Command, defaultValue int) int {
 	// get left margin for blastn searching
 	leftMargin, err := cmd.Flags().GetInt("left-margin")
@@ -146,6 +151,8 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 
 	// get identity for blastn searching
 	params.SetIdentity(extractIdentity(cmd, 100))
+
+	params.SetUngapped(extractUngapped(cmd))
 
 	params.SetLeftMargin(extractLeftMargin(cmd, 200))
 

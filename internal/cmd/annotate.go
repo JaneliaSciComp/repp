@@ -30,6 +30,7 @@ func init() {
 	annotateCmd.Flags().StringP("exclude", "x", "", "keywords for excluding features")
 	annotateCmd.Flags().StringP("dbs", "d", "", "comma separated list sequence databases to consider as features")
 	annotateCmd.Flags().IntP("identity", "p", 96, "match %-identity threshold (see 'blastn -help')")
+	annotateCmd.Flags().Bool("ungapped", false, "Ungapped alignment flag")
 	annotateCmd.Flags().BoolP("cull", "c", true, "remove features enclosed in others")
 	annotateCmd.Flags().BoolP("names", "n", false, "log feature names to the console")
 
@@ -62,6 +63,7 @@ func runAnnotateCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("must pass a file with a plasmid sequence or the plasmid sequence as an argument.")
 	}
 
+	ungapped := extractUngapped(cmd)
 	namesOnly, _ := cmd.Flags().GetBool("names")
 	toCull, _ := cmd.Flags().GetBool("cull")
 
@@ -78,6 +80,7 @@ func runAnnotateCmd(cmd *cobra.Command, args []string) {
 		name,
 		query,
 		identity,
+		ungapped,
 		namesOnly,
 		toCull,
 		dbNames,

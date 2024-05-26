@@ -168,9 +168,6 @@ type Config struct {
 	// include fragment location in strategy output
 	IncludeFragLocationInStrategyOutput bool `mapstructure:"include-frag-location-in-strategy-output"`
 
-	// use ungapped alignment for blast
-	UseUngappedAlignment bool `mapstructure:"use-ungapped-alignment"`
-
 	// user provided path to primer3 config dir
 	p3ConfigDir string
 }

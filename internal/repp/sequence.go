@@ -17,6 +17,7 @@ func SequenceList(
 	seq string,
 	filters []string,
 	identity int,
+	ungapped bool,
 	leftMargin int,
 	dbNames []string) {
 
@@ -25,7 +26,7 @@ func SequenceList(
 		rlog.Fatal(err)
 	}
 
-	matches, err := blast("find_cmd", seq, true, leftMargin, dbs, filters, identity, false)
+	matches, err := blast("find_cmd", seq, true, leftMargin, dbs, filters, identity, ungapped)
 	if err != nil {
 		rlog.Fatal(err)
 	}
@@ -88,6 +89,7 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		assemblyParams.GetIn(),
 		assemblyParams.GetFilters(),
 		assemblyParams.GetIdentity(),
+		assemblyParams.GetUngapped(),
 		assemblyParams.GetLeftMargin(),
 		backboneFrag,
 		dbs,
@@ -151,6 +153,7 @@ func sequence(
 	input string,
 	filters []string,
 	identity int,
+	ungapped bool,
 	leftMargin int,
 	backboneFrag *Frag,
 	dbs []DB,
@@ -236,7 +239,7 @@ func sequence(
 		dbs,
 		filters,
 		identity,
-		conf.UseUngappedAlignment,
+		ungapped,
 	)
 	if err != nil {
 		dbMessage := strings.Join(dbNames(dbs), ", ")

@@ -221,7 +221,6 @@ func (b *blastExec) run() (err error) {
 
 	if b.ungapped {
 		flags = append(flags, "-ungapped")
-
 	}
 
 	// https://www.ncbi.nlm.nih.gov/books/NBK279682/
@@ -522,6 +521,7 @@ func blast(
 func blastAgainst(
 	name, seq, subject string,
 	identity int,
+	ungapped bool,
 ) (matches []match, err error) {
 	in, err := os.CreateTemp("", "blast-in-*")
 	if err != nil {
@@ -542,6 +542,7 @@ func blastAgainst(
 		in:              in,
 		out:             out,
 		identity:        identity,
+		ungapped:        ungapped,
 	}
 	defer b.close()
 

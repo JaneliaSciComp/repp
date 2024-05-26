@@ -56,6 +56,7 @@ func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 	featureMatches := blastFeatures(
 		assemblyParams.GetFilters(),
 		assemblyParams.GetIdentity(),
+		assemblyParams.GetUngapped(),
 		dbs,
 		feats,
 		conf,
@@ -73,9 +74,11 @@ func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		feats,
 		featureMatches,
 		assemblyParams.GetIdentity(),
+		assemblyParams.GetUngapped(),
 		dbs,
 		maxSolutions,
-		conf)
+		conf,
+	)
 
 	// write the output file
 	insertLength := 0
@@ -179,6 +182,7 @@ func queryFeatures(
 func blastFeatures(
 	filters []string,
 	identity int,
+	ungapped bool,
 	dbs []DB,
 	feats [][]string,
 	conf *config.Config) map[string][]featureMatch {
@@ -193,7 +197,7 @@ func blastFeatures(
 			dbs,
 			filters,
 			identity,
-			conf.UseUngappedAlignment,
+			ungapped,
 		)
 		if err != nil {
 			rlog.Fatal(err)
@@ -228,6 +232,7 @@ func featureSolutions(
 	feats [][]string,
 	featureMatches map[string][]featureMatch,
 	identity int,
+	ungapped bool,
 	dbs []DB,
 	keepNSolutions int,
 	conf *config.Config) (string, [][]*Frag) {
@@ -245,7 +250,7 @@ func featureSolutions(
 	defer os.Remove(subjectDB)
 
 	// re-BLAST the features against the new subject database
-	featureMatches = reblastFeatures(identity, feats, conf, subjectDB, frags)
+	featureMatches = reblastFeatures(identity, ungapped, feats, subjectDB, frags)
 
 	// merge matches into one another if they can combine to cover a range
 	extendedMatches = extendMatches(feats, featureMatches)
@@ -424,14 +429,14 @@ func subjectDatabase(extendedMatches []match, dbs []DB) (filename string, frags 
 // reblastFeatures returns matches between the target features and entries in the databases with those features
 func reblastFeatures(
 	identity int,
+	ungapped bool,
 	feats [][]string,
-	conf *config.Config,
 	subjectDB string,
 	frags []*Frag) map[string][]featureMatch {
 	featureMatches := make(map[string][]featureMatch) // a map from from each entry (by id) to its list of matched features
 	for i, target := range feats {
 		targetFeature := target[1]
-		matches, err := blastAgainst(target[0], targetFeature, subjectDB, identity)
+		matches, err := blastAgainst(target[0], targetFeature, subjectDB, identity, ungapped)
 		if err != nil {
 			rlog.Fatal(err)
 		}

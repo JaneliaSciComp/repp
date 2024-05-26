@@ -13,7 +13,7 @@ import (
 // the feature matches are written to stdout.
 func Annotate(inputName, inputQuery string,
 	identity int,
-	namesOnly, toCull bool,
+	ungapped, namesOnly, toCull bool,
 	dbNames, filters []string,
 	output string) {
 	var name, query string
@@ -39,11 +39,11 @@ func Annotate(inputName, inputQuery string,
 		rlog.Fatal("failed to find any fragment databases: %v", err)
 	}
 
-	annotate(name, query, output, identity, dbs, filters, toCull, namesOnly)
+	annotate(name, query, output, identity, ungapped, dbs, filters, toCull, namesOnly)
 }
 
 // annotate is for executing blast against the query sequence.
-func annotate(name, seq, output string, identity int, dbs []DB, filters []string, toCull, namesOnly bool) {
+func annotate(name, seq, output string, identity int, ungapped bool, dbs []DB, filters []string, toCull, namesOnly bool) {
 	handleErr := func(err error) {
 		if err != nil {
 			rlog.Fatal(err)
@@ -81,7 +81,7 @@ func annotate(name, seq, output string, identity int, dbs []DB, filters []string
 		seq:      seq,
 		identity: identity,
 		circular: true,
-		ungapped: false,
+		ungapped: ungapped,
 	}
 	defer b.close()
 
