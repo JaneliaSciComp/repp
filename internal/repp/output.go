@@ -572,7 +572,14 @@ func writeFragsToFastaFile(frags []*Frag, maxIDLength int, circularize bool, fas
 func writeSeqToFastaFile(id, seq string, circular bool, fastaFile *os.File) (err error) {
 	var outputSeq, circularAttr string
 	if circular {
-		outputSeq = seq + seq
+		firstHalf := seq[:len(seq)/2]
+		secondHalf := seq[len(seq)/2:]
+		if firstHalf == secondHalf {
+			// the current sequence is already circularized
+			outputSeq = seq
+		} else {
+			outputSeq = seq + seq
+		}
 		circularAttr = "circular"
 	} else {
 		outputSeq = seq
