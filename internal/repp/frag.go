@@ -593,7 +593,7 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 		return
 	}
 
-	// 2. check for whether either of the primers have an off-target/mismatch
+	// 3. check for whether either of the primers have an off-target/mismatch
 	var mismatchExists bool
 	var mm match
 
