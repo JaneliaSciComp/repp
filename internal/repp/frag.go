@@ -566,10 +566,10 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 		return
 	}
 
-	// 1. check for whether the primers have too have a pair penalty score
+	// 1. check whether the primers have too high pair penalty score
 	if f.Primers[0].PairPenalty > conf.PcrPrimerMaxPairPenalty {
 		err = fmt.Errorf(
-			"primers have pair primer3 penalty score of %f, should be less than %f:\f%+v\f%+v",
+			"primers have pair primer3 penalty score of %f, should be less than %f\nP0: %+v\nP1: %+v",
 			f.Primers[0].PairPenalty,
 			conf.PcrPrimerMaxPairPenalty,
 			f.Primers[0],
@@ -580,13 +580,13 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 		return
 	}
 
-	// check the Tm difference
+	// 2. check the difference in annealing temperatures (Tm) between the two primers
 	if conf.PcrMaxFwdRevPrimerTmDiff > 0 && math.Abs(f.Primers[0].Tm-f.Primers[1].Tm) > conf.PcrMaxFwdRevPrimerTmDiff {
 		err = fmt.Errorf(
 			"the difference in Tm of the 2 primers %f - %f is greater than max allowed: %f",
 			f.Primers[0].Tm,
 			f.Primers[1].Tm,
-			conf.PcrPrimerMaxPairPenalty,
+			conf.PcrMaxFwdRevPrimerTmDiff,
 		)
 		f.Primers = nil
 		primerErrs[pHash] = err
