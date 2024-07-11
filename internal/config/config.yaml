@@ -74,7 +74,7 @@ pcr-primer-max-tm: 63
 
 # Max allowed difference in primer annealing temperatures (Tm)
 # If <0 the difference is not checked
-pcr-max-fwd-rev-primer-tm-diff: 5
+pcr-max-fwd-rev-primer-tm-diff: 10
 
 # Max homopolymer length allowed for primer design
 # for 0 uses the default primer3 setting
