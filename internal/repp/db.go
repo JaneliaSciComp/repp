@@ -47,6 +47,7 @@ type DB struct {
 
 // AddDatabase imports one or more sequence files into a BLAST database to the REPP directory.
 func AddDatabase(dbName string, seqFiles []string, circularizeSequences bool, cost float64, prefixSeqIDWithFName bool) (err error) {
+	rlog.Infof("Create database %s with circularize flag set to %v", dbName, circularizeSequences)
 	// Each database will be in its own directory because blastdb creates a lot of files for each database
 	dbSequenceDir := path.Join(config.SeqDatabaseDir, dbName)
 
