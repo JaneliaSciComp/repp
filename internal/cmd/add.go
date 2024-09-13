@@ -61,7 +61,7 @@ func init() {
 	databaseAddCmd.Flags().StringP("name", "n", "", "database name")
 	databaseAddCmd.Flags().Float64P("cost", "c", 0.0, "the cost per plasmid procurement (eg order + shipping fee)")
 	databaseAddCmd.Flags().Bool("prefixSeqIDs", true, "Prefix sequence IDs with filename")
-	databaseAddCmd.Flags().Bool("circularizeSequences", false, "Prefix sequence IDs with filename")
+	databaseAddCmd.Flags().Bool("circularizeSequences", true, "All sequences added to the BLAST database will be circularized if they aren't already")
 
 	must(databaseAddCmd.MarkFlagRequired("name"))
 

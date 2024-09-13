@@ -559,8 +559,7 @@ func ListFeatures(featureName string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.TabIndent)
 	matchedFeature, exactMatch := f.contents[featureName]
 	if exactMatch && len(containing) < 2 {
-		fmt.Fprintf(w, featureName+"\t"+matchedFeature)
-		if _, err := w.Write([]byte("\n")); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%s\n", featureName, matchedFeature); err != nil {
 			rlog.Fatal(err)
 		}
 		w.Flush()
