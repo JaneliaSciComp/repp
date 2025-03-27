@@ -59,6 +59,20 @@ func Test_readOligosFromCSV(t *testing.T) {
 			nextIndex: 4,
 		},
 		{
+			name: "oligo ID has no numeric component and has different prefix",
+			args: args{
+				`other,act
+				other,tgacg
+				other,tgacggg`,
+			},
+			want: map[string]oligo{
+				"ACT":     {id: "other", seq: "act"},
+				"TGACG":   {id: "other", seq: "tgacg"},
+				"TGACGGG": {id: "other", seq: "tgacggg"},
+			},
+			nextIndex: 1,
+		},
+		{
 			name: "jump in next index",
 			args: args{
 				`os1,act
@@ -69,6 +83,20 @@ func Test_readOligosFromCSV(t *testing.T) {
 				"TGACG": {id: "os10", seq: "tgacg"},
 			},
 			nextIndex: 11,
+		},
+		{
+			name: "mixed prefixes and unsorted index",
+			args: args{
+				`os4,act
+				os2,tgacg
+				other10,actg`,
+			},
+			want: map[string]oligo{
+				"ACT":   {id: "os4", seq: "act"},
+				"TGACG": {id: "os2", seq: "tgacg"},
+				"ACTG":  {id: "other10", seq: "actg"},
+			},
+			nextIndex: 5,
 		},
 	}
 
