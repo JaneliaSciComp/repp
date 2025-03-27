@@ -153,7 +153,7 @@ func (b *blastExec) input() error {
 	}
 
 	// write the query ID and sequence
-	_, err := b.in.WriteString(fmt.Sprintf(">%s\n%s\n", b.name, querySeq))
+	_, err := fmt.Fprintf(b.in, ">%s\n%s\n", b.name, querySeq)
 
 	return err
 }
@@ -292,7 +292,7 @@ func (b *blastExec) parseLine(lineIndex int, line, inputQuerySeq string, filters
 	if len(cols) < 6 {
 		return
 	}
-	entry := strings.Replace(cols[0], ">", "", -1)
+	entry := strings.ReplaceAll(cols[0], ">", "")
 	queryStart, _ := strconv.Atoi(cols[1])
 	queryEnd, _ := strconv.Atoi(cols[2])
 	subjectStart, _ := strconv.Atoi(cols[3])
@@ -307,8 +307,8 @@ func (b *blastExec) parseLine(lineIndex int, line, inputQuerySeq string, filters
 		// subject sequence column is actually empty so there cannot be any match
 		return
 	}
-	subjectSeq = strings.Replace(subjectSeq, "-", "", -1) // remove gap markers
-	queryStart--                                          // convert from 1-based to 0-based
+	subjectSeq = strings.ReplaceAll(subjectSeq, "-", "") // remove gap markers
+	queryStart--                                         // convert from 1-based to 0-based
 	queryEnd--
 	subjectStart--
 	subjectEnd--
@@ -405,7 +405,7 @@ func (b *blastExec) runAgainst() (err error) {
 	return
 }
 
-func (b *blastExec) close() (err error) {
+func (b *blastExec) Close() (err error) {
 	if isEnvDebugSet() {
 		// keep the temporary files
 		rlog.Infof("Blastn input/output: %s, %s", b.in.Name(), b.out.Name())
@@ -486,7 +486,7 @@ func blast(
 			identity:        identity,
 			ungapped:        ungapped,
 		}
-		defer b.close()
+		defer b.Close() // nolint:errcheck
 
 		// make sure the db exists
 		if _, err := os.Stat(db.Path); os.IsNotExist(err) {
@@ -544,7 +544,7 @@ func blastAgainst(
 		identity:        identity,
 		ungapped:        ungapped,
 	}
-	defer b.close()
+	defer b.Close() // nolint:errcheck
 
 	// make sure the subject file exists
 	if _, err := os.Stat(subject); os.IsNotExist(err) {
@@ -681,7 +681,7 @@ func queryDatabases(entry string, dbs []DB) (f *Frag, err error) {
 		if outFile == "" {
 			continue // failed to query from this DB
 		}
-		defer os.Remove(outFile)
+		defer os.Remove(outFile) // nolint:errcheck
 
 		if frags, err := read(outFile, false, false); err == nil {
 			targetFrag := frags[0]
@@ -713,7 +713,7 @@ func seqMismatch(primers []Primer, parentID, parentSeq string, conf *config.Conf
 	if err != nil {
 		return mismatchResult{false, match{}, err}
 	}
-	defer os.Remove(parentFile.Name())
+	defer os.Remove(parentFile.Name()) // nolint:errcheck
 
 	if parentID == "" {
 		parentID = "parent"
@@ -754,7 +754,7 @@ func parentMismatch(primers []Primer, parent string, db DB, conf *config.Config)
 
 	// check each primer for mismatches
 	if parentFile.Name() != "" {
-		defer os.Remove(parentFile.Name())
+		defer os.Remove(parentFile.Name()) // nolint:errcheck
 
 		for i, primer := range primers {
 			// confirm that the 3' end of the primer is in the parent seq
@@ -788,7 +788,7 @@ func blastdbcmd(entry string, db DB) (output *os.File, parentSeq string, err err
 	if err != nil {
 		return nil, "", err
 	}
-	defer os.Remove(entryFile.Name())
+	defer os.Remove(entryFile.Name()) // nolint:errcheck
 
 	// path to the output sequence file from querying the entry's sequence from the BLAST db
 	output, err = os.CreateTemp("", "blastcmd-out-*")
@@ -863,7 +863,7 @@ func mismatch(primer string, parentFile *os.File, c *config.Config) (wasMismatch
 		identity: 65,    // see Primer-BLAST https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3412702/
 		evalue:   30000, // see Primer-BLAST
 	}
-	defer b.close()
+	defer b.Close() // nolint:errcheck
 
 	// execute BLAST
 	if err = b.runAgainst(); err != nil {

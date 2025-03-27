@@ -93,21 +93,21 @@ func (a sortedOligosByID) Swap(i, j int) {
 }
 
 type oligosDB struct {
-	indexedOligos     map[string]oligo
-	oligoIDBasePrefix string
-	nextOligoID       uint
-	synthOligos       bool
+	indexedOligos map[string]oligo
+	baseIDPrefix  string
+	nextOligoID   uint
+	synthOligos   bool
 }
 
 func (oligos oligosDB) getNewOligoID(newSeqIndex int) string {
 	// otherwise use the oligoIDBase as a prefix
-	return fmt.Sprintf("%s%d", oligos.oligoIDBasePrefix, oligos.nextOligoID+uint(newSeqIndex))
+	return fmt.Sprintf("%s%d", oligos.baseIDPrefix, oligos.nextOligoID+uint(newSeqIndex))
 }
 
 func newOligosDB(defaultBasePrefix string, synthOligos bool) *oligosDB {
 	var o = &oligosDB{}
 	o.indexedOligos = make(map[string]oligo)
-	o.oligoIDBasePrefix = defaultBasePrefix
+	o.baseIDPrefix = defaultBasePrefix
 	o.nextOligoID = 1
 	o.synthOligos = synthOligos
 	return o
@@ -166,7 +166,7 @@ func readOligosFromFile(oligosCSVFilename string, oligos *oligosDB) error {
 		rlog.Warnf("Error opening oligos manifest %s: %v", oligosCSVFilename, err)
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 
 	manifestReader := csv.NewReader(f)
 
@@ -204,15 +204,14 @@ func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {
 		}
 
 		currentOligoIDBase, currentOligoIndex := extractOligoIDComps(oligoIdField)
-		if currentOligoIDBase != "" {
-			oligos.oligoIDBasePrefix = currentOligoIDBase
-		}
-		// if an index is found - nextIndex becomes current index +1
-		// otherwise increment previous value
-		if currentOligoIndex == 0 {
-			oligos.nextOligoID++
-		} else {
-			oligos.nextOligoID = currentOligoIndex + 1
+		if strings.EqualFold(currentOligoIDBase, oligos.baseIDPrefix) {
+			// current oligo has the same prefix as the current oligo database
+			if currentOligoIndex == 0 {
+				// current oligo has no numeric index component
+				oligos.nextOligoID++
+			} else if oligos.nextOligoID <= currentOligoIndex {
+				oligos.nextOligoID = currentOligoIndex + 1
+			}
 		}
 
 		// there are cases where the sequence field looks like "/5Biosg/GTGAAGTTCCCAAAGGTGCA"

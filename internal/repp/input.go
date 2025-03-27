@@ -17,9 +17,6 @@ var (
 	stderr = log.New(os.Stderr, "", 0)
 )
 
-const primerIDPrefix = "oS"
-const synthFragIDPrefix = "syn"
-
 type AssemblyParams interface {
 	GetIn() string
 	SetIn(in string)
@@ -48,8 +45,14 @@ type AssemblyParams interface {
 	GetPrimersDBLocations() []string
 	SetPrimersDBLocations(dbLocations []string)
 
+	GetPrimerIDsPrefix() string
+	SetPrimerIDsPrefix(prefix string)
+
 	GetSynthFragsDBLocations() []string
 	SetSynthFragsDBLocations(dbLocations []string)
+
+	GetSynthFragIDsPrefix() string
+	SetSynthFragIDsPrefix(prefix string)
 
 	getDBs() ([]DB, error)
 	SetDbNames(dbNames []string)
@@ -78,8 +81,16 @@ type assemblyParamsImpl struct {
 	// primers manifest
 	primersDBs []string
 
+	// primerIDsPrefix - prefix used for new used oligos
+	// in the strategy report
+	primerIDsPrefix string
+
 	// synthetic fragments manifest
 	synthFragsDBs []string
+
+	// synthFragIDsPrefix - prefix used for new used synthetic fragments
+	// in the strategy report
+	synthFragIDsPrefix string
 
 	// list of enzimes
 	enzymeNames []string
@@ -173,12 +184,28 @@ func (ap *assemblyParamsImpl) SetPrimersDBLocations(dbLocations []string) {
 	ap.primersDBs = dbLocations
 }
 
+func (ap assemblyParamsImpl) GetPrimerIDsPrefix() string {
+	return ap.primerIDsPrefix
+}
+
+func (ap *assemblyParamsImpl) SetPrimerIDsPrefix(prefix string) {
+	ap.primerIDsPrefix = prefix
+}
+
 func (ap assemblyParamsImpl) GetSynthFragsDBLocations() []string {
 	return ap.synthFragsDBs
 }
 
 func (ap *assemblyParamsImpl) SetSynthFragsDBLocations(dbLocations []string) {
 	ap.synthFragsDBs = dbLocations
+}
+
+func (ap assemblyParamsImpl) GetSynthFragIDsPrefix() string {
+	return ap.synthFragIDsPrefix
+}
+
+func (ap *assemblyParamsImpl) SetSynthFragIDsPrefix(prefix string) {
+	ap.synthFragIDsPrefix = prefix
 }
 
 func (ap assemblyParamsImpl) getDBs() (dbs []DB, err error) {

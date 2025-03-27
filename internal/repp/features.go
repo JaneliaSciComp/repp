@@ -87,8 +87,8 @@ func Features(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 	}
 
 	// do not use the oligos manifest
-	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), primerIDPrefix, false)
-	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), synthFragIDPrefix, true)
+	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), assemblyParams.GetPrimerIDsPrefix(), false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), assemblyParams.GetSynthFragIDsPrefix(), true)
 
 	if _, err := writeResult(
 		assemblyParams.GetOut(),
@@ -153,7 +153,7 @@ func queryFeatures(
 				}
 				insertFeats = append(insertFeats, []string{f, seq})
 			} else if dbFrag, err := queryDatabases(f, dbs); err == nil {
-				f = strings.Replace(f, ":", "|", -1)
+				f = strings.ReplaceAll(f, ":", "|")
 				if !fwd {
 					dbFrag.Seq = reverseComplement(dbFrag.Seq)
 				}
@@ -247,7 +247,7 @@ func featureSolutions(
 
 	// create a subject file from the matches' source fragments
 	subjectDB, frags := subjectDatabase(extendedMatches, dbs)
-	defer os.Remove(subjectDB)
+	defer os.Remove(subjectDB) // nolint:errcheck
 
 	// re-BLAST the features against the new subject database
 	featureMatches = reblastFeatures(identity, ungapped, feats, subjectDB, frags)
@@ -265,7 +265,7 @@ func featureSolutions(
 	featureToStart := make(map[int]int) // map from feature index to start index on fullSynthSeq
 	for i, feat := range feats {
 		featureToStart[i] = targetBuilder.Len()
-		targetBuilder.WriteString(feat[1])
+		targetBuilder.WriteString(feat[1]) // nolint:errcheck
 	}
 	target := targetBuilder.String()
 
@@ -535,7 +535,7 @@ func ListFeatures(featureName string) {
 			fmt.Fprintf(w, "%s\t%s\n", feat, seq)
 		}
 
-		w.Flush()
+		w.Flush() // nolint:errcheck
 
 		return
 	}
@@ -562,7 +562,7 @@ func ListFeatures(featureName string) {
 		if _, err := fmt.Fprintf(w, "%s\t%s\n", featureName, matchedFeature); err != nil {
 			rlog.Fatal(err)
 		}
-		w.Flush()
+		w.Flush() // nolint:errcheck
 		return
 	}
 
@@ -580,7 +580,7 @@ func ListFeatures(featureName string) {
 			rlog.Fatal(err)
 		}
 	}
-	w.Flush()
+	w.Flush() // nolint:errcheck
 }
 
 // AddFeatures - add the feature's seq in the database (or create if it isn't in the feature db)

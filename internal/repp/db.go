@@ -65,7 +65,7 @@ func AddDatabase(dbName string, seqFiles []string, circularizeSequences bool, co
 		rlog.Errorf("Error creating database sequence file %f\n", dbSequenceFilepath)
 		return
 	}
-	defer dbSeqFile.Close()
+	defer dbSeqFile.Close() // nolint:errcheck
 
 	if len(seqFiles) == 0 {
 		// try to read from stdin
@@ -130,7 +130,7 @@ func ListDatabases() {
 	for _, db := range m.DBs {
 		fmt.Fprintf(w, "%s\t%.2f\n", path.Base(db.Path), db.Cost)
 	}
-	w.Flush()
+	w.Flush() // nolint:errcheck
 }
 
 // DeleteCmd deletes an existing sequence database from the REPP directory.

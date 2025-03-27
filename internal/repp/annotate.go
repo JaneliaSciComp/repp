@@ -63,12 +63,12 @@ func annotate(name, seq, output string, identity int, ungapped bool, dbs []DB, f
 	indexToFeature := make(map[int]string)
 	for feat, featSeq := range featureKV.contents {
 		indexToFeature[featIndex] = feat
-		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq))
+		featureSubjects.WriteString(fmt.Sprintf(">%d\n%s\n", featIndex, featSeq)) // nolint:errcheck
 		featIndex++
 	}
 	subjectFile, err := os.CreateTemp("", "features-*")
 	handleErr(err)
-	defer os.Remove(subjectFile.Name())
+	defer os.Remove(subjectFile.Name()) // nolint:errcheck
 
 	_, err = subjectFile.WriteString(featureSubjects.String())
 	handleErr(err)
@@ -83,7 +83,7 @@ func annotate(name, seq, output string, identity int, ungapped bool, dbs []DB, f
 		circular: true,
 		ungapped: ungapped,
 	}
-	defer b.close()
+	defer b.Close() // nolint:errcheck
 
 	var features []match
 	if len(dbs) < 1 {
@@ -151,6 +151,6 @@ func annotate(name, seq, output string, identity int, ungapped bool, dbs []DB, f
 			}
 			fmt.Fprintf(tw, "%s\t%d\t%d\t%s\t\n", feat.entry, feat.queryStart+1, feat.queryEnd+1, dir)
 		}
-		tw.Flush()
+		tw.Flush() // nolint:errcheck
 	}
 }

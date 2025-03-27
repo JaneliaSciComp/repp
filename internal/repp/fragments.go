@@ -62,8 +62,8 @@ func AssembleFragments(assemblyParams AssemblyParams, conf *config.Config) {
 
 	target, solution := fragments(frags, conf)
 
-	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), primerIDPrefix, false)
-	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), synthFragIDPrefix, true)
+	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), assemblyParams.GetPrimerIDsPrefix(), false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), assemblyParams.GetSynthFragIDsPrefix(), true)
 
 	// write the single list of fragments as a possible solution to the output file
 	if _, err := writeResult(
@@ -142,7 +142,7 @@ func annealFragments(min, max int, frags []*Frag) (vec string) {
 		f.end = f.start + len(fragSeq) - 1
 
 		// add this Frag's sequence onto the accumulated plasmid sequence
-		vecSeq.WriteString(contrib)
+		vecSeq.WriteString(contrib) // nolint:errcheck
 	}
 
 	return vecSeq.String()
@@ -194,7 +194,7 @@ func reverseComplement(seq string) string {
 
 	var revCompBuffer bytes.Buffer
 	for _, c := range seq {
-		revCompBuffer.WriteByte(revCompMap[c])
+		revCompBuffer.WriteByte(revCompMap[c]) // nolint:errcheck
 	}
 
 	revCompBytes := revCompBuffer.Bytes()

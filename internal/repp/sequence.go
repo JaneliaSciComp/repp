@@ -60,7 +60,7 @@ func SequenceList(
 		fmt.Fprintf(writer, "%s\t%d\t%d\t%d\t%d\t%s\n", m.entry, m.queryStart, m.queryEnd, m.subjectStart, m.subjectEnd, m.db.Name)
 		seenIds[key(m)] = true
 	}
-	writer.Flush()
+	writer.Flush() // nolint:errcheck
 }
 
 // Sequence is for running an end to end plasmid design using a target sequence.
@@ -99,8 +99,8 @@ func Sequence(assemblyParams AssemblyParams, maxSolutions int, conf *config.Conf
 		rlog.Fatal(err)
 	}
 
-	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), primerIDPrefix, false)
-	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), synthFragIDPrefix, true)
+	primersDB := readOligos(assemblyParams.GetPrimersDBLocations(), assemblyParams.GetPrimerIDsPrefix(), false)
+	synthFragsDB := readOligos(assemblyParams.GetSynthFragsDBLocations(), assemblyParams.GetSynthFragIDsPrefix(), true)
 
 	// write the results to a file
 	elapsed := time.Since(start)

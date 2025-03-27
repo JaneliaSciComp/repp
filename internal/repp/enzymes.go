@@ -268,7 +268,7 @@ func recogRegex(recog string) (decoded string) {
 
 	var regexDecoder strings.Builder
 	for _, c := range recog {
-		regexDecoder.WriteString(regexDecode[c])
+		regexDecoder.WriteString(regexDecode[c]) // nolint:errcheck
 	}
 
 	return regexDecoder.String()
@@ -300,7 +300,7 @@ func PrintEnzymes(enzyme string) {
 		for _, name := range enzymeNames {
 			fmt.Fprintf(w, "%s\t%s\n", name, f.contents[name])
 		}
-		w.Flush()
+		w.Flush() // nolint:errcheck
 		return
 	}
 
@@ -336,7 +336,7 @@ func PrintEnzymes(enzyme string) {
 	if _, err := w.Write([]byte("\n")); err != nil {
 		rlog.Fatal(err)
 	}
-	w.Flush()
+	w.Flush() // nolint:errcheck
 }
 
 // AddEnzymes the enzyme's seq in the database (or create if it isn't in the enzyme db).

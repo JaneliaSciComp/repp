@@ -1,9 +1,28 @@
 # Options for analysis running.
+version: '2'
+
 run:
   timeout: 1m
 
-linters-settings:
-  gofmt:
-    simplify: true
-  errcheck:
-    ignore: ''
+linters:
+  enable:
+    - govet
+    - staticcheck
+
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+      disable-default-exclusions: true
+      # See https://github.com/kisielk/errcheck#excluding-functions for details.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Printf
+        - fmt.Println
+        - fmt.Sprintf
+
+formatters:
+  settings:
+    gofmt:
+      simplify: true

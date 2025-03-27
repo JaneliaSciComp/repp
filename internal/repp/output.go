@@ -216,13 +216,13 @@ func writeCSV(filename, fragmentIDBase string,
 	if err != nil {
 		return err
 	}
-	defer reagentsFile.Close()
+	defer reagentsFile.Close() // nolint:errcheck
 
 	strategyFile, err := os.Create(strategyFilename)
 	if err != nil {
 		return err
 	}
-	defer strategyFile.Close()
+	defer strategyFile.Close() // nolint:errcheck
 
 	strategyCSVWriter := csv.NewWriter(strategyFile)
 	// write timestamp
@@ -291,18 +291,18 @@ func writeCSV(filename, fragmentIDBase string,
 			return err
 		}
 		reagents := []oligo{}
-		var newPrimerIndex int = 0
-		var newSynthFragIndex int = 0
+		var newPrimerIndex = 0
+		var newSynthFragIndex = 0
 
-		newPrimers := newOligosDB(primerIDPrefix, false)
-		newSynthFrags := newOligosDB(synthFragIDPrefix, true)
+		newPrimers := newOligosDB(existingPrimers.baseIDPrefix, false)
+		newSynthFrags := newOligosDB(existingSynthFrags.baseIDPrefix, true)
 
-		var updatedPrimerDBs []*oligosDB = []*oligosDB{
+		var updatedPrimerDBs = []*oligosDB{
 			existingPrimers,
 			newPrimers,
 		}
 
-		var updatedSynthFragsDBs []*oligosDB = []*oligosDB{
+		var updatedSynthFragsDBs = []*oligosDB{
 			existingSynthFrags,
 			newSynthFrags,
 		}
@@ -529,7 +529,7 @@ func writeFragsToFastaFile(frags []*Frag, maxIDLength int, circularize bool, fas
 	// convert an int to an Excel like column a ... z, aa .. az, ba .. bz
 	// just to be safe
 	base10ToBase26 := func(i int) string {
-		var base26Val string = ""
+		var base26Val = ""
 		for currVal := i; ; {
 			if currVal >= 26 {
 				mod := currVal % 26
@@ -585,7 +585,7 @@ func writeSeqToFastaFile(id, seq string, circular bool, fastaFile *os.File) (err
 		outputSeq = seq
 		circularAttr = ""
 	}
-	_, err = fastaFile.WriteString(fmt.Sprintf(">%s %s\n%s\n", id, circularAttr, outputSeq))
+	_, err = fmt.Fprintf(fastaFile, ">%s %s\n%s\n", id, circularAttr, outputSeq)
 	return err
 }
 
@@ -600,7 +600,7 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 
 	// feature rows
 	var fsb strings.Builder
-	fsb.WriteString("DEFINITION  .\nACCESSION   .\nFEATURES             Location/Qualifiers\n")
+	fsb.WriteString("DEFINITION  .\nACCESSION   .\nFEATURES             Location/Qualifiers\n") // nolint:errcheck
 	for _, m := range feats {
 		cS := ""
 		cE := ""
@@ -619,7 +619,7 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 			e = len(seq)
 		}
 
-		fsb.WriteString(
+		fsb.WriteString( // nolint:errcheck
 			fmt.Sprintf("     misc_feature    %s%d..%d%s\n", cS, s, e, cE) +
 				fmt.Sprintf("                     /label=\"%s\"\n", m.entry),
 		)
@@ -627,20 +627,20 @@ func writeGenbank(filename, name, seq string, frags []*Frag, feats []match) {
 
 	// origin row
 	var ori strings.Builder
-	ori.WriteString("ORIGIN\n")
+	ori.WriteString("ORIGIN\n") // nolint:errcheck
 	for i := 0; i < len(seq); i += 60 {
 		n := strconv.Itoa(i + 1)
-		ori.WriteString(strings.Repeat(" ", 9-len(n)) + n)
+		ori.WriteString(strings.Repeat(" ", 9-len(n)) + n) // nolint:errcheck
 		for s := i; s < i+60 && s < len(seq); s += 10 {
 			e := s + 10
 			if e > len(seq) {
 				e = len(seq)
 			}
-			ori.WriteString(fmt.Sprintf(" %s", seq[s:e]))
+			ori.WriteString(fmt.Sprintf(" %s", seq[s:e])) // nolint:errcheck
 		}
-		ori.WriteString("\n")
+		ori.WriteString("\n") // nolint:errcheck
 	}
-	ori.WriteString("//\n")
+	ori.WriteString("//\n") // nolint:errcheck
 
 	gb := strings.Join([]string{header, fsb.String(), ori.String()}, "")
 	err := os.WriteFile(filename, []byte(gb), 0644)

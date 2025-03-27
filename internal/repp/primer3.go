@@ -101,10 +101,12 @@ func (p *primer3) input(f, prev, next *Frag) (addLeft, addRight int, err error) 
 	for key, val := range settings {
 		fmt.Fprintf(&fileBuffer, "%s=%s\n", key, val)
 	}
-	fileBuffer.WriteString("=") // required at file's end
+	if _, err = fileBuffer.WriteString("="); err != nil { // required at file's end
+		return 0, 0, fmt.Errorf("failed to write primer3 end of input file %v: ", err)
+	}
 	// then write them to the file
 	if _, err = p.in.Write(fileBuffer.Bytes()); err != nil {
-		return 0, 0, fmt.Errorf("failed to write primer3 input file %v: ", err)
+		return 0, 0, fmt.Errorf("failed to write buffer to primer3 input file %v: ", err)
 	}
 	return
 }
@@ -354,7 +356,7 @@ func (p *primer3) parse(target string) (primers []Primer, err error) {
 	return
 }
 
-func (p *primer3) close() (err error) {
+func (p *primer3) Close() (err error) {
 	if os.Getenv("DEBUG_REPP") == "TRUE" {
 		// keep the temporary files
 		rlog.Infof("Primer3 input/output: %s, %s", p.in.Name(), p.out.Name())

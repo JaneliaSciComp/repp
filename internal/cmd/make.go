@@ -68,43 +68,15 @@ Solutions have either a minimum fragment count or assembly cost (or both).`,
 // set flags
 func init() {
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	fragmentsCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
-	fragmentsCmd.Flags().StringP("out", "o", "", "output file name")
-	fragmentsCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases by name")
-	fragmentsCmd.Flags().StringP("backbone", "b", "", backboneHelp)
-	fragmentsCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
-	fragmentsCmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
+	setCommonCommandFlags(fragmentsCmd)
 	must(fragmentsCmd.MarkFlagRequired("in"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	featuresCmd.Flags().StringP("out", "o", "", "output file name")
-	featuresCmd.Flags().StringP("dbs", "d", "", "comma separated list of sequence databases by name")
-	featuresCmd.Flags().StringP("backbone", "b", "", backboneHelp)
-	featuresCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
-	featuresCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	featuresCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
-	featuresCmd.Flags().Bool("ungapped", false, "Ungapped alignment flag")
-	featuresCmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
-	featuresCmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
-	featuresCmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
+	setCommonCommandFlags(featuresCmd)
 	must(featuresCmd.MarkFlagRequired("out"))
 
 	// Flags for specifying the paths to the input file, input fragment files, and output file
-	sequenceCmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
-	sequenceCmd.Flags().StringP("out", "o", "", "output file name")
-	sequenceCmd.Flags().StringP("out-fmt", "f", "CSV", "output file format; valid values [JSON, CSV]")
-	sequenceCmd.Flags().StringP("dbs", "d", "", "list of sequence databases by name")
-	sequenceCmd.Flags().StringP("backbone", "b", "", backboneHelp)
-	sequenceCmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
-	sequenceCmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
-	sequenceCmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
-	sequenceCmd.Flags().Bool("ungapped", false, "Ungapped alignment flag")
-	sequenceCmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
-	sequenceCmd.Flags().StringP("primers-databases", "m", "", "Comma separated list of CSV primers database files")
-	sequenceCmd.Flags().StringP("synth-frags-databases", "s", "", "Comma separated list of CSV synthetic fragments database files")
-	sequenceCmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
-	sequenceCmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
-
+	setCommonCommandFlags(sequenceCmd)
 	must(sequenceCmd.MarkFlagRequired("in"))
 
 	makeCmd.AddCommand(fragmentsCmd)
@@ -119,6 +91,25 @@ func init() {
 	}
 
 	RootCmd.AddCommand(makeCmd)
+}
+
+func setCommonCommandFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP("in", "i", "", "input file name (FASTA or Genbank)")
+	cmd.Flags().StringP("out", "o", "", "output file name")
+	cmd.Flags().StringP("out-fmt", "f", "CSV", "output file format; valid values [JSON, CSV]")
+	cmd.Flags().StringP("dbs", "d", "", "list of sequence databases by name")
+	cmd.Flags().StringP("enzymes", "e", "", enzymeHelp)
+	cmd.Flags().StringP("backbone", "b", "", backboneHelp)
+	cmd.Flags().StringP("exclude", "x", "", "keywords for excluding fragments")
+	cmd.Flags().IntP("identity", "p", 100, "%-identity threshold (see 'blastn -help')")
+	cmd.Flags().Bool("ungapped", false, "Ungapped alignment flag")
+	cmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
+	cmd.Flags().StringP("primers-databases", "m", "", "Comma separated list of CSV primers database files")
+	cmd.Flags().StringP("primers-prefix", "", "oS", "Prefix used for labeling new used oligos")
+	cmd.Flags().StringP("synth-frags-databases", "s", "", "Comma separated list of CSV synthetic fragments database files")
+	cmd.Flags().StringP("synth-frags-prefix", "", "syn", "Prefix used for labeling new found synthetic fragments")
+	cmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
+	cmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
 }
 
 func runFragmentsCmd(cmd *cobra.Command, args []string) {

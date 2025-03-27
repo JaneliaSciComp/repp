@@ -249,7 +249,8 @@ func (f *Frag) cost(procure bool) (fragCost float64, adjustedFragCost float64) {
 		adjustedFragCost = f.db.Cost
 	}
 
-	if f.fragType == pcr {
+	switch f.fragType {
+	case pcr:
 		var primersCost float64
 		if f.Primers != nil {
 			// cost of primers plus the cost of a single PCR reaction
@@ -261,7 +262,7 @@ func (f *Frag) cost(procure bool) (fragCost float64, adjustedFragCost float64) {
 		pcrFragCost := primersCost + f.conf.PcrRxnCost
 		fragCost += pcrFragCost
 		adjustedFragCost += pcrFragCost
-	} else if f.fragType == synthetic {
+	case synthetic:
 		synthFragCost := f.conf.SynthFragmentCost(len(f.Seq))
 		fragCost += synthFragCost
 		adjustedFragCost += synthFragCost * float64(f.conf.GetSyntheticFragmentFactor())
@@ -528,7 +529,7 @@ func (f *Frag) setPrimers(prev, next *Frag, seq string, conf *config.Config) (er
 	}
 
 	psExec := newPrimer3(seq, conf)
-	defer psExec.close()
+	defer psExec.Close() // nolint:errcheck
 
 	// make input file and write to the fs
 	// find how many bp of additional sequence need to be added
