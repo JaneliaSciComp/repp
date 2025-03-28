@@ -98,6 +98,30 @@ func Test_readOligosFromCSV(t *testing.T) {
 			},
 			nextIndex: 5,
 		},
+		{
+			name: "different number of fields per entry but the ones that matter are present",
+			args: args{
+				`os1,act,,,,,
+				os10,tgacg`,
+			},
+			want: map[string]oligo{
+				"ACT":   {id: "os1", seq: "act"},
+				"TGACG": {id: "os10", seq: "tgacg"},
+			},
+			nextIndex: 11,
+		},
+		{
+			name: "row with too few columns",
+			args: args{
+				`os1,act,,,,,
+				os10,
+				os11`,
+			},
+			want: map[string]oligo{
+				"ACT": {id: "os1", seq: "act"},
+			},
+			nextIndex: 2,
+		},
 	}
 
 	for _, tt := range tests {

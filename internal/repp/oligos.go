@@ -168,20 +168,21 @@ func readOligosFromFile(oligosCSVFilename string, oligos *oligosDB) error {
 	}
 	defer f.Close() // nolint:errcheck
 
-	manifestReader := csv.NewReader(f)
+	oligosCSVReader := csv.NewReader(f)
 
-	if err = readOligosFromCSV(manifestReader, oligos); err != nil {
+	if err = readOligosFromCSV(oligosCSVReader, oligos); err != nil {
 		rlog.Warnf("Error parsing oligos manifest %s: %v", oligosCSVFilename, err)
 	}
 
 	return nil
 }
 
-func readOligosFromCSV(manifestReader *csv.Reader, oligos *oligosDB) error {
+func readOligosFromCSV(oligosCSVReader *csv.Reader, oligos *oligosDB) error {
 
-	manifestReader.Comment = '#'
-	manifestReader.TrimLeadingSpace = true
-	records, err := manifestReader.ReadAll()
+	oligosCSVReader.Comment = '#'
+	oligosCSVReader.TrimLeadingSpace = true
+	oligosCSVReader.FieldsPerRecord = -1 // allow variable number of fields per record
+	records, err := oligosCSVReader.ReadAll()
 	if err != nil {
 		return err
 	}
