@@ -169,14 +169,14 @@ func extractCommonParams(cmd *cobra.Command, args []string, params repp.Assembly
 	params.SetPrimersDBLocations(extractOligosDatabases(cmd, "primers-databases"))
 
 	// get primer IDs prefix
-	primerIDsPrefix, _ := cmd.Flags().GetString("primer-ids-prefix")
+	primerIDsPrefix, _ := cmd.Flags().GetString("primer-prefix")
 	params.SetPrimerIDsPrefix(primerIDsPrefix)
 
 	// extract synthesized fragments dbname (CSV file)
 	params.SetSynthFragsDBLocations(extractOligosDatabases(cmd, "synth-frags-databases"))
 
 	// get synthetic IDs prefix
-	synthIDsPrefix, _ := cmd.Flags().GetString("synth-ids-prefix")
+	synthIDsPrefix, _ := cmd.Flags().GetString("synth-frag-prefix")
 	params.SetSynthFragIDsPrefix(synthIDsPrefix)
 }
 

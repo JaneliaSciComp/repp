@@ -105,9 +105,9 @@ func setCommonCommandFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("ungapped", false, "Ungapped alignment flag")
 	cmd.Flags().Int("left-margin", 100, "left margin for matches of the beginning of a circular genome")
 	cmd.Flags().StringP("primers-databases", "m", "", "Comma separated list of CSV primers database files")
-	cmd.Flags().StringP("primers-prefix", "", "oS", "Prefix used for labeling new used oligos")
+	cmd.Flags().StringP("primer-prefix", "", "oS", "Prefix used for labeling new used oligos")
 	cmd.Flags().StringP("synth-frags-databases", "s", "", "Comma separated list of CSV synthetic fragments database files")
-	cmd.Flags().StringP("synth-frags-prefix", "", "syn", "Prefix used for labeling new found synthetic fragments")
+	cmd.Flags().StringP("synth-frag-prefix", "", "syn", "Prefix used for labeling new found synthetic fragments")
 	cmd.Flags().Int("synthetic-frag-factor", 0, "Penalty for synthetic fragments")
 	cmd.Flags().IntP("max-kept-solutions", "n", 1, "Top solutions to keep")
 }
