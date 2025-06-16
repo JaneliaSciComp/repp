@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const releaseNumber = "1.2.3"
+const releaseNumber = "1.2.4"
 
 //go:embed commit.txt
 var commit string
