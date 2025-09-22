@@ -292,7 +292,6 @@ func writeCSV(filename, fragmentIDBase string,
 		}
 		reagents := []oligo{}
 		var newPrimerIndex = 0
-		var newSynthFragIndex = 0
 
 		newPrimers := newOligosDB(existingPrimers.baseIDPrefix, false)
 		newSynthFrags := newOligosDB(existingSynthFrags.baseIDPrefix, true)
@@ -307,15 +306,23 @@ func writeCSV(filename, fragmentIDBase string,
 			newSynthFrags,
 		}
 
-		for fi, f := range s.Fragments {
-			fnumber := fi + 1
+		pcrFragIndex := 1
+		synthFragIndex := 1
+		for _, f := range s.Fragments {
 			var fwdPrimer, revPrimer Primer
 			var synthSeq string
+			var fID string
 
-			fID := fmt.Sprintf("%s_%d_%s", fragmentIDBase, fnumber, fragTypeAsString(f.fragType))
 			fwdPrimer, revPrimer = f.getPrimers()
 			if fwdPrimer.Seq == "" && revPrimer.Seq == "" {
+				// synthetic fragment
+				fID = fmt.Sprintf("%s_%s%d", fragmentIDBase, fragTypeAsString(f.fragType), synthFragIndex)
 				synthSeq = f.Seq
+				synthFragIndex++
+			} else {
+				// PCR fragment
+				fID = fmt.Sprintf("%s_%s%d", fragmentIDBase, fragTypeAsString(f.fragType), pcrFragIndex)
+				pcrFragIndex++
 			}
 
 			fwdOligo := searchOligoDBs(fwdPrimer.Seq, updatedPrimerDBs)
@@ -353,12 +360,10 @@ func writeCSV(filename, fragmentIDBase string,
 			if f.fragType == synthetic {
 				synthReagent := searchOligoDBs(synthSeq, updatedSynthFragsDBs)
 				if !synthReagent.hasID() {
-					synthReagent.assignNewOligoID(existingSynthFrags.getNewOligoID(newSynthFragIndex))
+					synthReagent.assignNewOligoID(fID)
 					synthReagent.synth = true
 					newSynthFrags.addOligo(synthReagent)
-					newSynthFragIndex++
 				}
-				fID = synthReagent.id
 				templateID = "N/A"
 				matchRatio = "N/A"
 				pcrSeqSize = len(f.Seq)

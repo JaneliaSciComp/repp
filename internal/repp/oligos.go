@@ -99,6 +99,12 @@ type oligosDB struct {
 	synthOligos   bool
 }
 
+// String display method for an oligosDB
+func (oligos oligosDB) String() string {
+	return fmt.Sprintf("Oligos DB: prefix:%s, synth:%t, size:%d",
+		oligos.baseIDPrefix, oligos.synthOligos, len(oligos.indexedOligos))
+}
+
 func (oligos oligosDB) getNewOligoID(newSeqIndex int) string {
 	// otherwise use the oligoIDBase as a prefix
 	return fmt.Sprintf("%s%d", oligos.baseIDPrefix, oligos.nextOligoID+uint(newSeqIndex))
