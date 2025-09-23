@@ -458,7 +458,7 @@ func fragmentBase(filename string) string {
 }
 
 func fragIDComponents(fragID string) []string {
-	var fragmentIDSeparators = " ,_-.;:"
+	var fragmentIDSeparators = " ,_-.;:|><"
 
 	splitFunc := func(c rune) bool {
 		return strings.ContainsRune(fragmentIDSeparators, c)
