@@ -93,7 +93,7 @@ pcr-use-strict-constraints: false
 synthetic-min-length: 300
 
 # Maximum length of a synthesized building fragment
-synthetic-max-length: 5000
+synthetic-max-length: 1800
 
 # Penalty for synthetic fragments
 synthetic-fragment-factor: 1
@@ -103,7 +103,7 @@ synthetic-fragment-factor: 1
 # so 500: is synthesis from whatever length is less than that key up to it
 synthetic-fragment-cost:
   # Twist: 
-  5000:
+  1800:
     fixed: false
     cost: 0.07
 
