@@ -363,6 +363,9 @@ func writeCSV(filename, fragmentIDBase string,
 					synthReagent.assignNewOligoID(fID)
 					synthReagent.synth = true
 					newSynthFrags.addOligo(synthReagent)
+				} else {
+					// if a synthetic fragment was found re-assign fragment ID
+					fID = synthReagent.id
 				}
 				templateID = "N/A"
 				matchRatio = "N/A"
